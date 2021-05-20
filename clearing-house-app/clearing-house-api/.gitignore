@@ -1,0 +1,8 @@
+.settings/*
+.project
+target
+data
+*.log
+.idea/
+**/*.lock
+**/*.iml

@@ -1,0 +1,29 @@
+{
+  "header": {
+      "@context": {
+        "ids": "https://w3id.org/idsa/core/",
+        "idsc": "https://w3id.org/idsa/code/"
+      },
+      "@type": "ids:LogMessage",
+      "@id": "https://w3id.org/idsa/autogen/logMessage/c6c15a90-7799-4aa1-ac21-9323b87a7xv9",
+      "ids:securityToken": {
+        "@type": "ids:DynamicAttributeToken",
+        "@id": "https://w3id.org/idsa/autogen/dynamicAttributeToken/6378asd9-480d-80df-c5cb02e4e260",
+        "ids:tokenFormat": {
+          "@id": "idsc:JWT"
+        },
+        "ids:tokenValue": "eyJ0eXAiOiJKV1QiLCJraWQiOiJkZWZhdWx0IiwiYWxnIjoiUlMyNTYifQ.eyJzZWN1cml0eVByb2ZpbGUiOiJpZHNjOlRSVVNURURfQ09OTkVDVE9SX1NFQ1VSSVRZX1BST0ZJTEUiLCJyZWZlcnJpbmdDb25uZWN0b3IiOiJodHRwOi8vY2xlYXJpbmdob3VzZXRlc3Rjb25uZWN0b3IxLmRlbW8iLCJAdHlwZSI6ImlkczpEYXRQYXlsb2FkIiwiQGNvbnRleHQiOiJodHRwczovL3czaWQub3JnL2lkc2EvY29udGV4dHMvY29udGV4dC5qc29ubGQiLCJ0cmFuc3BvcnRDZXJ0c1NoYTI1NiI6IjFkNGVhY2QxNDZlODQyZTdiOWU2N2RjYTIxZWNmOTllOTg0OWI2ZjRlYmVjOWFiZDg4MTY3NGY5ODYzZTdjZWQiLCJzY29wZXMiOlsiaWRzYzpJRFNfQ09OTkVDVE9SX0FUVFJJQlVURVNfQUxMIl0sImF1ZCI6Imlkc2M6SURTX0NPTk5FQ1RPUlNfQUxMIiwiaXNzIjoiaHR0cHM6Ly9kYXBzLmFpc2VjLmZyYXVuaG9mZXIuZGUiLCJzdWIiOiJCMDowMjo0OToyMTo0RDpBNTo3Qzo3NzpBODo3RDoyMzpENzozMzpGRDo2MTo1RDo4RTpBNTo1NjpBNzprZXlpZDpDQjo4QzpDNzpCNjo4NTo3OTpBODoyMzpBNjpDQjoxNTpBQjoxNzo1MDoyRjpFNjo2NTo0Mzo1RDpFOCIsIm5iZiI6MTYxNDA5OTA5NiwiaWF0IjoxNjE0MDk5MDk2LCJqdGkiOiJNVEF6TkRrNU1EQTNOVEl4TWpZM09UZzBOamc9IiwiZXhwIjoxNjE0MTAyNjk2fQ.rhEvyh3dGrg8rpX2WtMdLJIZBnKh8_V5CsigEHxMNWsN5JrBr4B6Knbc3RPHnjEtrylh316P-eJ5tPjE0PkEe48AsT_ud2wzX9ZvBPScZb0mzmVA0J4DPDw6bCW66t_VOxoZZyfqxUFQ0n19szrzJ9ETiyh9rUctaPtUH-WdapiBIQeXvSFmvRPUMBuAmcLxAboa216tMnK9pwC7ikp6Z0U7_VWXRBUKke490M6xDVFtYdDiaXdjBW1O40JLyH7T7MLL44TGOGoBQV930aT1VYw6S_dEFFiiwwj5OCiWOIuYL2MWTLhNjCZnwHaYk0CYHTf-BivxuG_DuY1QC9i5Vw"
+      },
+      "ids:senderAgent": "http://example.org",
+      "ids:modelVersion": "4.0.0",
+      "ids:issued": {
+        "@value": "2020-12-14T08:57:57.057+01:00",
+        "@type": "http://www.w3.org/2001/XMLSchema#dateTimeStamp"
+      },
+      "ids:issuerConnector": {
+        "@id": "https://broker.ids.isst.fraunhofer.de/"
+      }
+    },
+  "payload": "This is the test payload",
+  "payloadType": "the test payload type"
+}

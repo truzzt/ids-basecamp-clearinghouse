@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="
+ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+ http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+    <!-- Beans -->
+    <bean id="responseProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseOutputProcessor" />
+    <bean id="logProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseLogProcessor" />
+    <bean id="queryProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseQueryProcessor" />
+    
+    <!-- Routes -->
+    <camelContext xmlns="http://camel.apache.org/schema/blueprint">
+        <restConfiguration component="jetty" host="0.0.0.0" port="9999" bindingMode="off" />
+        <rest id="CH_REST">
+            <post uri="/messages/query/{pid}" id="CH_QUERY_PID">
+                <to uri="direct:query" />
+            </post>
+            <post uri="/messages/query/{pid}/{id}" id="CH_QUERY_PID_ID">
+                <to uri="direct:query" />
+            </post>
+            <post uri="/messages/log/{pid}" id="CH_LOG_PID">
+                <to uri="direct:log" />
+            </post>
+        </rest>
+        <route id="CH_ROUTE_LOG">
+            <from uri="direct:log"/>
+            <process ref="logProcessor" />
+            <to uri="http://clearing-house-api:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+            <process ref="responseProcessor" />
+        </route>
+        <route id="CH_ROUTE_QUERY">
+            <from uri="direct:query"/>
+            <process ref="queryProcessor" />
+            <to uri="http://clearing-house-api:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+            <process ref="responseProcessor" />
+        </route>
+    </camelContext>
+</blueprint>

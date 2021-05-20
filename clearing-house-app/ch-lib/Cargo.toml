@@ -1,0 +1,22 @@
+[package]
+name = "ch-lib"
+version = "0.5.2"
+authors = [
+    "Mark Gall <mark.gall@aisec.fraunhofer.de>",
+    "Georg Bramm <georg.bramm@aisec.fraunhofer.de>",
+]
+edition = "2018"
+
+[dependencies]
+core-lib = { git = "https://github.com/Fraunhofer-AISEC/ids-clearing-house-core.git" }
+chrono = { version = "0.4", features = ["serde"] }
+error-chain = "0.12.4"
+fern = "0.5"
+log = "0.4"
+mongodb = "0.3.12"
+rocket = "0.4.2"
+rocket_codegen = "0.4.2"
+rocket_contrib = "0.4.2"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"

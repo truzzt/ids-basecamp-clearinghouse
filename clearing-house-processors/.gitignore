@@ -1,0 +1,17 @@
+# Gradle
+/.gradle
+
+# Eclipse
+.metadata
+.project
+.settings
+.classpath
+*.launch
+
+# IDEA
+*.iml
+/.idea
+
+# Binary
+/target
+/build

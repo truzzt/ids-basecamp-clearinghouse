@@ -1,0 +1,27 @@
+[package]
+name = "clearing-house-api"
+version = "0.5.2"
+authors = [
+    "Mark Gall <mark.gall@aisec.fraunhofer.de>",
+    "Georg Bramm <georg.bramm@aisec.fraunhofer.de>",
+]
+edition = "2018"
+
+[dependencies]
+biscuit = "0.5.0"
+core-lib = { git = "https://github.com/Fraunhofer-AISEC/ids-clearing-house-core.git" }
+ch-lib = { path = "../ch-lib"}
+chrono = { version = "0.4", features = ["serde"] }
+error-chain = "0.12.1"
+fern = "0.5"
+log = "0.4"
+rocket = "0.4.2"
+rocket_codegen = "0.4.2"
+rocket_contrib = "0.4.2"
+serde = "1.0"
+percent-encoding = "2.1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+
+[dev-dependencies]
+reqwest = "0.9.3"
