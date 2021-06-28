@@ -25,7 +25,6 @@ use ch_lib::model::{ids::{
 }, ServerInfo, OwnerList};
 use ch_lib::model::constants::{ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API, ROCKET_QUERY_API, ROCKET_PROCESS_API};
 use ch_lib::db::ProcessStore;
-use core_lib::errors::Error;
 
 #[post( "/<pid>", format = "json", data = "<message>")]
 fn log(

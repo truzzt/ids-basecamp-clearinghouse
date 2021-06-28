@@ -1,6 +1,6 @@
 use rocket::response::{self, Response, Responder};
 use rocket::request::Request;
-use rocket::http::{Header, ContentType};
+use rocket::http::Header;
 use crate::model::constants::IDS_HEADER;
 use core_lib::api::ApiResponse;
 use crate::model::ids::message::IdsMessage;

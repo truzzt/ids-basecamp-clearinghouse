@@ -15,7 +15,7 @@ use mongodb::{
     }
 };
 
-use core_lib::constants::{MONGO_DB, MONGO_ID, MONGO_OWNER, MONGO_COLL_PROCESSES};
+use core_lib::constants::{MONGO_DB, MONGO_ID, MONGO_COLL_PROCESSES};
 use core_lib::db::{DataStoreApi, drop_table, create_table};
 use core_lib::errors::*;
 use serde_json::json;

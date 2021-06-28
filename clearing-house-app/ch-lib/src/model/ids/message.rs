@@ -13,9 +13,9 @@ const TRANSFER_CONTRACT: &'static str = "transfer_contract";
 const ISSUED: &'static str = "issued";
 const ISSUER_CONNECTOR: &'static str = "issuer_connector";
 const CONTENT_VERSION: &'static str = "content_version";
-const RECIPIENT_CONNECTOR: &'static str = "recipient_connector";
+/// const RECIPIENT_CONNECTOR: &'static str = "recipient_connector"; // all messages should contain the CH connector, so we skip this information
 const SENDER_AGENT: &'static str = "sender_agent";
-const RECIPIENT_AGENT: &'static str = "recipient_agent";
+///const RECIPIENT_AGENT: &'static str = "recipient_agent";  // all messages should contain the CH agent, so we skip this information
 const PAYLOAD: &'static str = "payload";
 const PAYLOAD_TYPE: &'static str = "payload_type";
 
