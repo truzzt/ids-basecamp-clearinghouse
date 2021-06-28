@@ -40,6 +40,30 @@ impl ClearingHouseApiClient {
         Ok(message)
     }
 
+    pub fn create_process(&self, token: &String, pid: &String, msg: String) -> Result<ClearingHouseMessage>{
+        let uri = format!("{}/process/{}", self.uri, pid);
+        let client = Client::new();
+
+        println!("calling {}", &uri);
+        let mut response = client.post(uri.as_str())
+            .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
+            .bearer_auth(token)
+            .body(msg)
+            .send()?;
+
+        println!("Status Code: {}", &response.status());
+        println!("Headers: {:?}", response.headers());
+        match response.status(){
+            StatusCode::CREATED => {
+                let ids_header = response.headers().get("ids-header").unwrap().to_str().unwrap();
+                let ids_response: IdsMessage =  serde_json::from_str(ids_header)?;
+                let message = ClearingHouseMessage::new(ids_response, response.text().ok(), Some("application/json".to_string()));
+                Ok(message)
+            },
+            _ => Err(Error::from_kind(ErrorKind::from("Hopefully we got 404")))
+        }
+    }
+
     pub fn query_with_pid(&self, token: &String, pid: &String, msg: String) -> Result<ClearingHouseMessage>{
         let uri = format!("{}/messages/query/{}", self.uri, pid);
         let client = Client::new();

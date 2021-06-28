@@ -18,16 +18,14 @@ use core_lib::{
         process::Process
     }
 };
-use ch_lib::model::{
-    ids::{
-        message::IdsMessage,
-        request::ClearingHouseMessage,
-        response::IdsResponse
-    },
-    ServerInfo
-};
-use ch_lib::model::constants::{ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API, ROCKET_QUERY_API};
+use ch_lib::model::{ids::{
+    message::IdsMessage,
+    request::ClearingHouseMessage,
+    response::IdsResponse
+}, ServerInfo, OwnerList};
+use ch_lib::model::constants::{ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API, ROCKET_QUERY_API, ROCKET_PROCESS_API};
 use ch_lib::db::ProcessStore;
+use core_lib::errors::Error;
 
 #[post( "/<pid>", format = "json", data = "<message>")]
 fn log(
@@ -78,7 +76,7 @@ fn log(
                 if db.get_process(&pid).is_err(){
                     info!("Requested pid '{}' does not exist. Creating...", &pid);
                     // create a new process
-                    let new_process = Process::new(pid.clone(), user.clone());
+                    let new_process = Process::new(pid.clone(), vec!(user.clone()));
 
                     if db.store_process(new_process).is_err(){
                         error!("Error while creating process '{}'", &pid);
@@ -105,12 +103,12 @@ fn log(
                 info!("Requested pid '{}' does not exist. Creating...", &pid);
                 // create a new process
                 let process = match apikey.sub() {
-                    Some(subject) => Process::new(pid.clone(), subject),
+                    Some(subject) => Process::new(pid.clone(), vec!(subject)),
                     None => {
                         // We identify the user with the subject. So if it's missing we cannot proceed.
                         error!("Error while creating process '{}'. User unknown.", &pid);
                         error = String::from("Error while creating process. User unknown.");
-                        Process::new(pid.clone(), "".to_string())
+                        Process::new(pid.clone(), vec!("".to_string()))
                     }
                 };
                 if error.is_empty(){
@@ -136,6 +134,95 @@ fn log(
             }
         }
     };
+    // Depending on api_response create the correct IDS message
+    let ids_response_message = IdsMessage::respond_to(m, &server_info);
+    IdsResponse::respond(api_response, ids_response_message)
+}
+
+#[post( "/<pid>", format = "json", data = "<message>")]
+fn create_process(
+    server_info: State<ServerInfo>,
+    apikey: ApiKey<IdsClaims, Empty>,
+    db: State<ProcessStore>,
+    message: Json<ClearingHouseMessage>,
+    pid: String
+) -> IdsResponse {
+    let msg = message.into_inner();
+    let mut m = msg.header;
+    m.payload = msg.payload;
+    m.payload_type = msg.payload_type;
+
+    // check if the pid already exists
+    let api_response = match db.get_process(&pid){
+        Ok(p) => {
+            warn!("Requested pid '{}' already exists.", &p.id);
+            ApiResponse::BadRequest(String::from("Process already exists"))
+        }
+        _ => {
+            // filter out calls for default process id
+            match DEFAULT_PROCESS_ID.eq(pid.as_str()) {
+                true => {
+                    warn!("Log to default pid '{}' not allowed", DEFAULT_PROCESS_ID);
+                    ApiResponse::BadRequest(String::from("Document already exists"))
+                },
+                false => {
+                    // prepare credentials of user
+                    match apikey.sub() {
+                        None => {
+                            // No credentials, so we can't identify the owner later.
+                            error!("Cannot create pid without user credentials");
+                            ApiResponse::BadRequest(String::from("Cannot create pid without user credentials"))
+                        },
+                        Some(user) => {
+                            // track if an error occurs
+                            let mut error = String::new();
+
+                            let mut owners = vec!(user);
+                            // check list of owners and add them if they exist
+                            if m.payload.is_some() {
+                                match serde_json::from_str::<OwnerList>(m.payload.as_ref().unwrap()){
+                                    Ok(owner_list) => {
+                                        for o in owner_list.owners{
+                                            if !owners.contains(&o){
+                                                owners.push(o);
+                                            }
+                                        }
+                                    },
+                                    Err(e) => {
+                                        error!("Error while creating process '{}': {}", &pid, e);
+                                        error = String::from("Error while creating process");
+                                    }
+                                };
+
+                            }
+                            info!("Requested pid '{}' will have {} owners", &pid, owners.len());
+
+                            // if previously no error occured, create a new process and store it
+                            if error.is_empty(){
+                                // create process
+                                info!("Requested pid '{}' does not exist. Creating...", &pid);
+                                let new_process = Process::new(pid.clone(), owners);
+
+                                match db.store_process(new_process){
+                                    Ok(pid) => {
+                                        ApiResponse::SuccessCreate(json!(pid))
+                                    }
+                                    Err(e) => {
+                                        error!("Error while creating process '{}': {}", &pid, e);
+                                        ApiResponse::InternalError(String::from("Error while creating process"))
+                                    }
+                                }
+                            }
+                            else{
+                                ApiResponse::InternalError(error)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+
     // Depending on api_response create the correct IDS message
     let ids_response_message = IdsMessage::respond_to(m, &server_info);
     IdsResponse::respond(api_response, ids_response_message)
@@ -308,6 +395,7 @@ pub fn mount(rocket: rocket::Rocket, server_info: ServerInfo) -> rocket::Rocket 
     rocket
         .manage(server_info)
         .mount(format!("{}{}", ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API).as_str(), routes![log, unauth_log])
+        .mount(format!("{}", ROCKET_PROCESS_API).as_str(), routes![create_process])
         .mount(format!("{}{}", ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_QUERY_API).as_str(),
                routes![query_id, query_pid, unauth_query_id, unauth_query_pid])
 }

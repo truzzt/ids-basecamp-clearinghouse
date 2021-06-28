@@ -1,3 +1,7 @@
+// Some tests require a clean database for each test run. The tests are not able to clean
+// the database after them if they added processes while running.
+
+
 use core_lib::errors::*;
 use core_lib::util;
 use ch_lib::model::ids::message::{DOC_TYPE, IdsMessage};
@@ -5,10 +9,11 @@ use ch_lib::model::ids::request::ClearingHouseMessage;
 use core_lib::constants::{CONFIG_FILE, DOCUMENT_API_URL};
 use crate::ch_api_client::ClearingHouseApiClient;
 use core_lib::api::{ApiClient, HashMessage};
-use crate::{TOKEN, delete_test_doc_type_from_keyring, insert_test_doc_type_into_keyring, CH_API};
+use crate::{TOKEN, delete_test_doc_type_from_keyring, insert_test_doc_type_into_keyring, CH_API, EXPECTED_SENDER_AGENT, EXPECTED_ISSUER_CONNECTOR};
 use core_lib::api::client::document_api::DocumentApiClient;
 use ch_lib::model::ids::MessageType;
 use core_lib::model::new_uuid;
+use ch_lib::model::ids::InfoModelId::SimpleId;
 
 ///Testcase: Check correctness of IDS response when querying existing document
 #[test]
@@ -41,20 +46,22 @@ fn check_ids_message_when_querying_existing_document() -> Result<()> {
     let ids_response = result.header;
     // we expect a result message
     assert_eq!(ids_response.type_message, MessageType::ResultMessage);
-    // we have one recipient agent
-    //TODO: check
-    //assert_eq!(ids_response.recipient_agent.as_ref().unwrap().len(), 1);
+    // we have one recipient agent,
+    assert_eq!(ids_response.recipient_agent.as_ref().unwrap().len(), 1);
     // which is the sender of the query message
-    //TODO: check
-    //let expected_recipient_agent = query_message.recipient_agent.clone().unwrap().pop().unwrap();
-    //assert_eq!(ids_response.sender_agent, expected_recipient_agent.to_string());
+    assert_eq!(ids_response.recipient_agent.as_ref().unwrap()[0], SimpleId(query_message.sender_agent));
     // we have one recipient connector
     assert_eq!(ids_response.recipient_connector.as_ref().unwrap().len(), 1);
     // which is the sender of the query message
     assert_eq!(ids_response.recipient_connector.clone().unwrap().pop().unwrap(), query_message.issuer_connector);
+    // sender agent is the clearing house (check config.yml on failure!)
+    assert_eq!(ids_response.sender_agent, EXPECTED_SENDER_AGENT.to_string());
+    // issuer connector is the clearing house (check config.yml on failure!)
+    assert_eq!(ids_response.issuer_connector, SimpleId(EXPECTED_ISSUER_CONNECTOR.to_string()));
+    // our message is the answer to the log_message
+    assert_eq!(ids_response.correlation_message, query_message.id);
     //TODO: check security token
     //TODO: check auth token
-    //TODO: check correlation message!
 
     // clean up
     doc_api.delete_document(&TOKEN.to_string(), &pid, &existing_doc.doc_id)?;
@@ -203,20 +210,22 @@ fn check_ids_message_when_querying_for_pid() -> Result<()> {
     let ids_response = result.header;
     // we expect a result message
     assert_eq!(ids_response.type_message, MessageType::ResultMessage);
-    // we have one recipient agent
-    //TODO: check
-    //assert_eq!(ids_response.recipient_agent.as_ref().unwrap().len(), 1);
+    // we have one recipient agent,
+    assert_eq!(ids_response.recipient_agent.as_ref().unwrap().len(), 1);
     // which is the sender of the query message
-    //TODO: check
-    //let expected_recipient_agent = query_message.recipient_agent.clone().unwrap().pop().unwrap();
-    //assert_eq!(ids_response.sender_agent, expected_recipient_agent.to_string());
+    assert_eq!(ids_response.recipient_agent.as_ref().unwrap()[0], SimpleId(query_message.sender_agent));
     // we have one recipient connector
     assert_eq!(ids_response.recipient_connector.as_ref().unwrap().len(), 1);
     // which is the sender of the query message
     assert_eq!(ids_response.recipient_connector.clone().unwrap().pop().unwrap(), query_message.issuer_connector);
+    // sender agent is the clearing house (check config.yml on failure!)
+    assert_eq!(ids_response.sender_agent, EXPECTED_SENDER_AGENT.to_string());
+    // issuer connector is the clearing house (check config.yml on failure!)
+    assert_eq!(ids_response.issuer_connector, SimpleId(EXPECTED_ISSUER_CONNECTOR.to_string()));
+    // our message is the answer to the log_message
+    assert_eq!(ids_response.correlation_message, query_message.id);
     //TODO: check security token
     //TODO: check auth token
-    //TODO: check correlation message!
 
     // clean up
     doc_api.delete_document(&TOKEN.to_string(), &pid, &existing_doc_1.doc_id)?;
@@ -270,7 +279,7 @@ fn test_query_for_pid() -> Result<()> {
     Ok(())
 }
 
-//TODO: Testcase: Query existing pid with no documents
+///Testcase: Query existing pid with no documents
 #[test]
 fn test_query_for_pid_with_no_docs() -> Result<()> {
     // configure client_api
@@ -278,22 +287,11 @@ fn test_query_for_pid_with_no_docs() -> Result<()> {
     let ch_api: ClearingHouseApiClient = ApiClient::new(CH_API);
     let doc_api: DocumentApiClient = util::configure_api(DOCUMENT_API_URL, &config)?;
 
-    // prepare test data
+    // prepare test data i.e. create a process
     let dt_id = DOC_TYPE.to_string();
-    let pid_with_docs = String::from("test_pid_with_docs");
     let pid_without_docs = String::from("test_pid_with_no_docs");
-
-    // clean up doc type (in case of previous test failure)
-    delete_test_doc_type_from_keyring(&TOKEN.to_string(), &pid_with_docs, &dt_id)?;
-    insert_test_doc_type_into_keyring(&TOKEN.to_string(), &pid_with_docs, &dt_id)?;
-
-    let json_data = util::read_file("tests/integration/json/log_message.json")?;
-    let existing_message_1 = ch_api.log_message(&TOKEN.to_string(), &pid_with_docs, json_data)?;
-    let existing_doc_1: HashMessage = serde_json::from_str(existing_message_1.payload.as_ref().unwrap())?;
-
-    let json_data = util::read_file("tests/integration/json/log_message_2.json")?;
-    let existing_message_2 = ch_api.log_message(&TOKEN.to_string(), &pid_with_docs, json_data)?;
-    let existing_doc_2: HashMessage = serde_json::from_str(existing_message_2.payload.as_ref().unwrap())?;
+    let json_data = util::read_file("tests/integration/json/request_message.json")?;
+    ch_api.create_process(&TOKEN.to_string(), &pid_without_docs, json_data)?;
 
     // run the test
     let json_data = util::read_file("tests/integration/json/query_message.json")?;
@@ -302,13 +300,6 @@ fn test_query_for_pid_with_no_docs() -> Result<()> {
     // check that we got two ids messages
     let payload_messages: Vec<IdsMessage> = serde_json::from_str(result.payload.as_ref().unwrap())?;
     assert_eq!(payload_messages.len(), 0);
-
-    // clean up
-    doc_api.delete_document(&TOKEN.to_string(), &pid_with_docs, &existing_doc_1.doc_id)?;
-    doc_api.delete_document(&TOKEN.to_string(), &pid_with_docs, &existing_doc_2.doc_id)?;
-
-    // tear down
-    delete_test_doc_type_from_keyring(&TOKEN.to_string(), &pid_with_docs, &dt_id)?;
 
     Ok(())
 }

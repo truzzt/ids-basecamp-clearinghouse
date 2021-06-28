@@ -134,6 +134,8 @@ pub enum MessageType {
     LogMessage,
     #[serde(rename = "ids:QueryMessage")]
     QueryMessage,
+    #[serde(rename = "ids:RequestMessage")]
+    RequestMessage,
     #[serde(rename = "ids:ResultMessage")]
     ResultMessage,
     #[serde(rename = "ids:RejectionMessage")]

@@ -9,7 +9,7 @@ extern crate fern;
 extern crate log;
 
 use std::io::prelude::*;
-use ch_lib::model::constants::{SERVER_MODEL, SERVER_NAME};
+use ch_lib::model::constants::{SERVER_MODEL, SERVER_NAME, SERVER_AGENT};
 use core_lib::api::client::{blockchain_api::BlockchainApiClient, document_api::DocumentApiClient, keyring_api::KeyringApiClient};
 use core_lib::constants::{CONFIG_FILE, DOCUMENT_API_URL, BLOCKCHAIN_API_URL, INIT_DB, DAPS_API_URL, KEYRING_API_URL};
 use core_lib::util;
@@ -64,6 +64,10 @@ fn launch_rocket() -> Result<()> {
         match config[0][SERVER_NAME].as_str() {
             Some(server_name) => server_name.to_string(),
             None => "server_name".to_string()
+        },
+        match config[0][SERVER_AGENT].as_str() {
+            Some(server_agent) => server_agent.to_string(),
+            None => "server_agent".to_string()
         }
     );
     // init database using config.yml

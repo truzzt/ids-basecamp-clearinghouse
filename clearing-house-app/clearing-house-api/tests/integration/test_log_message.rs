@@ -5,9 +5,10 @@ use ch_lib::model::ids::request::ClearingHouseMessage;
 use core_lib::constants::{CONFIG_FILE, DOCUMENT_API_URL};
 use crate::ch_api_client::ClearingHouseApiClient;
 use core_lib::api::{ApiClient, HashMessage};
-use crate::{TOKEN, delete_test_doc_type_from_keyring, insert_test_doc_type_into_keyring, CH_API};
+use crate::{TOKEN, delete_test_doc_type_from_keyring, insert_test_doc_type_into_keyring, CH_API, EXPECTED_SENDER_AGENT, EXPECTED_ISSUER_CONNECTOR};
 use core_lib::api::client::document_api::DocumentApiClient;
 use ch_lib::model::ids::MessageType;
+use ch_lib::model::ids::InfoModelId::SimpleId;
 
 /// Testcase: Log a message to a pid that does exist
 #[test]
@@ -109,22 +110,25 @@ fn check_ids_message_when_logging_document() -> Result<()> {
 
     // check the ids response
     let ids_response = result.header;
-    // we expect a result message
+    // we expect a message processed notification
     assert_eq!(ids_response.type_message, MessageType::MessageProcessedNotification);
-    // we have one recipient agent
-    //TODO: check
-    //assert_eq!(ids_response.recipient_agent.as_ref().unwrap().len(), 1);
+    // we have one recipient agent,
+    assert_eq!(ids_response.recipient_agent.as_ref().unwrap().len(), 1);
     // which is the sender of the query message
-    //TODO: check
-    //let expected_recipient_agent = query_message.recipient_agent.clone().unwrap().pop().unwrap();
-    //assert_eq!(ids_response.sender_agent, expected_recipient_agent.to_string());
+    assert_eq!(ids_response.recipient_agent.as_ref().unwrap()[0], SimpleId(log_message.sender_agent));
     // we have one recipient connector
     assert_eq!(ids_response.recipient_connector.as_ref().unwrap().len(), 1);
     // which is the sender of the query message
     assert_eq!(ids_response.recipient_connector.clone().unwrap().pop().unwrap(), log_message.issuer_connector);
+    // sender agent is the clearing house (check config.yml on failure!)
+    assert_eq!(ids_response.sender_agent, EXPECTED_SENDER_AGENT.to_string());
+    // issuer connector is the clearing house (check config.yml on failure!)
+    assert_eq!(ids_response.issuer_connector, SimpleId(EXPECTED_ISSUER_CONNECTOR.to_string()));
+    // our message is the answer to the log_message
+    assert_eq!(ids_response.correlation_message, log_message.id);
+
     //TODO: check security token
     //TODO: check auth token
-    //TODO: check correlation message!
 
     // clean up
     doc_api.delete_document(&TOKEN.to_string(), &pid, &result_doc.doc_id)?;
@@ -135,4 +139,5 @@ fn check_ids_message_when_logging_document() -> Result<()> {
     Ok(())
 }
 
-//TODO: Testcase: Create a document for existing pid with different user results in unauthorized
+//TODO: Testcase: Create a document for existing pid with unauthorized user results in unauthorized
+//TODO: Testcase: Create a document for existing pid with different authorized user works

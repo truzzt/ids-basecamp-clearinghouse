@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use crate::model::ids::{InfoModelDateTime, InfoModelId, SecurityToken, MessageType};
 use core_lib::model::document::{Document, DocumentPart};
 use crate::model::ServerInfo;
+use crate::model::ids::InfoModelId::SimpleId;
 
 pub const DOC_TYPE: &'static str = "IDS_MESSAGE";
 
@@ -188,10 +189,10 @@ impl IdsMessage {
         IdsMessage {
             model_version: server_info.im_version.to_string(),
             issuer_connector: InfoModelId::new(server_info.connector.to_string()),
+            sender_agent: server_info.agent.to_string(),
             correlation_message: msg.id.clone(),
             recipient_connector: Some(vec!(msg.issuer_connector)),
-            //TODO: set recipient agent
-            //recipient_agent: Some(vec!(msg.sender_agent))
+            recipient_agent: Some(vec!(SimpleId(msg.sender_agent))),
             //TODO: security token, auth token
             ..Default::default()
         }

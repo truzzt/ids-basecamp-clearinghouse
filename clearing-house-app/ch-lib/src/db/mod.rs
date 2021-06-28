@@ -145,14 +145,17 @@ impl ProcessStore {
     }
 
     pub fn is_authorized(&self, user: &String, pid: &String) -> Result<bool>{
-        let coll = self.database.collection(MONGO_COLL_PROCESSES);
-        return match coll.find_one(Some(doc!{ MONGO_ID: pid, MONGO_OWNER: user}), None)? {
-            Some(r) => {
-                let _process = mongodb::from_bson::<Process>(Bson::Document(r))?;
-                Ok(true)
-            },
-            None => {
-                Ok(false)
+        debug!("checking if user '{}' is authorized to access '{}'", user, pid);
+        return match self.get_process(&pid){
+            Ok(process) => {
+                let authorized = process.owners.iter().any(|o| {
+                    debug!("found owner {}", o);
+                    user.eq(o)
+                });
+                Ok(authorized)
+            }
+            _ => {
+                Err(format!("User '{}' could not be authorized", &user).into())
             }
         }
     }
