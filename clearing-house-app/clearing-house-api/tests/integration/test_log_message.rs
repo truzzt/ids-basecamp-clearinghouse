@@ -5,10 +5,11 @@ use ch_lib::model::ids::request::ClearingHouseMessage;
 use core_lib::constants::{CONFIG_FILE, DOCUMENT_API_URL};
 use crate::ch_api_client::ClearingHouseApiClient;
 use core_lib::api::{ApiClient, HashMessage};
-use crate::{TOKEN, delete_test_doc_type_from_keyring, insert_test_doc_type_into_keyring, CH_API, EXPECTED_SENDER_AGENT, EXPECTED_ISSUER_CONNECTOR};
+use crate::{TOKEN, delete_test_doc_type_from_keyring, insert_test_doc_type_into_keyring, CH_API, EXPECTED_SENDER_AGENT, EXPECTED_ISSUER_CONNECTOR, OTHER_TOKEN};
 use core_lib::api::client::document_api::DocumentApiClient;
 use ch_lib::model::ids::MessageType;
 use ch_lib::model::ids::InfoModelId::SimpleId;
+use ch_lib::model::OwnerList;
 
 /// Testcase: Log a message to a pid that does exist
 #[test]
@@ -139,5 +140,61 @@ fn check_ids_message_when_logging_document() -> Result<()> {
     Ok(())
 }
 
-//TODO: Testcase: Create a document for existing pid with unauthorized user results in unauthorized
-//TODO: Testcase: Create a document for existing pid with different authorized user works
+///Testcase: Create a document for existing pid with unauthorized user results in unauthorized
+#[test]
+fn test_log_message_with_unauthorized_user() -> Result<()> {
+    // configure client_api
+    let ch_api: ClearingHouseApiClient = ApiClient::new(CH_API);
+
+    // prepare test data and create pid
+    let pid = String::from("test_log_message_with_unauthorized_user");
+    let json_data = util::read_file("tests/integration/json/request_message.json")?;
+    ch_api.create_process(&TOKEN.to_string(), &pid, json_data)?;
+
+    // write message with authorized user
+    let json_data = util::read_file("tests/integration/json/log_message.json")?;
+    let existing_message = ch_api.log_message(&TOKEN.to_string(), &pid, json_data)?;
+    assert!(existing_message.payload.unwrap().contains("Log entry created"));
+
+    // run the test with unauthorized user
+    let json_data = util::read_file("tests/integration/json/log_message_2.json")?;
+    let new_message = ch_api.log_message(&OTHER_TOKEN.to_string(), &pid, json_data.clone())?;
+
+    println!("{:#?}", new_message);
+
+    // check the result
+    assert!(new_message.payload.unwrap().contains("User not authorized."));
+
+    Ok(())
+}
+
+///Testcase: Create a document for existing pid with different authorized user works
+#[test]
+fn test_log_message_in_existing_pid_with_authorized_user() -> Result<()> {
+    // configure client_api
+    let ch_api: ClearingHouseApiClient = ApiClient::new(CH_API);
+
+    // prepare test data and create pid
+    let pid = String::from("test_log_message_in_existing_pid_with_authorized_user");
+    let mut message: ClearingHouseMessage = serde_json::from_str(&util::read_file("tests/integration/json/request_message.json")?)?;
+    let ownerlist = OwnerList::new(vec!(String::from("6F:8C:8B:54:94:3C:A4:58:8C:21:E6:A2:20:B7:DF:01:D3:B1:B8:A3:keyid:CB:8C:C7:B6:85:79:A8:23:A6:CB:15:AB:17:50:2F:E6:65:43:5D:E8")));
+    println!("old payload: {:#?}", &message.payload);
+    message.payload = Some(serde_json::to_string(&ownerlist)?);
+    println!("new payload: {:#?}", &message.payload);
+    let json_data = serde_json::to_string(&message)?;
+    ch_api.create_process(&TOKEN.to_string(), &pid, json_data)?;
+
+    // write message with authorized user
+    let json_data = util::read_file("tests/integration/json/log_message.json")?;
+    let existing_message = ch_api.log_message(&TOKEN.to_string(), &pid, json_data)?;
+    assert!(existing_message.payload.unwrap().contains("Log entry created"));
+
+    // run the test with another authorized user
+    let json_data = util::read_file("tests/integration/json/log_message_2.json")?;
+    let new_message = ch_api.log_message(&OTHER_TOKEN.to_string(), &pid, json_data.clone())?;
+
+    // check the result
+    assert!(new_message.payload.unwrap().contains("Log entry created"));
+
+    Ok(())
+}

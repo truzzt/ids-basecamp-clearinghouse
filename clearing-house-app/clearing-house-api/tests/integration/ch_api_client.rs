@@ -60,7 +60,7 @@ impl ClearingHouseApiClient {
                 let message = ClearingHouseMessage::new(ids_response, response.text().ok(), Some("application/json".to_string()));
                 Ok(message)
             },
-            _ => Err(Error::from_kind(ErrorKind::from("Hopefully we got 404")))
+            _ => Err(Error::from_kind(ErrorKind::from(format!("Status Code not ok, was {:#?}", response.status()))))
         }
     }
 
@@ -84,7 +84,7 @@ impl ClearingHouseApiClient {
                 let message = ClearingHouseMessage::new(ids_response, response.text().ok(), Some("application/json".to_string()));
                 Ok(message)
             },
-            _ => Err(Error::from_kind(ErrorKind::from("Hopefully we got 404")))
+            _ => Err(Error::from_kind(ErrorKind::from(format!("Status Code not ok, was {:#?}", response.status()))))
         }
     }
 
@@ -108,7 +108,7 @@ impl ClearingHouseApiClient {
                 let message = ClearingHouseMessage::new(ids_response, response.text().ok(), Some("application/json".to_string()));
                 Ok(message)
             },
-            _ => Err(Error::from_kind(ErrorKind::from("Hopefully we got 404")))
+            _ => Err(Error::from_kind(ErrorKind::from(format!("Status Code not ok, was {:#?}", response.status()))))
         }
     }
 }

@@ -9,11 +9,12 @@ use ch_lib::model::ids::request::ClearingHouseMessage;
 use core_lib::constants::{CONFIG_FILE, DOCUMENT_API_URL};
 use crate::ch_api_client::ClearingHouseApiClient;
 use core_lib::api::{ApiClient, HashMessage};
-use crate::{TOKEN, delete_test_doc_type_from_keyring, insert_test_doc_type_into_keyring, CH_API, EXPECTED_SENDER_AGENT, EXPECTED_ISSUER_CONNECTOR};
+use crate::{TOKEN, delete_test_doc_type_from_keyring, insert_test_doc_type_into_keyring, CH_API, EXPECTED_SENDER_AGENT, EXPECTED_ISSUER_CONNECTOR, OTHER_TOKEN};
 use core_lib::api::client::document_api::DocumentApiClient;
 use ch_lib::model::ids::MessageType;
 use core_lib::model::new_uuid;
 use ch_lib::model::ids::InfoModelId::SimpleId;
+use ch_lib::model::OwnerList;
 
 ///Testcase: Check correctness of IDS response when querying existing document
 #[test]
@@ -164,7 +165,8 @@ fn test_query_non_existing_document() -> Result<()> {
     let json_data = util::read_file("tests/integration/json/query_message.json")?;
 
     // should result in error
-    assert!(ch_api.query_with_pid_and_id(&TOKEN.to_string(), &pid, &non_existing_doc_id, json_data).is_err());
+    let result = ch_api.query_with_pid_and_id(&TOKEN.to_string(), &pid, &non_existing_doc_id, json_data);
+    assert!(result.err().unwrap().description().contains("404"));
 
     // clean up
     doc_api.delete_document(&TOKEN.to_string(), &pid, &existing_doc.doc_id)?;
@@ -283,12 +285,9 @@ fn test_query_for_pid() -> Result<()> {
 #[test]
 fn test_query_for_pid_with_no_docs() -> Result<()> {
     // configure client_api
-    let config = util::load_config(CONFIG_FILE);
     let ch_api: ClearingHouseApiClient = ApiClient::new(CH_API);
-    let doc_api: DocumentApiClient = util::configure_api(DOCUMENT_API_URL, &config)?;
 
     // prepare test data i.e. create a process
-    let dt_id = DOC_TYPE.to_string();
     let pid_without_docs = String::from("test_pid_with_no_docs");
     let json_data = util::read_file("tests/integration/json/request_message.json")?;
     ch_api.create_process(&TOKEN.to_string(), &pid_without_docs, json_data)?;
@@ -304,5 +303,89 @@ fn test_query_for_pid_with_no_docs() -> Result<()> {
     Ok(())
 }
 
-//TODO: Testcase: Query non-existing pid
-//TODO: Testcase: Query existing pid with multiple documents with different user
+///Testcase: Query non-existing pid
+#[test]
+fn test_query_for_non_existing_pid() -> Result<()> {
+    // configure client_api
+    let ch_api: ClearingHouseApiClient = ApiClient::new(CH_API);
+
+    // prepare test data i.e. create a process
+    let non_existing_pid = String::from("test_this_pid_does_not_exist_pid");
+
+    // run the test
+    let json_data = util::read_file("tests/integration/json/query_message.json")?;
+    let result = ch_api.query_with_pid(&TOKEN.to_string(), &non_existing_pid, json_data);
+
+    // We choose to send back "not authorized". If we did send back "not found", users could use this
+    // oracle to find out which pids are already created
+    assert!(result.err().unwrap().description().contains("401"));
+
+    Ok(())
+}
+
+///Testcase: Query pid with unauthorized user
+#[test]
+fn test_query_for_unauthorized_user() -> Result<()> {
+    // configure client_api
+    let ch_api: ClearingHouseApiClient = ApiClient::new(CH_API);
+
+    // prepare test data i.e. create a process and store a document
+    let pid = String::from("test_query_for_unauthorized_user_pid");
+    let json_data = util::read_file("tests/integration/json/log_message.json")?;
+    let existing_message = ch_api.log_message(&TOKEN.to_string(), &pid, json_data)?;
+    assert!(existing_message.payload.unwrap().contains("Log entry created"));
+
+    // run the test
+    let json_data = util::read_file("tests/integration/json/query_message.json")?;
+    let result = ch_api.query_with_pid(&OTHER_TOKEN.to_string(), &pid, json_data);
+
+    // check the status code of the result message
+    assert!(result.err().unwrap().description().contains("401"));
+
+    Ok(())
+}
+
+///Testcase: Query pid with multiple unauthorized users
+#[test]
+fn test_query_for_multiple_authorized_users() -> Result<()> {
+    // configure client_api
+    let config = util::load_config(CONFIG_FILE);
+    let ch_api: ClearingHouseApiClient = ApiClient::new(CH_API);
+    let doc_api: DocumentApiClient = util::configure_api(DOCUMENT_API_URL, &config)?;
+
+    // prepare test data -- create a process
+    let pid = String::from("test_query_for_multiple_authorized_users");
+    let mut message: ClearingHouseMessage = serde_json::from_str(&util::read_file("tests/integration/json/request_message.json")?)?;
+    let ownerlist = OwnerList::new(vec!(String::from("6F:8C:8B:54:94:3C:A4:58:8C:21:E6:A2:20:B7:DF:01:D3:B1:B8:A3:keyid:CB:8C:C7:B6:85:79:A8:23:A6:CB:15:AB:17:50:2F:E6:65:43:5D:E8")));
+    println!("old payload: {:#?}", &message.payload);
+    message.payload = Some(serde_json::to_string(&ownerlist)?);
+    println!("new payload: {:#?}", &message.payload);
+    let json_data = serde_json::to_string(&message)?;
+    let process_result = ch_api.create_process(&TOKEN.to_string(), &pid, json_data)?;
+    assert!(process_result.payload.unwrap().contains("test_query_for_multiple_authorized_users"));
+
+    // prepare test data -- add documents from two users
+    let json_data = util::read_file("tests/integration/json/log_message.json")?;
+    let existing_message_1 = ch_api.log_message(&TOKEN.to_string(), &pid, json_data)?;
+    let existing_doc_1: HashMessage = serde_json::from_str(existing_message_1.payload.as_ref().unwrap())?;
+    assert!(existing_message_1.payload.unwrap().contains("Log entry created"));
+
+    let json_data = util::read_file("tests/integration/json/log_message_2.json")?;
+    let existing_message_2 = ch_api.log_message(&OTHER_TOKEN.to_string(), &pid, json_data)?;
+    let existing_doc_2: HashMessage = serde_json::from_str(existing_message_2.payload.as_ref().unwrap())?;
+    assert!(existing_message_2.payload.unwrap().contains("Log entry created"));
+
+    // run the test
+    let json_data = util::read_file("tests/integration/json/query_message.json")?;
+    let result = ch_api.query_with_pid(&TOKEN.to_string(), &pid, json_data)?;
+
+    // check that we got two ids messages
+    let payload_messages: Vec<IdsMessage> = serde_json::from_str(result.payload.as_ref().unwrap())?;
+    assert_eq!(payload_messages.len(), 2);
+
+    // clean up
+    doc_api.delete_document(&TOKEN.to_string(), &pid, &existing_doc_1.doc_id)?;
+    doc_api.delete_document(&TOKEN.to_string(), &pid, &existing_doc_2.doc_id)?;
+
+    Ok(())
+}
