@@ -19,7 +19,12 @@
  */
 package de.fhg.aisec.ids.clearinghouse;
 
+import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriver;
+import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriverConfig;
+import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityProfile;
+import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityRequirements;
 import de.fraunhofer.iais.eis.MessageProcessedNotificationMessage;
+import de.fraunhofer.iais.eis.MessageProcessedNotificationMessageBuilder;
 import de.fraunhofer.iais.eis.ids.jsonld.Serializer;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -27,12 +32,11 @@ import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,11 +55,24 @@ public class ClearingHouseOutputProcessor implements Processor {
     final var egetIn = exchange.getIn();
     final var typeHeader = egetIn.getHeader(TYPE_HEADER).toString();
     final var idsHeader = egetIn.getHeader(IDS_HEADER).toString();
+    final var securityRequirements = new SecurityRequirements.Builder()
+            .setRequiredSecurityLevel(SecurityProfile.TRUSTED)
+            .build();
+    final var dapsConfig = new AisecDapsDriverConfig.Builder()
+            .setKeyStorePath(Paths.get("/root/etc/consumer-server-keystore.jks"))
+            .setTrustStorePath(Paths.get("/root/etc/consumer-server-truststore.jks"))
+            .setKeyAlias("1.0.1")
+            .setSecurityRequirements(securityRequirements)
+            .build();
+
+    final var dapsDriver = new AisecDapsDriver(dapsConfig);
 
     Map<String, Object> headers = egetIn.getHeaders();
     for (String header: headers.keySet()){
       LOG.debug("Found header '{}':'{}'", header, headers.get(header));
     }
+
+    dapsDriver.getToken();
 
     // preparation
     MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
@@ -69,7 +86,9 @@ public class ClearingHouseOutputProcessor implements Processor {
       }
 
       //If we need to add a security token, this would be the place. Deserialize the token and add it.
-      //resultMessage = SERIALIZER.deserialize(idsHeader, MessageProcessedNotificationMessage.class);
+      resultMessage = SERIALIZER.deserialize(idsHeader, MessageProcessedNotificationMessage.class);
+      MessageProcessedNotificationMessageBuilder resultMessageBuilder = new MessageProcessedNotificationMessageBuilder();
+
       multipartEntityBuilder.addPart(
             ClearingHouseConstants.MULTIPART_HEADER,
             new StringBody(idsHeader, ContentType.APPLICATION_JSON));

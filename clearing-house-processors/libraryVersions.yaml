@@ -5,8 +5,7 @@
 
 # Versions for modules that will be released as libraries
 api: "2.1.0"
-idscp: "1.1.0"
-idscp2: "1.0.0"
+idscp2: "0.4.5"
 
 # basically, the first requirement, all other libraries depend on this version
 karaf: "4.2.8"
@@ -50,8 +49,8 @@ mapdb: "3.0.7"
 jnrunix: "0.22"
 jnrffi: "2.1.5"
 protobuf: "3.10.0"
-httpcore: "4.4.11"
-httpclient: "4.5.7"
+httpcore: "4.4.14"
+httpclient: "4.5.13"
 jaxwsApi: "2.3.1"
 
 # Needed for ACME module
