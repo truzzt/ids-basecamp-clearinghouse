@@ -231,6 +231,17 @@ fn create_process(
     IdsResponse::respond(api_response, ids_response_message)
 }
 
+#[post( "/<_pid>", format = "json", data = "<message>", rank=50)]
+fn unauth_create_process(
+    server_info: State<ServerInfo>,
+    message: Json<ClearingHouseMessage>,
+    _pid: String
+) -> IdsResponse {
+    let msg = message.into_inner();
+    let ids_response_msg = IdsMessage::respond_to(msg.header, &server_info);
+    IdsResponse::new(ApiResponse::Unauthorized(String::from("Token not valid!")),IdsMessage::error(ids_response_msg))
+}
+
 fn log_message(
     apikey: ApiKey<IdsClaims, Empty>,
     bc_api: State<BlockchainApiClient>,
@@ -398,7 +409,7 @@ pub fn mount(rocket: rocket::Rocket, server_info: ServerInfo) -> rocket::Rocket 
     rocket
         .manage(server_info)
         .mount(format!("{}{}", ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API).as_str(), routes![log, unauth_log])
-        .mount(format!("{}", ROCKET_PROCESS_API).as_str(), routes![create_process])
+        .mount(format!("{}", ROCKET_PROCESS_API).as_str(), routes![create_process, unauth_create_process])
         .mount(format!("{}{}", ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_QUERY_API).as_str(),
                routes![query_id, query_pid, unauth_query_id, unauth_query_pid])
 }
