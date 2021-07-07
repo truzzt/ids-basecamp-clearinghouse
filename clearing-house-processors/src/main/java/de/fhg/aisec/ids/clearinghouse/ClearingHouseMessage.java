@@ -18,6 +18,10 @@ public class ClearingHouseMessage {
     public void setPayload(InputStream payload) throws Exception {
         this.payload = DatatypeConverter.printBase64Binary(payload.readAllBytes());
     }
+    public void setPayload(String payload) throws Exception {
+        this.payload = payload;
+    }
+
     public void setPayloadType(String payloadType) {
         this.payloadType = payloadType;
     }

@@ -58,21 +58,21 @@ public class ClearingHouseOutputProcessor implements Processor {
     final var securityRequirements = new SecurityRequirements.Builder()
             .setRequiredSecurityLevel(SecurityProfile.TRUSTED)
             .build();
-    final var dapsConfig = new AisecDapsDriverConfig.Builder()
+    /*final var dapsConfig = new AisecDapsDriverConfig.Builder()
             .setKeyStorePath(Paths.get("/root/etc/consumer-server-keystore.jks"))
             .setTrustStorePath(Paths.get("/root/etc/consumer-server-truststore.jks"))
-            .setKeyAlias("1.0.1")
+            .setKeyAlias("consumer-core")
             .setSecurityRequirements(securityRequirements)
             .build();
 
-    final var dapsDriver = new AisecDapsDriver(dapsConfig);
+    final var dapsDriver = new AisecDapsDriver(dapsConfig);*/
 
     Map<String, Object> headers = egetIn.getHeaders();
     for (String header: headers.keySet()){
       LOG.debug("Found header '{}':'{}'", header, headers.get(header));
     }
 
-    dapsDriver.getToken();
+    //dapsDriver.getToken();
 
     // preparation
     MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
@@ -86,8 +86,8 @@ public class ClearingHouseOutputProcessor implements Processor {
       }
 
       //If we need to add a security token, this would be the place. Deserialize the token and add it.
-      resultMessage = SERIALIZER.deserialize(idsHeader, MessageProcessedNotificationMessage.class);
-      MessageProcessedNotificationMessageBuilder resultMessageBuilder = new MessageProcessedNotificationMessageBuilder();
+      //resultMessage = SERIALIZER.deserialize(idsHeader, MessageProcessedNotificationMessage.class);
+      //MessageProcessedNotificationMessageBuilder resultMessageBuilder = new MessageProcessedNotificationMessageBuilder();
 
       multipartEntityBuilder.addPart(
             ClearingHouseConstants.MULTIPART_HEADER,

@@ -147,9 +147,13 @@ fn create_process(
     pid: String
 ) -> IdsResponse {
     let msg = message.into_inner();
+    println!("RECEIVED: {:#?}", &msg);
     let mut m = msg.header;
     m.payload = msg.payload;
     m.payload_type = msg.payload_type;
+
+    // validate payload (happens mostly in camel)
+    let payload = m.payload.clone().unwrap_or(String::new());
 
     // check if the pid already exists
     let api_response = match db.get_process(&pid){
@@ -175,11 +179,11 @@ fn create_process(
                         Some(user) => {
                             // track if an error occurs
                             let mut error = String::new();
-
                             let mut owners = vec!(user);
                             // check list of owners and add them if they exist
-                            if m.payload.is_some() {
-                                match serde_json::from_str::<OwnerList>(m.payload.as_ref().unwrap()){
+                            if !payload.is_empty() {
+                                debug!("OwnerList: '{:#?}'", &payload);
+                                match serde_json::from_str::<OwnerList>(&payload){
                                     Ok(owner_list) => {
                                         for o in owner_list.owners{
                                             if !owners.contains(&o){
@@ -213,7 +217,7 @@ fn create_process(
                                 }
                             }
                             else{
-                                ApiResponse::InternalError(error)
+                                ApiResponse::BadRequest(error)
                             }
                         }
                     }
