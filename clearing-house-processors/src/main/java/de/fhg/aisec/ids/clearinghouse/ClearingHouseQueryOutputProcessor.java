@@ -19,15 +19,12 @@
  */
 package de.fhg.aisec.ids.clearinghouse;
 
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriver;
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriverConfig;
 import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityProfile;
 import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityRequirements;
 import de.fraunhofer.iais.eis.*;
 import de.fraunhofer.iais.eis.ids.jsonld.Serializer;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.apache.camel.http.common.HttpHelper;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -37,20 +34,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 
 import static de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.*;
 
-public class ClearingHouseOutputProcessor implements Processor {
+public class ClearingHouseQueryOutputProcessor implements Processor {
 
-  private final Logger LOG = LoggerFactory.getLogger(ClearingHouseOutputProcessor.class);
+  private final Logger LOG = LoggerFactory.getLogger(ClearingHouseQueryOutputProcessor.class);
   private static final Serializer SERIALIZER = new Serializer();
   private static final Integer STATUS_CODE_OK = 200;
   private static final Integer STATUS_CODE_CREATED = 201;
 
-  private MessageProcessedNotificationMessage resultMessage;
+  private ResultMessage resultMessage;
   private RejectionMessage rejectionMessage;
 
   @Override
@@ -103,7 +99,7 @@ public class ClearingHouseOutputProcessor implements Processor {
       LOG.debug("status code is: {}", statusCode);
       if (statusCode == STATUS_CODE_OK || statusCode == STATUS_CODE_CREATED){
         LOG.debug("Status code was ok");
-        resultMessage = SERIALIZER.deserialize(idsHeader, MessageProcessedNotificationMessage.class);
+        resultMessage = SERIALIZER.deserialize(idsHeader, ResultMessage.class);
         // InfoModel does not allow changing the message directly, so we use reflection
         Field securityToken = resultMessage.getClass().getDeclaredField("_securityToken");
         securityToken.setAccessible(true);
