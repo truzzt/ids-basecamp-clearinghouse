@@ -19,6 +19,8 @@
  */
 package de.fhg.aisec.ids.clearinghouse;
 
+import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriver;
+import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriverConfig;
 import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityProfile;
 import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityRequirements;
 import de.fraunhofer.iais.eis.*;
@@ -34,6 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 
@@ -58,14 +62,14 @@ public class ClearingHouseQueryOutputProcessor implements Processor {
     final var securityRequirements = new SecurityRequirements.Builder()
             .setRequiredSecurityLevel(SecurityProfile.TRUSTED)
             .build();
-    /*final var dapsConfig = new AisecDapsDriverConfig.Builder()
-            .setKeyStorePath(Paths.get("/root/etc/consumer-server-keystore.jks"))
-            .setTrustStorePath(Paths.get("/root/etc/consumer-server-truststore.jks"))
-            .setKeyAlias("consumer-core")
+    final var dapsConfig = new AisecDapsDriverConfig.Builder()
+            .setKeyStorePath(Paths.get("/root/etc/keystore.p12"))
+            .setTrustStorePath(Paths.get("/root/etc/truststore.p12"))
+            .setKeyAlias("1")
             .setSecurityRequirements(securityRequirements)
             .build();
 
-    final var dapsDriver = new AisecDapsDriver(dapsConfig);*/
+    final var dapsDriver = new AisecDapsDriver(dapsConfig);
 
     Map<String, Object> headers = egetIn.getHeaders();
     for (String header: headers.keySet()){
@@ -73,8 +77,6 @@ public class ClearingHouseQueryOutputProcessor implements Processor {
     }
 
     final var statusCode = ((Integer) headers.get("CamelHttpResponseCode")).intValue();
-
-    //dapsDriver.getToken();
 
     // preparation
     MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
@@ -89,10 +91,10 @@ public class ClearingHouseQueryOutputProcessor implements Processor {
 
       // We'll need this to store the modified idsHeader
       String headerWithDat = idsHeader;
-      // Dummy Token
-      DynamicAttributeToken dummyToken = new DynamicAttributeTokenBuilder()
+      // The real token
+      DynamicAttributeToken dapsToken = new DynamicAttributeTokenBuilder()
               ._tokenFormat_(TokenFormat.JWT)
-              ._tokenValue_("PLACEHOLDER")
+              ._tokenValue_(new String(dapsDriver.getToken(), StandardCharsets.UTF_8))
               .build();
       // To add the DAT we need to deserialize the IDS message in the header and add the DAT
       // Depending on the status code we get different IDS messages
@@ -103,7 +105,7 @@ public class ClearingHouseQueryOutputProcessor implements Processor {
         // InfoModel does not allow changing the message directly, so we use reflection
         Field securityToken = resultMessage.getClass().getDeclaredField("_securityToken");
         securityToken.setAccessible(true);
-        securityToken.set(resultMessage, dummyToken);
+        securityToken.set(resultMessage, dapsToken);
         headerWithDat = SERIALIZER.serialize(resultMessage);
       }
       else{
@@ -112,7 +114,7 @@ public class ClearingHouseQueryOutputProcessor implements Processor {
         // InfoModel does not allow changing the message directly, so we use reflection
         Field securityToken = rejectionMessage.getClass().getDeclaredField("_securityToken");
         securityToken.setAccessible(true);
-        securityToken.set(rejectionMessage, dummyToken);
+        securityToken.set(rejectionMessage, dapsToken);
         headerWithDat = SERIALIZER.serialize(rejectionMessage);
       }
 
