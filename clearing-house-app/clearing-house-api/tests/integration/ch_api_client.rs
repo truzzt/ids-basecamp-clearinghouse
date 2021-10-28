@@ -5,6 +5,9 @@ use core_lib::api::ApiClient;
 use core_lib::errors::*;
 use ch_lib::model::ids::message::IdsMessage;
 use ch_lib::model::ids::request::ClearingHouseMessage;
+use ch_lib::model::constants::CLEARING_HOUSE_URL;
+use biscuit::jwk::JWKSet;
+use biscuit::Empty;
 
 #[derive(Clone)]
 pub struct ClearingHouseApiClient {
@@ -17,6 +20,10 @@ impl ApiClient for ClearingHouseApiClient {
         ClearingHouseApiClient {
             uri,
         }
+    }
+
+    fn get_conf_param() -> String {
+        String::from(CLEARING_HOUSE_URL)
     }
 }
 
@@ -38,6 +45,30 @@ impl ClearingHouseApiClient {
         let ids_response: IdsMessage =  serde_json::from_str(ids_header)?;
         let message = ClearingHouseMessage::new(ids_response, response.text().ok(), Some("application/json".to_string()));
         Ok(message)
+    }
+
+    pub fn get_pk(&self) -> Result<JWKSet<Empty>>{
+        let uri = format!("{}/.well-known/jwks.json", self.uri);
+        let client = Client::new();
+
+        println!("calling {}", &uri);
+        let mut response = client.get(uri.as_str())
+            .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
+            .send()?;
+
+        println!("Status Code: {}", &response.status());
+        println!("Headers: {:?}", response.headers());
+        match response.status(){
+            StatusCode::OK => {
+                match response.json(){
+                    Ok(jwks) => Ok(jwks),
+                    Err(e) => {
+                        Err(Error::from(e))
+                    }
+                }
+            },
+            _ => Err(Error::from_kind(ErrorKind::from(format!("Status Code not ok, was {:#?}", response.status()))))
+        }
     }
 
     pub fn create_process(&self, token: &String, pid: &String, msg: String) -> Result<ClearingHouseMessage>{

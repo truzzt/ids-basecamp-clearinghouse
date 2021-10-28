@@ -1,92 +1,44 @@
-#![feature(proc_macro_hygiene, decl_macro)]
+#[macro_use] extern crate rocket;
 
-#[macro_use]
-extern crate rocket;
-#[macro_use]
-extern crate rocket_contrib;
-extern crate fern;
-#[macro_use]
-extern crate log;
+use core_lib::api::client::{ApiClientConfigurator, ApiClientEnum};
+use core_lib::util::setup_logger;
+use rocket::{Build, Rocket};
+use rocket::fairing::AdHoc;
 
-use std::io::prelude::*;
-use ch_lib::model::constants::{SERVER_MODEL, SERVER_NAME, SERVER_AGENT};
-use core_lib::api::client::{blockchain_api::BlockchainApiClient, document_api::DocumentApiClient, keyring_api::KeyringApiClient};
-use core_lib::constants::{CONFIG_FILE, DOCUMENT_API_URL, BLOCKCHAIN_API_URL, INIT_DB, DAPS_API_URL, KEYRING_API_URL};
-use core_lib::util;
-use core_lib::errors::*;
-
+use ch_lib::db::ProcessStoreConfigurator;
+use ch_lib::model::constants::{SERVER_AGENT, SERVER_CONNECTOR_NAME, SERVER_MODEL_VERSION, SIGNING_KEY};
 use ch_lib::model::ServerInfo;
-use core_lib::db::DataStoreApi;
-use core_lib::api::client::daps_api::DapsApiClient;
-use ch_lib::db::ProcessStore;
 
 pub mod clearing_house_api;
 
-fn main() {
-    if let Err(ref e) = launch_rocket() {
-        let stderr = &mut ::std::io::stderr();
-        let errmsg = "Error writing to stderr";
-
-        writeln!(stderr, "error: {}", e).expect(errmsg);
-
-        for e in e.iter().skip(1) {
-            writeln!(stderr, "caused by: {}", e).expect(errmsg);
-        }
-
-        // The backtrace is not always generated. Try to run this example
-        // with `RUST_BACKTRACE=1`.
-        if let Some(backtrace) = e.backtrace() {
-            writeln!(stderr, "backtrace: {:?}", backtrace).expect(errmsg);
-        }
-
-        ::std::process::exit(1);
-    }
+pub fn add_server_info() -> AdHoc {
+    AdHoc::on_ignite("Adding Server Info", |rocket| async {
+        let server_agent = rocket.figment().extract_inner(SERVER_AGENT).unwrap_or(String::new());
+        let connector_name = rocket.figment().extract_inner(SERVER_CONNECTOR_NAME).unwrap_or(String::new());
+        let model_version = rocket.figment().extract_inner(SERVER_MODEL_VERSION).unwrap_or(String::new());
+        let info = ServerInfo::new(model_version, connector_name, server_agent);
+        rocket.manage(info)
+    })
 }
 
-fn launch_rocket() -> Result<()> {
+pub fn add_signing_key() -> AdHoc {
+    AdHoc::on_ignite("Adding Signing Key", |rocket| async {
+        let private_key_path = rocket.figment().extract_inner(SIGNING_KEY).unwrap_or(String::from("keys/private_key.der"));
+        rocket.manage(private_key_path)
+    })
+}
 
+#[launch]
+fn rocket() -> Rocket<Build> {
     // setup logging
-    util::setup_logger()?;
+    setup_logger().expect("Failure to set up the logger! Exiting...");
 
-    // read yaml config file
-    let config = util::load_config(CONFIG_FILE);
-
-    let bc_api: BlockchainApiClient = util::configure_api(BLOCKCHAIN_API_URL, &config)?;
-    let daps_api: DapsApiClient = util::configure_api(DAPS_API_URL, &config)?;
-    let doc_api: DocumentApiClient = util::configure_api(DOCUMENT_API_URL, &config)?;
-    let key_api: KeyringApiClient = util::configure_api(KEYRING_API_URL, &config)?;
-
-    let server_info = ServerInfo::new(
-        match config[0][SERVER_MODEL].as_str() {
-            Some(server_model) => server_model.to_string(),
-            None => "server_model".to_string()
-        },
-        match config[0][SERVER_NAME].as_str() {
-            Some(server_name) => server_name.to_string(),
-            None => "server_name".to_string()
-        },
-        match config[0][SERVER_AGENT].as_str() {
-            Some(server_agent) => server_agent.to_string(),
-            None => "server_agent".to_string()
-        }
-    );
-    // init database using config.yml
-    let db: ProcessStore = util::configure_db(&config)?;
-    // default value = true
-    if config[0][INIT_DB].as_bool().unwrap_or(true) {
-        db.clean_db()?;
-        db.create_indexes()?;
-    }
-
-    let mut rocket = rocket::ignite()
-        // configure document_api_cliet and manage it with rocket
-        .manage(bc_api)
-        .manage(daps_api)
-        .manage(doc_api)
-        .manage(key_api)
-        .manage(db);
-    rocket = clearing_house_api::mount(rocket, server_info);
-    rocket.launch();
-
-    Ok(())
+    rocket::build()
+        .attach(ProcessStoreConfigurator)
+        .attach(add_server_info())
+        .attach(add_signing_key())
+        .attach(ApiClientConfigurator::new(ApiClientEnum::Daps))
+        .attach(ApiClientConfigurator::new(ApiClientEnum::Document))
+        .attach(ApiClientConfigurator::new(ApiClientEnum::Keyring))
+        .attach(clearing_house_api::mount_api())
 }

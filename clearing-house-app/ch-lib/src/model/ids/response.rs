@@ -48,12 +48,10 @@ impl IdsResponse {
 }
 
 
-
-
-impl<'r> Responder<'r> for IdsResponse {
+impl<'r> Responder<'r, 'r> for IdsResponse {
      fn respond_to(self, req: &Request) -> response::Result<'r> {
         let head_str = serde_json::to_string(&self.api_header).unwrap();
-        debug!("ids-reponse: {}", &head_str);
+        debug!("ids-response: {}", &head_str);
          Response::build()
              .header(Header::new(IDS_HEADER, head_str))
              .merge(self.api_response.respond_to(req)?)

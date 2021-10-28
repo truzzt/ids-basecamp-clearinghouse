@@ -256,7 +256,7 @@ impl From<Document> for IdsMessage {
 
         // issued
         if let Some(v) = p_map.get(ISSUED) {
-            match serde_json::from_str(&v.as_ref().unwrap()) {
+            match serde_json::from_str(v.as_ref().unwrap()) {
                 Ok(date_time) => {
                     m.issued = date_time;
                 },
@@ -320,6 +320,7 @@ impl From<Document> for IdsMessage {
 impl From<IdsMessage> for Document {
     fn from(m: IdsMessage) -> Self {
         let mut doc_parts = vec![];
+
         // message_id
         let id = match m.id {
             Some(m_id) => m_id,
@@ -346,7 +347,7 @@ impl From<IdsMessage> for Document {
         // issued
         doc_parts.push(DocumentPart::new(
             ISSUED.to_string(),
-            Some(m.issued.to_string())
+            serde_json::to_string(&m.issued).ok()
         ));
 
         // issuer_connector
@@ -382,17 +383,17 @@ impl From<IdsMessage> for Document {
         // payload
         doc_parts.push(DocumentPart::new(
             PAYLOAD.to_string(),
-            serde_json::to_string(&m.payload).ok()
+            m.payload.clone()
         ));
 
         // payload_type
         doc_parts.push(DocumentPart::new(
             PAYLOAD_TYPE.to_string(),
-            serde_json::to_string(&m.payload_type).ok()
+            m.payload_type.clone()
         ));
 
         // pid
-        Document::new(m.pid.unwrap(), DOC_TYPE.to_string(), doc_parts)
+        Document::new(m.pid.unwrap(), DOC_TYPE.to_string(), -1, doc_parts)
     }
 }
 

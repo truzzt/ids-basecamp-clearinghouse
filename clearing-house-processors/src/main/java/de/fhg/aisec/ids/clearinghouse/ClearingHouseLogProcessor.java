@@ -42,8 +42,8 @@ public class ClearingHouseLogProcessor implements Processor {
     // Get the IDS InfoModelManager and retrieve a JSON-LD-serialized self-description that will be sent as a multipart "header"
     ClearingHouseMessage converted = new ClearingHouseMessage();
     converted.setHeader(parser.getHeader());
-    converted.setPayload(parser.getPayload());
     converted.setPayloadType(parser.getPayloadContentType());
+    converted.setPayload(parser.getPayload());
     LOG.debug("Build CH message: {}, with payload {} and payload type {}", converted.toJson(), converted.payload, converted.payloadType);
     // Remove current Content-Type header before setting the new one
     exchange.getIn().removeHeader(TYPE_HEADER);

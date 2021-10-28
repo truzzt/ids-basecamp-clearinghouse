@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter, Result};
 pub mod message;
 pub mod request;
 pub mod response;
-#[cfg(test)] mod test;
+#[cfg(test)] mod tests;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct InfoModelComplexId {
@@ -71,8 +71,8 @@ impl From<String> for InfoModelId {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum InfoModelDateTime {
-    Time(DateTime<Local>),
-    ComplexTime(InfoModelTimeStamp)
+    ComplexTime(InfoModelTimeStamp),
+    Time(DateTime<Local>)
 }
 
 impl InfoModelDateTime {

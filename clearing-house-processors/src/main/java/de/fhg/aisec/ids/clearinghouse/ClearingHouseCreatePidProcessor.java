@@ -46,12 +46,11 @@ public class ClearingHouseCreatePidProcessor implements Processor {
     // validate payload: we require payload type: application/json with ISO_8859_1
     ContentType expectedContentType = ContentType.create("application/json");
     if (expectedContentType.getMimeType().equals(converted.payloadType)){
-      String jsonPayload = new String(parser.getPayload().readAllBytes(), StandardCharsets.ISO_8859_1);
       LOG.debug("Received payload:", converted.toJson(), converted.payload, converted.payloadType);
-      converted.setPayload(jsonPayload);
+      converted.setPayload(parser.getPayload());
     }
     else{
-      converted.setPayload("");
+      converted.setPayload(null);
     }
 
     LOG.debug("Build CH message: {}, with payload {} and payload type {}", converted.toJson(), converted.payload, converted.payloadType);

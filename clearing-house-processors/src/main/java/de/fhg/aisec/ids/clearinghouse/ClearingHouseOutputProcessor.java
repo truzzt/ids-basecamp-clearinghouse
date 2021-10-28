@@ -35,6 +35,9 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
@@ -77,6 +80,13 @@ public class ClearingHouseOutputProcessor implements Processor {
     }
 
     final var statusCode = ((Integer) headers.get("CamelHttpResponseCode")).intValue();
+
+    // Clean up the headers
+    exchange.getIn().removeHeader(AUTH_HEADER);
+    exchange.getIn().removeHeader(IDS_HEADER);
+    exchange.getIn().removeHeader(PID_HEADER);
+    exchange.getIn().removeHeader(SERVER);
+    exchange.getIn().removeHeader(TYPE_HEADER);
 
     // preparation
     MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
@@ -154,19 +164,13 @@ public class ClearingHouseOutputProcessor implements Processor {
       }
     }
 
-    // Clean up the headers
-    exchange.getIn().removeHeader(AUTH_HEADER);
-    exchange.getIn().removeHeader(IDS_HEADER);
-    exchange.getIn().removeHeader(PID_HEADER);
-    exchange.getIn().removeHeader(SERVER);
-    // Remove current Content-Type header before setting the new one
-    exchange.getIn().removeHeader(TYPE_HEADER);
-    // Set Content-Type for multipart message
-    exchange.getIn().setHeader(TYPE_HEADER, "multipart/form-data; boundary=" + boundary);
-
     // Wrap up message
-    HttpEntity entity = multipartEntityBuilder.build();
-    LOG.debug("Created entity: {}", entity.getContent());
-    exchange.getIn().setBody(entity.getContent());
+    HttpEntity resultEntity = multipartEntityBuilder.build();
+    // Set Content-Type for multipart message
+    exchange.getIn().setHeader(TYPE_HEADER, resultEntity.getContentType().getValue());
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    resultEntity.writeTo(out);
+    InputStream inputStream = new ByteArrayInputStream(out.toByteArray());
+    exchange.getIn().setBody(inputStream);
   }
 }

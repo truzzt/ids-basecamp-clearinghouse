@@ -1,29 +1,63 @@
 import org.yaml.snakeyaml.Yaml
 
+plugins {
+    `java-library`
+    `maven-publish`
+}
+
+group = "de.fhg.aisec.ids.clearinghouse"
+version = "1.1-SNAPSHOT"
+
 buildscript {
     repositories {
         mavenCentral()
+
+        maven {
+            name = "GitHubPackages"
+
+            url = uri("https://maven.pkg.github.com/Fraunhofer-AISEC/ids-clearing-house-service")
+            credentials(HttpHeaderCredentials::class) {
+                name = findProperty("github.username")
+                value = findProperty("github.token")
+            }
+            authentication {
+                create<HttpHeaderAuthentication>("header")
+            }
+        }   
     }
+    
     dependencies {
         classpath("org.yaml:snakeyaml:1.26")
     }
 }
 
-plugins {
-    java
-    id("biz.aQute.bnd") version "4.2.0" apply false
-}
+publishing {
+     publications {
+        create<MavenPublication>("binary") {
+            artifact(tasks["jar"])
+        }
+    }
+    repositories {
+        maven {            
+            name = "GitHubPackages"
 
-group = "de.fhg.aisec.ids.clearinghouse"
-version = "1.1-SNAPSHOT"
+            url = uri("https://maven.pkg.github.com/Fraunhofer-AISEC/ids-clearing-house-service")
+            credentials(HttpHeaderCredentials::class) {
+                name = findProperty("github.username")
+                value = findProperty("github.token")
+            }
+            authentication {
+                create<HttpHeaderAuthentication>("header")
+            }
+        }
+    }
+}
 
 repositories {
     mavenCentral()
     // References IAIS repository that contains the infomodel artifacts
     maven("https://maven.iais.fraunhofer.de/artifactory/eis-ids-public/")
 }
-
-apply(plugin = "biz.aQute.bnd.builder")
 
 dependencies {
     @Suppress("UNCHECKED_CAST") val libraryVersions =
@@ -48,19 +82,15 @@ dependencies {
     testImplementation("junit", "junit", libraryVersions["junit4"])
 }
 
-configure<JavaPluginConvention> {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
-
-tasks.withType<JavaCompile> {
+tasks.compileJava {
+    sourceCompatibility = "11"
+    targetCompatibility = "11"
     options.encoding = "UTF-8"
 }
 
-tasks.withType<Jar> {
+tasks.jar {
     manifest {
-        attributes(Pair("Bundle-Vendor", "Fraunhofer AISEC"))
-        attributes(Pair("-noee", true))
+        attributes(mapOf(Pair("Bundle-Vendor", "Fraunhofer AISEC"),
+                         Pair("-noee", true)))
     }
-    destinationDirectory.set(file("../build/trusted-connector"))
 }
