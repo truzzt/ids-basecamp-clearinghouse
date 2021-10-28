@@ -30,7 +30,7 @@ jobs:
         ssh-add - <<< "${{ secrets.IDS_CLEARING_HOUSE_CORE_TOKEN }}"
         cargo build --release
     
-- name: Publish clearing-house-processors
+    - name: Publish clearing-house-processors
       run: |
         cd clearing-house-processors
         eval "$(ssh-agent -s)"
