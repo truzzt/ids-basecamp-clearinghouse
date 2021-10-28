@@ -30,10 +30,15 @@ jobs:
         ssh-add - <<< "${{ secrets.IDS_CLEARING_HOUSE_CORE_TOKEN }}"
         cargo build --release
     
-    - name: Build build image
+- name: Publish clearing-house-processors
       run: |
-        cd clearing-house-app
-        docker build . --file Dockerfile --tag $IMAGE_NAME
+        cd clearing-house-processors
+        eval "$(ssh-agent -s)"
+        gradle publish
+
+    - name: Build build image
+      run: |        
+        docker build . --file docker/clearing-house-api.Dockerfile --tag $IMAGE_NAME
     
     - name: Log into registry
       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
