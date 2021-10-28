@@ -12,6 +12,8 @@ buildscript {
     repositories {
         mavenCentral()
 
+        fun findProperty(s: String) = project.findProperty(s) as String?
+
         maven {
             name = "GitHubPackages"
 
@@ -32,7 +34,9 @@ buildscript {
 }
 
 publishing {
-     publications {
+    fun findProperty(s: String) = project.findProperty(s) as String?
+
+    publications {
         create<MavenPublication>("binary") {
             artifact(tasks["jar"])
         }
