@@ -9,7 +9,7 @@ The Clearing House Service API is based on the Trusted Connector [Trusted Connec
 The Clearing House App is a REST API written in RUST that is run in a container in the trusted connector. The Clearing House Processors contain the routes and the CAMEL processors that handle IDS messages that are supported by the Clearing House Service API.
 
 ## IDS Clearing House Core
-The Clearing House Service API depends on two micro services from the [Clearing House Core](https://github.com/Fraunhofer-AISEC/ids-clearing-house-core):
+The Clearing House Service API depends on two micro services from the [Clearing House Core](https://github.com/International-Data-Spaces-Association/ids-clearing-house-core):
 1. Document API
 2. Keyring API
 
