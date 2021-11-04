@@ -37,7 +37,7 @@ The Clearing House App is configured using the configuration file `Rocket.toml`,
 - `clear_db`: `true` or `false` indicates if the database should be cleared when starting the Service API or not. If `true` a restart will wipe the database! Starting the Service API on a clean database will initialize the database.
 - `signing_key`: Location of the private key (DER format) used for signing the Receipts. Clearing House uses PS512 algorithm for signing.
 
-More information on general configuration options in a `Rocket.toml` file can be found [here](https://rocket.rs/v0.5-rc/guide/configuration/#rockettoml). An example configuration is located [here](https://github.com/Fraunhofer-AISEC/ids-clearing-house-service/blob/master/clearing-house-app/clearing-house-api/Rocket.toml).
+More information on general configuration options in a `Rocket.toml` file can be found [here](https://rocket.rs/v0.5-rc/guide/configuration/#rockettoml). An example configuration is located [here](clearing-house-api/Rocket.toml).
 
 #### Logging
 When starting the Clearing House Service API it also needs the following environment variables set:
@@ -62,3 +62,18 @@ There are multiple ways in which the Clearing House enforces Data Immutability:
 - Using the Clearing House Service API there is no way to update an already existing log entry in the database
 - Log entries in the database include a hash value of the previous log entry, chaining together all log entries. Any change to a previous log entry would require rehashing all following log entries.
 - The connector logging information in the Clearing House receives a signed receipt from the Clearing House that includes among other things a timestamp and the current chain hash. A single valid receipt in possession of any connector is enough to detect any change to data up to the time indicated in the receipt.
+
+## Docker Containers
+Dockerfiles are located [here](docker/). There are two types of dockerfiles:
+1. Simple builds (e.g. [dockerfile](docker/clearing-house-api.Dockerfile)) that require you to build the Clearing House APIs yourself using [Rust](https://www.rust-lang.org)
+2. Multistage builds (e.g. [dockerfile](docker/clearingh-house-api-multistage.Dockerfile)) that have a stage for building the rust code
+
+To build the containers check out the repository and in the main directory execute
+
+`docker build -f docker/<dockerfile> . -t <image-name>`
+
+Please read the Clearing House App Configuration section, before using `docker run` oder `docker-compose`. Containers build with the provided dockerfiles need three volumes:
+1. The configuration file `Rocket.toml`is expected at `/server/Rocket.toml`
+2. The folder containing the signing key is expected at `/server/keys`
+3. The folder containing the daps certificate is expected at `/server/certs`
+
