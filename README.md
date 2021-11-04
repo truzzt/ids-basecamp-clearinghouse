@@ -19,11 +19,11 @@ The Document API is responsible for storing the data, while the Keyring API prov
 The Clearing House Service API is defined by the [IDS-G](https://github.com/International-Data-Spaces-Association/IDS-G/tree/feature/paris/core) and represents the top level service. 
 
 ### Clearing House Processors Configuration
-The Clearing House Processors are written in Java for use in the Camel Component of the Trusted Connector. The process of setting up a Trusted Connector is described [here](https://industrial-data-space.github.io/trusted-connector-documentation/docs/getting_started/). To configure the Trusted Connector for the Clearing House Service API it needs access to the following files inside the docker container:
+The Clearing House Processors are written in Java for use in the Camel Component of the Trusted Connector. The process of setting up a Trusted Connector is described [here](https://industrial-data-space.github.io/trusted-connector-documentation/docs/getting_started/). To configure the Trusted Connector for the Clearing House Service API it needs access to the following files inside the docker container (e.g. mounted as a volume):
 - `clearing-house-processors-1.1-SNAPSHOT.jar`: The Clearing House Processors need to be placed in the `/root/jars` folder of the Trusted Connector. The jar file needs to be build from the Clearing House Processors using `gradle`.
 - `clearing-house-routes.xml`: The camel routes required by the Clearing House need to be placed in the `/root/deploy` folder of the Trusted Connector.
 
-Other than that the Trusted Connector requires a e.g. a truststore and a keystore with appropriate key material. Please refer to the [Documentation](https://industrial-data-space.github.io/trusted-connector-documentation/) of the Trusted Connector for more information.
+Other than that the Trusted Connector requires e.g. a truststore and a keystore with appropriate key material. Please refer to the [Documentation](https://industrial-data-space.github.io/trusted-connector-documentation/) of the Trusted Connector for more information.
 
 ### Clearing House App Configuration
 The Clearing House App is configured using the configuration file `Rocket.toml`, which must specify a set of configuration options, such as the correct URLs of the database and other service apis:
