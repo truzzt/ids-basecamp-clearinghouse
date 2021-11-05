@@ -14,6 +14,7 @@ The Clearing House Service API is defined by the [IDS-G](https://github.com/Inte
 ## Requirements
 - [OpenSSL](https://www.openssl.org)
 - [MongoDB](https://www.mongodb.com)
+- ([Docker](https://www.docker.com))
 
 Additionally, the Clearing House App depends on on two micro services from the [Clearing House Core](https://github.com/Fraunhofer-AISEC/ids-clearing-house-core):
 1. Document API
