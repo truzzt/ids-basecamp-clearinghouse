@@ -1,9 +1,0 @@
-database_url: clearing-house-mongo
-database_port: 27017
-init_db: true
-
-blockchain_api_url: http://172.31.6.49:8003
-daps_api_url: https://daps.aisec.fraunhofer.de
-document_api_url: http://document-api:8001
-server_name: https://ch-ids.aisec.fraunhofer.de/
-server_model: 4.0.0
