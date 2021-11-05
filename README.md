@@ -11,8 +11,11 @@ The IDS Clearing House Service consists of two parts:
 
 The Clearing House Service API is defined by the [IDS-G](https://github.com/International-Data-Spaces-Association/IDS-G/tree/main) and represents the top level service.
 
-## Dependencies
-The Clearing House App depends on on two micro services from the [Clearing House Core](https://github.com/Fraunhofer-AISEC/ids-clearing-house-core):
+## Requirements
+- [OpenSSL](https://www.openssl.org)
+- [MongoDB](https://www.mongodb.com)
+
+Additionally, the Clearing House App depends on on two micro services from the [Clearing House Core](https://github.com/Fraunhofer-AISEC/ids-clearing-house-core):
 1. Document API
 2. Keyring API
 
