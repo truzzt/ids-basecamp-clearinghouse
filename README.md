@@ -68,7 +68,7 @@ The Clearing House Processors are written in Java for use in the Camel Component
 Besides those files that are specific for the configuration of the Clearing House Service API, the Trusted Connector requires other files for its configuration, e.g. a truststore and a keystore with appropriate key material. Please refer to the [Documentation](https://industrial-data-space.github.io/trusted-connector-documentation/) of the Trusted Connector for more information or check the [Examples](https://github.com/industrial-data-space/trusted-connector/tree/master/examples).
 
 ## Docker Containers
-Dockerfiles are located [here](docker/). There are two types of dockerfiles:
+The Clearing House App can be build using Dockerfiles that are located [here](docker/). There are two types of dockerfiles:
 1. Simple builds (e.g. [dockerfile](docker/clearing-house-api.Dockerfile)) that require you to build the Clearing House APIs yourself using [Rust](https://www.rust-lang.org)
 2. Multistage builds (e.g. [dockerfile](docker/clearing-house-api-multistage.Dockerfile)) that have a stage for building the rust code
 
@@ -80,6 +80,8 @@ Please read the Clearing House App Configuration section, before using `docker r
 1. The configuration file `Rocket.toml`is expected at `/server/Rocket.toml`
 2. The folder containing the signing key needs to match the path configured for the signing key in `Rocket.toml`, e.g. `/sever/keys`
 3. The folder containing the daps certificate is expected at `/server/certs`
+
+The Clearing House Processors are not run as docker containers. The Clearing House Processors are needed to configure the Trusted Connector.
 
 ## Building from Source
 ### Clearing House App
