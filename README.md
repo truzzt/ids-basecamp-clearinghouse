@@ -51,7 +51,7 @@ The Clearing House API sends a signed receipt as response to a logging request. 
 
 `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -outform der -out private_key.der`
 
-Please note that the Clearing House requires the key to be in DER format.
+Please note that the Clearing House requires the key to be in DER format. It must be available to the Clearing House App under the path configured in `Rocket.toml`, e.g. `/server/keys/private_key.der`.
 
 #### DAPS
 The Clearing House needs to be able to validate the certificate used by the DAPS. If the DAPS uses a self-signed certificate the certificate needs to be added in two places:
