@@ -20,7 +20,7 @@ Additionally, the Clearing House App depends on on two micro services from the [
 1. Document API
 2. Keyring API
 
-The Document API is responsible for storing the data, while the Keyring API provides cryptographic support for encryption and decryption of the stored data. Please refer to the documentation [here](https://github.com/Fraunhofer-AISEC/ids-clearing-house-core/README.md) how to set up those services.
+The Document API is responsible for storing the data, while the Keyring API provides cryptographic support for encryption and decryption of the stored data. Please refer to the documentation [here](https://github.com/Fraunhofer-AISEC/ids-clearing-house-core) how to set up those services.
 
 The Clearing House Service API requires a Trusted Connector [Trusted Connector](https://github.com/industrial-data-space/trusted-connector) for deployment. The process of setting up a Trusted Connector is described [here](https://industrial-data-space.github.io/trusted-connector-documentation/docs/getting_started/). Using a docker image of the Trusted Connector should be sufficient for most deployments:
 
