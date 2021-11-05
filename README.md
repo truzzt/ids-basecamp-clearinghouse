@@ -29,7 +29,7 @@ The Clearing House Service API requires a Trusted Connector [Trusted Connector](
 ## Configuration
 
 ### Clearing House App
-The Clearing House App is configured using the configuration file `Rocket.toml`, which must specify a set of configuration options, such as the correct URLs of the database and other service apis:
+The Clearing House App is configured using the configuration file [`Rocket.toml`](clearing-house-app/clearing-house-api/Rocket.toml), which must specify a set of configuration options, such as the correct URLs of the database and other service apis:
 - `daps_api_url`: Specifies the URL of the DAPS Service. Required to validate DAPS token
 - `keyring_api_url`: Specifies the URL of the Keyring API
 - `document_api_url`: Specifies the URL of the Document API
@@ -40,7 +40,7 @@ The Clearing House App is configured using the configuration file `Rocket.toml`,
 - `clear_db`: `true` or `false` indicates if the database should be cleared when starting the Service API or not. If `true` a restart will wipe the database! Starting the Service API on a clean database will initialize the database.
 - `signing_key`: Location of the private key (DER format) used for signing the Receipts. Clearing House uses PS512 algorithm for signing.
 
-More information on general configuration options in a `Rocket.toml` file can be found [here](https://rocket.rs/v0.5-rc/guide/configuration/#rockettoml). An example configuration is located [here](clearing-house-app/clearing-house-api/Rocket.toml).
+More information on general configuration options in a `Rocket.toml` file can be found [here](https://rocket.rs/v0.5-rc/guide/configuration/#rockettoml).
 
 #### Logging
 When starting the Clearing House Service API it also needs the following environment variables set:
