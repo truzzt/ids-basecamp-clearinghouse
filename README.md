@@ -78,7 +78,7 @@ To build the containers check out the repository and in the main directory execu
 
 Please read the Clearing House App Configuration section, before using `docker run` oder `docker-compose`. Containers build with the provided dockerfiles need three volumes:
 1. The configuration file `Rocket.toml`is expected at `/server/Rocket.toml`
-2. The folder containing the signing key is expected at `/server/keys`
+2. The folder containing the signing key needs to match the path configured for the signing key in `Rocket.toml`, e.g. `/sever/keys`
 3. The folder containing the daps certificate is expected at `/server/certs`
 
 ## Building from Source
