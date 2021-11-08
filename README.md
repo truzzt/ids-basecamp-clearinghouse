@@ -67,6 +67,26 @@ The Clearing House Processors are written in Java for use in the Camel Component
 
 Besides those files that are specific for the configuration of the Clearing House Service API, the Trusted Connector requires other files for its configuration, e.g. a truststore and a keystore with appropriate key material. Please refer to the [Documentation](https://industrial-data-space.github.io/trusted-connector-documentation/) of the Trusted Connector for more information or check the [Examples](https://github.com/industrial-data-space/trusted-connector/tree/master/examples).
 
+Example configuration in docker-compose.yml:
+```
+tc-core:
+    container_name: "tc-core"
+    image: fraunhoferaisec/trusted-connector-core:5.0.2
+    tty: true
+    stdin_open: true
+    volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - ./data/trusted-connector/allow-all-flows.pl:/root/deploy/allow-all-flows.pl
+        - ./data/trusted-connector/ch-ids.p12:/root/etc/keystore.p12
+        - ./data/trusted-connector/truststore.p12:/root/etc/truststore.p12
+        - ./data/trusted-connector/clearing-house-processors-1.1-SNAPSHOT.jar:/root/jars/clearing-house-processors-1.1-SNAPSHOT.jar
+        - ./data/trusted-connector/routes/clearing-house-routes.xml:/root/deploy/clearing-house-routes.xml
+    ports:
+        - "8443:8443"
+        - "9999:9999"
+```
+
+
 ## Docker Containers
 The Clearing House App can be build using Dockerfiles that are located [here](docker/). There are two types of dockerfiles:
 1. Simple builds (e.g. [dockerfile](docker/clearing-house-api.Dockerfile)) that require you to build the Clearing House APIs yourself using [Rust](https://www.rust-lang.org)
