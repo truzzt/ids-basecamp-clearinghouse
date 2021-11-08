@@ -60,6 +60,25 @@ The Clearing House needs to be able to validate the certificate used by the DAPS
 
 If you are using the prebuild docker containers and use `daps.aisec.fraunhofer.de` as the DAPS, only Step 1 is required.
 
+#### Example Configuration (docker-compose)
+```
+clearing-house-api:
+    container_name: "clearing-house-api"
+    depends_on:
+        - document-api
+        - keyring-api
+        - clearing-house-mongo
+    environment:
+        # Allowed levels: Off, Error, Warn, Info, Debug, Trace
+        - API_LOG_LEVEL=Debug
+    ports:
+        - "8000:8000"
+    volumes:
+        - ./data/Rocket.toml:/server/Rocket.toml
+        - ./data/keys:/server/keys
+        - ./data/certs:/server/certs
+```
+
 ### Trusted Connector
 The Clearing House Processors are written in Java for use in the Camel Component of the Trusted Connector. To configure the Trusted Connector for the Clearing House Service API it needs access to the following files inside the docker container (e.g. mounted as a volume):
 - `clearing-house-processors-1.1-SNAPSHOT.jar`: The Clearing House Processors need to be placed in the `/root/jars` folder of the Trusted Connector. The jar file needs to be build from the Clearing House Processors using `gradle`.
@@ -67,7 +86,7 @@ The Clearing House Processors are written in Java for use in the Camel Component
 
 Besides those files that are specific for the configuration of the Clearing House Service API, the Trusted Connector requires other files for its configuration, e.g. a truststore and a keystore with appropriate key material. Please refer to the [Documentation](https://industrial-data-space.github.io/trusted-connector-documentation/) of the Trusted Connector for more information or check the [Examples](https://github.com/industrial-data-space/trusted-connector/tree/master/examples).
 
-Example configuration in docker-compose.yml:
+#### Example Configuration (docker-compose)
 ```
 tc-core:
     container_name: "tc-core"
