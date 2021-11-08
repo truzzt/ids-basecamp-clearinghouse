@@ -58,7 +58,7 @@ The Clearing House needs to be able to validate the certificate used by the DAPS
 1. `/server/certs`: The Clearing House App will load certificates in this folder and use them for validation. The certificate needs to be in DER format.
 2. `/usr/local/share/ca-certificates`: The Clearing House App relies on openssl for parts of the validation and openssl will not trust a self-signed certificate unless it was added in this folder and `update-ca-certificates` was called. Once this is done the container might need to be restarted.
 
-If you are using the prebuild docker containers and use `daps.aisec.fraunhofer.de` as the DAPS, only Step 1 is required.
+If you are using [these dockerfiles](docker/) and use `daps.aisec.fraunhofer.de` as the DAPS, you only need to follow Step 1.
 
 #### Example Configuration (docker-compose)
 ```
