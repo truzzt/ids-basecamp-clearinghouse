@@ -82,7 +82,7 @@ clearing-house-api:
 ### Trusted Connector
 The Clearing House Processors are written in Java for use in the Camel Component of the Trusted Connector. To configure the Trusted Connector for the Clearing House Service API it needs access to the following files inside the docker container (e.g. mounted as a volume):
 - `clearing-house-processors-1.1-SNAPSHOT.jar`: The Clearing House Processors need to be placed in the `/root/jars` folder of the Trusted Connector. The jar file needs to be build from the Clearing House Processors using `gradle`.
-- `clearing-house-routes.xml`: The [camel routes](clearing-house-processors/src/routes) required by the Clearing House need to be placed in the `/root/deploy` folder of the Trusted Connector.
+- [`clearing-house-routes.xml`](clearing-house-processors/src/routes/clearing-house-routes.xml): The camel routes required by the Clearing House need to be placed in the `/root/deploy` folder of the Trusted Connector.
 
 Besides those files that are specific for the configuration of the Clearing House Service API, the Trusted Connector requires other files for its configuration, e.g. a truststore and a keystore with appropriate key material. Please refer to the [Documentation](https://industrial-data-space.github.io/trusted-connector-documentation/) of the Trusted Connector for more information or check the [Examples](https://github.com/industrial-data-space/trusted-connector/tree/master/examples).
 
