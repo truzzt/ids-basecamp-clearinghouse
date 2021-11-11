@@ -16,7 +16,7 @@ The Clearing House Service API is defined by the [IDS-G](https://github.com/Inte
 - [MongoDB](https://www.mongodb.com)
 - ([Docker](https://www.docker.com))
 
-Additionally, the Clearing House App depends on on two micro services from the [Clearing House Core](https://github.com/International-Data-Spaces-Association/ids-clearing-house-core):
+Additionally, the Clearing House App depends on on two micro services from the [Clearing House Core](https://github.com/Fraunhofer-AISEC/ids-clearing-house-core):
 1. Document API
 2. Keyring API
 
@@ -126,11 +126,17 @@ The Clearing House Processors are not run as docker containers. The Clearing Hou
 ### Clearing House App
 The Clearing House App is written in [Rust](https://www.rust-lang.org) and can be build using
 
-`cargo build --release`
+```
+cd clearing-house-app
+cargo build --release
+```
 
 The build requires OpenSSL to be installed.
 
 ### Clearing House Processors
 The Clearing House Processors are written in Java and require Java 11 and can be build using gradle:
 
-`gradle build`
+```
+cd clearing-house-processors
+./gradlew build
+```
