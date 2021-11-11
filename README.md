@@ -133,4 +133,7 @@ The build requires OpenSSL to be installed.
 ### Clearing House Processors
 The Clearing House Processors are written in Java and require Java 11 and can be build using gradle:
 
-`gradle build`
+```
+cd clearing-house-processors
+./gradlew build
+```
