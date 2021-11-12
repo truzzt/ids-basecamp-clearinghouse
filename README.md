@@ -131,7 +131,10 @@ The Clearing House Processors are not run as docker containers. The Clearing Hou
 ### Clearing House App
 The Clearing House App is written in [Rust](https://www.rust-lang.org) and can be build using
 
-`cargo build --release`
+```
+cd clearing-house-app
+cargo build --release
+```
 
 The build requires OpenSSL to be installed.
 
