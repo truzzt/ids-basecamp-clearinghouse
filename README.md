@@ -86,6 +86,9 @@ The Clearing House Processors are written in Java for use in the Camel Component
 
 Besides those files that are specific for the configuration of the Clearing House Service API, the Trusted Connector requires other files for its configuration, e.g. a truststore and a keystore with appropriate key material. Please refer to the [Documentation](https://industrial-data-space.github.io/trusted-connector-documentation/) of the Trusted Connector for more information or check the [Examples](https://github.com/industrial-data-space/trusted-connector/tree/master/examples).
 
+#### DAPS
+The Clearing House needs to be able to validate the certificate used by the DAPS. The Trusted Connector uses `https://daps.aisec.fraunhofer.de` as the default DAPS. If your need to use a different DAPS you need to set the environment variable `TC_DAPS_URL`.
+
 #### Example Configuration (docker-compose)
 ```
 tc-core:
@@ -100,6 +103,8 @@ tc-core:
         - ./data/trusted-connector/truststore.p12:/root/etc/truststore.p12
         - ./data/trusted-connector/clearing-house-processors-1.1-SNAPSHOT.jar:/root/jars/clearing-house-processors-1.1-SNAPSHOT.jar
         - ./data/trusted-connector/routes/clearing-house-routes.xml:/root/deploy/clearing-house-routes.xml
+    environment:
+        TC_DAPS_URL: https://<my-daps-url>
     ports:
         - "8443:8443"
         - "9999:9999"

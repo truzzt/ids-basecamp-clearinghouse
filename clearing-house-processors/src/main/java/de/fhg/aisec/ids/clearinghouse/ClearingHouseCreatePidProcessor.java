@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 
 import static de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.*;
 

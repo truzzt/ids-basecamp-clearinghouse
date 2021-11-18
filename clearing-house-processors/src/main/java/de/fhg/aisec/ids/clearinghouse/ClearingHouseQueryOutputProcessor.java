@@ -20,7 +20,6 @@
 package de.fhg.aisec.ids.clearinghouse;
 
 import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriver;
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriverConfig;
 import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityProfile;
 import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityRequirements;
 import de.fraunhofer.iais.eis.*;
@@ -40,7 +39,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 
@@ -54,7 +52,6 @@ public class ClearingHouseQueryOutputProcessor implements Processor {
   private static final Integer STATUS_CODE_CREATED = 201;
 
   private ResultMessage resultMessage;
-  private RejectionMessage rejectionMessage;
 
   @Override
   public void process(Exchange exchange) throws Exception {
@@ -65,13 +62,7 @@ public class ClearingHouseQueryOutputProcessor implements Processor {
     final var securityRequirements = new SecurityRequirements.Builder()
             .setRequiredSecurityLevel(SecurityProfile.TRUSTED)
             .build();
-    final var dapsConfig = new AisecDapsDriverConfig.Builder()
-            .setKeyStorePath(Paths.get("/root/etc/keystore.p12"))
-            .setTrustStorePath(Paths.get("/root/etc/truststore.p12"))
-            .setKeyAlias("1")
-            .setSecurityRequirements(securityRequirements)
-            .build();
-
+    final var dapsConfig = Configuration.createDapsConfig(securityRequirements);
     final var dapsDriver = new AisecDapsDriver(dapsConfig);
 
     Map<String, Object> headers = egetIn.getHeaders();
@@ -93,7 +84,7 @@ public class ClearingHouseQueryOutputProcessor implements Processor {
       }
 
       // We'll need this to store the modified idsHeader
-      String headerWithDat = idsHeader;
+      String headerWithDat;
       // The real token
       DynamicAttributeToken dapsToken = new DynamicAttributeTokenBuilder()
               ._tokenFormat_(TokenFormat.JWT)
@@ -113,7 +104,7 @@ public class ClearingHouseQueryOutputProcessor implements Processor {
       }
       else{
         LOG.debug("Status code was not ok");
-        rejectionMessage = SERIALIZER.deserialize(idsHeader, RejectionMessage.class);
+        RejectionMessage rejectionMessage = SERIALIZER.deserialize(idsHeader, RejectionMessage.class);
         // InfoModel does not allow changing the message directly, so we use reflection
         Field securityToken = rejectionMessage.getClass().getDeclaredField("_securityToken");
         securityToken.setAccessible(true);
