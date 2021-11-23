@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.util.Map;
 
 import static de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.TYPE_HEADER;
 import static de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.AUTH_HEADER;
@@ -37,8 +38,16 @@ public class ClearingHouseLogProcessor implements Processor {
 
   @Override
   public void process(Exchange exchange) throws Exception {
+
+    final var egetIn = exchange.getIn();
+
+    Map<String, Object> headers = egetIn.getHeaders();
+    for (String header: headers.keySet()){
+      LOG.debug("Found header '{}':'{}'", header, headers.get(header));
+    }
+
     ClearingHouseParser parser =
-        new ClearingHouseParser(exchange.getIn().getBody(InputStream.class), exchange, LogMessage.class);
+        new ClearingHouseParser(egetIn.getBody(InputStream.class), LogMessage.class);
     // Get the IDS InfoModelManager and retrieve a JSON-LD-serialized self-description that will be sent as a multipart "header"
     ClearingHouseMessage converted = new ClearingHouseMessage();
     converted.setHeader(parser.getHeader());

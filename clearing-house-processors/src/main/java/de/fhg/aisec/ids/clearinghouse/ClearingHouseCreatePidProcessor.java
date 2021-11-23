@@ -37,7 +37,7 @@ public class ClearingHouseCreatePidProcessor implements Processor {
   @Override
   public void process(Exchange exchange) throws Exception {
     ClearingHouseParser parser =
-        new ClearingHouseParser(exchange.getIn().getBody(InputStream.class), exchange, RequestMessage.class);
+        new ClearingHouseParser(exchange.getIn().getBody(InputStream.class), RequestMessage.class);
     // Get the IDS InfoModelManager and retrieve a JSON-LD-serialized self-description that will be sent as a multipart "header"
     ClearingHouseMessage converted = new ClearingHouseMessage();
     converted.setHeader(parser.getHeader());

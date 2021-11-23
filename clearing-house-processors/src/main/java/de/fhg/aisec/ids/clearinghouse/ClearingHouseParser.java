@@ -49,7 +49,7 @@ public class ClearingHouseParser<T extends Message> implements UploadContext {
   private String payloadContentType;
   private String token;
 
-  <T extends Message> ClearingHouseParser(final InputStream multipartInput, Exchange exchange, Class<T> clazz) throws FileUploadException, IOException {
+  <T extends Message> ClearingHouseParser(final InputStream multipartInput, Class<T> clazz) throws FileUploadException, IOException {
     this.multipartInput = multipartInput;
     multipartInput.mark(10240);
     try (BufferedReader reader =

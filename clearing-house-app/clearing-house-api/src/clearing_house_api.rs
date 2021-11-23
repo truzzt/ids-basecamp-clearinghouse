@@ -13,6 +13,7 @@ use core_lib::{
         process::Process
     }
 };
+use core_lib::constants::{DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES};
 use ch_lib::model::{ids::{
     message::IdsMessage,
     request::ClearingHouseMessage,
@@ -23,6 +24,9 @@ use ch_lib::db::ProcessStore;
 use ch_lib::model::constants::{ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API, ROCKET_QUERY_API, ROCKET_PROCESS_API, ROCKET_PK_API};
 use rocket::serde::json::{json, Json};
 use rocket::fairing::AdHoc;
+use std::convert::TryFrom;
+use core_lib::model::SortingOrder;
+use core_lib::model::SortingOrder::Ascending;
 
 #[post( "/<pid>", format = "json", data = "<message>")]
 async fn log(
@@ -290,15 +294,20 @@ async fn unauth_log(server_info: &State<ServerInfo>, message: Json<ClearingHouse
     IdsResponse::new(ApiResponse::Unauthorized(String::from("Token not valid!")),IdsMessage::error(ids_response_msg))
 }
 
-#[post("/<pid>", format = "json", data = "<message>")]
+#[post("/<pid>?<page>&<size>&<sort>", format = "json", data = "<message>")]
 async fn query_pid(
     server_info: &State<ServerInfo>,
     apikey: ApiKey<IdsClaims, Empty>,
     db: &State<ProcessStore>,
+    page: Option<i32>,
+    size: Option<i32>,
+    sort: Option<SortingOrder>,
     doc_api: &State<DocumentApiClient>,
     pid: String,
     message: Json<ClearingHouseMessage>
 ) -> IdsResponse {
+    debug!("page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
+
     let mut authorized = false;
 
     // prepare credentials for authorization check
@@ -325,12 +334,51 @@ async fn query_pid(
         }
     }
 
+    // sanity check for pagination
+    let sanitized_page = match page{
+        Some(p) => {
+            if p >= 0{
+                p
+            }
+            else{
+                warn!("...invalid page requested. Falling back to 0.");
+                1
+            }
+        },
+        None => 1
+    };
+
+    let sanitized_size = match size{
+        Some(s) => {
+            let converted_max = i32::try_from(MAX_NUM_RESPONSE_ENTRIES).unwrap();
+            if s > converted_max{
+                warn!("...invalid size requested. Falling back to default.");
+                converted_max
+            }
+            else{
+                if s > 0 {
+                    s
+                }
+                else{
+                    warn!("...invalid size requested. Falling back to default.");
+                    i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap()
+                }
+            }
+        },
+        None => i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap()
+    };
+
+    let sanitized_sort = match sort{
+        Some(s) => s,
+        None => Ascending
+    };
+
     let api_response =
         if !authorized {
             ApiResponse::Unauthorized(String::from("User not authorized."))
         }
         else {
-            match doc_api.get_documents_for_pid(&apikey.raw, &pid){
+            match doc_api.get_documents_for_pid_paginated(&apikey.raw, &pid, sanitized_page, sanitized_size, sanitized_sort){
                 Ok(docs) => {
                     let messages: Vec<IdsMessage> = docs.iter().map(|d|IdsMessage::from(d.clone())).collect();
                     ApiResponse::SuccessOk(json!(messages))

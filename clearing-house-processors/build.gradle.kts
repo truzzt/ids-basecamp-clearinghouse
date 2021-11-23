@@ -1,4 +1,6 @@
 import org.yaml.snakeyaml.Yaml
+import java.io.FileInputStream
+import java.util.*
 
 plugins {
     `java-library`
@@ -6,7 +8,11 @@ plugins {
 }
 
 group = "de.fhg.aisec.ids.clearinghouse"
-version = "1.1-SNAPSHOT"
+
+val fis = FileInputStream("../clearing-house-app/clearing-house-api/Cargo.toml")
+val props = Properties()
+props.load(fis)
+version = props.getProperty("version").removeSurrounding("\"")
 
 buildscript {
     repositories {
