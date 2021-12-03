@@ -81,7 +81,7 @@ clearing-house-api:
 
 ### Trusted Connector
 The Clearing House Processors are written in Java for use in the Camel Component of the Trusted Connector. To configure the Trusted Connector for the Clearing House Service API it needs access to the following files inside the docker container (e.g. mounted as a volume):
-- `clearing-house-processors-1.1-SNAPSHOT.jar`: The Clearing House Processors need to be placed in the `/root/jars` folder of the Trusted Connector. The jar file needs to be build from the Clearing House Processors using `gradle`.
+- `clearing-house-processors.jar`: The Clearing House Processors need to be placed in the `/root/jars` folder of the Trusted Connector. The jar file needs to be [build](#building-from-source) from the Clearing House Processors using `gradle`.
 - [`clearing-house-routes.xml`](clearing-house-processors/src/routes/clearing-house-routes.xml): The camel routes required by the Clearing House need to be placed in the `/root/deploy` folder of the Trusted Connector.
 
 Besides those files that are specific for the configuration of the Clearing House Service API, the Trusted Connector requires other files for its configuration, e.g. a truststore and a keystore with appropriate key material. Please refer to the [Documentation](https://industrial-data-space.github.io/trusted-connector-documentation/) of the Trusted Connector for more information or check the [Examples](https://github.com/industrial-data-space/trusted-connector/tree/master/examples).
@@ -101,7 +101,7 @@ tc-core:
         - ./data/trusted-connector/allow-all-flows.pl:/root/deploy/allow-all-flows.pl
         - ./data/trusted-connector/ch-ids.p12:/root/etc/keystore.p12
         - ./data/trusted-connector/truststore.p12:/root/etc/truststore.p12
-        - ./data/trusted-connector/clearing-house-processors-1.1-SNAPSHOT.jar:/root/jars/clearing-house-processors-1.1-SNAPSHOT.jar
+        - ./data/trusted-connector/clearing-house-processors-0.7.2.jar:/root/jars/clearing-house-processors.jar
         - ./data/trusted-connector/routes/clearing-house-routes.xml:/root/deploy/clearing-house-routes.xml
     environment:
         TC_DAPS_URL: https://<my-daps-url>
