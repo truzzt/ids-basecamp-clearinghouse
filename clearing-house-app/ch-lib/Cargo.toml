@@ -8,14 +8,14 @@ authors = [
 edition = "2018"
 
 [dependencies]
-biscuit = "0.5.0"
+biscuit = { git = "https://github.com/lawliet89/biscuit", branch = "master" }
 core-lib = { git = "https://github.com/Fraunhofer-AISEC/ids-clearing-house-core.git" }
 chrono = { version = "0.4", features = ["serde"] }
 error-chain = "0.12.4"
 fern = "0.5"
 log = "0.4"
 mongodb = "2.0.1"
-num-bigint = "0.3.3"
+num-bigint = "0.4.3"
 openssh-keys = "0.5.0"
 ring = "0.16.20"
 rocket = { version = "0.5.0-rc.1", features = ["json"] }

@@ -1,6 +1,7 @@
 #[macro_use] extern crate rocket;
 
 use core_lib::api::client::{ApiClientConfigurator, ApiClientEnum};
+use core_lib::model::JwksCache;
 use core_lib::util::setup_logger;
 use rocket::{Build, Rocket};
 use rocket::fairing::AdHoc;
@@ -41,4 +42,5 @@ fn rocket() -> Rocket<Build> {
         .attach(ApiClientConfigurator::new(ApiClientEnum::Document))
         .attach(ApiClientConfigurator::new(ApiClientEnum::Keyring))
         .attach(clearing_house_api::mount_api())
+        .manage(JwksCache::new())
 }
