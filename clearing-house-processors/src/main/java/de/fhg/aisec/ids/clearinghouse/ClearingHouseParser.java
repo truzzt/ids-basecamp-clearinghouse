@@ -21,7 +21,6 @@ package de.fhg.aisec.ids.clearinghouse;
 
 import de.fraunhofer.iais.eis.ids.jsonld.Serializer;
 import de.fraunhofer.iais.eis.Message;
-import org.apache.camel.Exchange;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUpload;
 import org.apache.commons.fileupload.FileUploadException;

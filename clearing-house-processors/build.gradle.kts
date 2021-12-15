@@ -12,7 +12,14 @@ group = "de.fhg.aisec.ids.clearinghouse"
 val fis = FileInputStream("../clearing-house-app/clearing-house-api/Cargo.toml")
 val props = Properties()
 props.load(fis)
-version = props.getProperty("version").removeSurrounding("\"")
+version = props.getProperty("version")
+
+tasks.register("printChVersion") {
+
+    doFirst {
+        println(props.getProperty("version"))
+    }
+}
 
 buildscript {
     repositories {
@@ -77,7 +84,6 @@ dependencies {
     implementation("de.fraunhofer.iais.eis.ids.infomodel", "java", libraryVersions["infomodel"])
     implementation("de.fraunhofer.iais.eis.ids", "infomodel-serializer", libraryVersions["infomodel"])
 
-    implementation("de.fhg.aisec.ids", "ids-api", libraryVersions["api"])
     implementation("de.fhg.aisec.ids", "camel-idscp2", libraryVersions["idscp2"])
 
     implementation("org.apache.camel", "camel-core", libraryVersions["camel"])
