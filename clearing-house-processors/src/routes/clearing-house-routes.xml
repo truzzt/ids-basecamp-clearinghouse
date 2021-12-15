@@ -7,6 +7,15 @@
           http://camel.apache.org/schema/spring
           http://camel.apache.org/schema/spring/camel-spring.xsd">
 
+    <camel:sslContextParameters id="ChSslContext">
+        <camel:keyManagers keyPassword="password">
+            <camel:keyStore resource="etc/keystore.p12" password="password"/>
+        </camel:keyManagers>
+        <camel:trustManagers>
+            <camel:keyStore resource="etc/truststore.p12" password="password"/>
+        </camel:trustManagers>
+    </camel:sslContextParameters>
+
     <!-- Beans -->
     <bean id="responseProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseOutputProcessor" />
     <bean id="queryResponseProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseQueryOutputProcessor" />
@@ -16,7 +25,10 @@
     
     <!-- Routes -->
     <camelContext xmlns="http://camel.apache.org/schema/spring">
-        <restConfiguration component="jetty" host="0.0.0.0" port="9999" bindingMode="off" />
+        <restConfiguration scheme="https" component="jetty" host="0.0.0.0" port="9999" bindingMode="off">
+            <endpointProperty key="sslContextParameters" value="#ChSslContext"/>
+        </restConfiguration>
+
         <rest id="CH_REST">
             <post uri="/messages/query/{pid}" id="CH_QUERY_PID">
                 <to uri="direct:query" />
