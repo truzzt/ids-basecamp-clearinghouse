@@ -96,7 +96,7 @@ The Clearing House Processors can override some standard configuration settings 
 ```
 tc-core:
     container_name: "tc-core"
-    image: fraunhoferaisec/trusted-connector-core:5.0.2
+    image: fraunhoferaisec/trusted-connector-core:6.0.0
     tty: true
     stdin_open: true
     volumes:
