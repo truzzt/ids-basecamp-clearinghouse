@@ -24,7 +24,7 @@ The Document API is responsible for storing the data, while the Keyring API prov
 
 The Clearing House Service API requires a Trusted Connector [Trusted Connector](https://github.com/industrial-data-space/trusted-connector) for deployment. The process of setting up a Trusted Connector is described [here](https://industrial-data-space.github.io/trusted-connector-documentation/docs/getting_started/). Using a docker image of the Trusted Connector should be sufficient for most deployments:
 
-`docker pull fraunhoferaisec/trusted-connector-core:5.0.2`
+`docker pull fraunhoferaisec/trusted-connector-core:6.0.0`
 
 ## Configuration
 
