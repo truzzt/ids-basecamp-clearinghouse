@@ -24,7 +24,7 @@ The Document API is responsible for storing the data, while the Keyring API prov
 
 The Clearing House Service API requires a Trusted Connector [Trusted Connector](https://github.com/industrial-data-space/trusted-connector) for deployment. The process of setting up a Trusted Connector is described [here](https://industrial-data-space.github.io/trusted-connector-documentation/docs/getting_started/). Using a docker image of the Trusted Connector should be sufficient for most deployments:
 
-`docker pull fraunhoferaisec/trusted-connector-core:5.0.2`
+`docker pull fraunhoferaisec/trusted-connector-core:6.0.0`
 
 ## Configuration
 
@@ -88,7 +88,7 @@ Besides those files that are specific for the configuration of the Clearing Hous
 
 #### Environment Variables
 The Clearing House Processors can override some standard configuration settings of the Trusted Connector using environment variables. If these variables are not set, the Clearing House Processors will use the standard values provided by the Trusted Connector:
-- `TC_DAPS_URL`: The url of the DAPS used by the Clearing House. The Trusted Connector uses `https://daps.aisec.fraunhofer.de` as the default DAPS.
+- `TC_DAPS_URL`: The url of the DAPS used by the Clearing House. The Trusted Connector uses `https://daps.aisec.fraunhofer.de/v2` as the default DAPS url.
 - `TC_KEYSTORE_PW`: The password of the key store mounted in the Trusted Connector. Defaults to `password`.
 - `TC_TRUSTSTORE_PW`: The password of the trust store mounted in the Trusted Connector. Defaults to `password`.
 
@@ -96,7 +96,7 @@ The Clearing House Processors can override some standard configuration settings 
 ```
 tc-core:
     container_name: "tc-core"
-    image: fraunhoferaisec/trusted-connector-core:5.0.2
+    image: fraunhoferaisec/trusted-connector-core:6.0.0
     tty: true
     stdin_open: true
     volumes:
