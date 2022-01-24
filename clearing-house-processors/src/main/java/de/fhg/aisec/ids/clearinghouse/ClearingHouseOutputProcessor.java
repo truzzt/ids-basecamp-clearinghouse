@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
@@ -60,7 +59,6 @@ public class ClearingHouseOutputProcessor implements Processor {
     final var securityRequirements = new SecurityRequirements.Builder()
             .setRequiredSecurityLevel(SecurityProfile.TRUSTED)
             .build();
-
     final var dapsConfig = Configuration.createDapsConfig(securityRequirements);
     final var dapsDriver = new AisecDapsDriver(dapsConfig);
 
@@ -100,24 +98,11 @@ public class ClearingHouseOutputProcessor implements Processor {
       // To add the DAT we need to deserialize the IDS message in the header and add the DAT
       // Depending on the status code we get different IDS messages
       LOG.debug("status code is: {}", statusCode);
-      if (statusCode == STATUS_CODE_OK || statusCode == STATUS_CODE_CREATED){
-        LOG.debug("Status code was ok");
-        MessageProcessedNotificationMessage resultMessage = SERIALIZER.deserialize(idsHeader, MessageProcessedNotificationMessage.class);
-        // InfoModel does not allow changing the message directly, so we use reflection
-        Field securityToken = resultMessage.getClass().getDeclaredField("_securityToken");
-        securityToken.setAccessible(true);
-        securityToken.set(resultMessage, dapsToken);
-        headerWithDat = SERIALIZER.serialize(resultMessage);
-      }
-      else{
-        LOG.debug("Status code was not ok");
-        RejectionMessage rejectionMessage = SERIALIZER.deserialize(idsHeader, RejectionMessage.class);
-        // InfoModel does not allow changing the message directly, so we use reflection
-        Field securityToken = rejectionMessage.getClass().getDeclaredField("_securityToken");
-        securityToken.setAccessible(true);
-        securityToken.set(rejectionMessage, dapsToken);
-        headerWithDat = SERIALIZER.serialize(rejectionMessage);
-      }
+      LOG.debug("ids header: {}", idsHeader);
+      String secToken = createSecurityToken(dapsToken);
+      LOG.debug("daps token: {}", secToken);
+      headerWithDat = addSecurityToken(idsHeader, secToken);
+      LOG.debug("message: {}", headerWithDat);
 
       multipartEntityBuilder.addPart(
             ClearingHouseConstants.MULTIPART_HEADER,
@@ -162,6 +147,20 @@ public class ClearingHouseOutputProcessor implements Processor {
     resultEntity.writeTo(out);
     InputStream inputStream = new ByteArrayInputStream(out.toByteArray());
     exchange.getIn().setBody(inputStream);
+  }
+
+  private String createSecurityToken(DynamicAttributeToken dapsToken) {
+
+    String token = "\"ids:securityToken\" : { \"@type\" : \"ids:DynamicAttributeToken\"," +
+            "\"@id\" : \"" + dapsToken.getId().toString() + "\"," +
+            "\"ids:tokenFormat\" : { \"@id\" : \"idsc:JWT\"}," +
+            "\"ids:tokenValue\" : \"" + dapsToken.getTokenValue() + "\"}";
+    return token;
+  }
+
+  private String addSecurityToken(String idsheader, String token){
+    String message = idsheader.substring(0,idsheader.length()-2).concat(",").concat(token).concat("]}");
+    return message;
   }
 }
 

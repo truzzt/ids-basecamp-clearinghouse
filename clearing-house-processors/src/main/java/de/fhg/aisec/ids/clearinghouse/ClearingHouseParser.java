@@ -61,16 +61,19 @@ public class ClearingHouseParser<T extends Message> implements UploadContext {
       this.multipartInput.reset();
       for (FileItem i : new FileUpload(new DiskFileItemFactory()).parseRequest(this)) {
         String fieldName = i.getFieldName();
+        LOG.debug("Field name: {}", fieldName);
         if (MULTIPART_HEADER.equals(fieldName)) {
           header = SERIALIZER.deserialize(
                   new String(i.getInputStream().readAllBytes(), StandardCharsets.UTF_8),
                   clazz
           );
-          LOG.debug("keyset size: {}", header.getProperties().keySet().size());
-          LOG.debug("id: {}", header.getId());
-          for (String key: header.getProperties().keySet()){
-            LOG.debug("Message Property: {} , value: {}", key , header.getProperties().get(key));
+          if (header.getProperties() != null) {
+            LOG.debug("keyset size: {}", header.getProperties().keySet().size());
+            for (String key : header.getProperties().keySet()) {
+              LOG.debug("Message Property: {} , value: {}", key, header.getProperties().get(key));
+            }
           }
+          LOG.debug("id: {}", header.getId());
 
           token = BEARER + header.getSecurityToken().getTokenValue();
         } else if (MULTIPART_PAYLOAD.equals(fieldName)) {

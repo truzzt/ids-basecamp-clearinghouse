@@ -28,9 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.util.Map;
 
-import static de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.TYPE_HEADER;
-import static de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.AUTH_HEADER;
-import static de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.TYPE_JSON;
+import static de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.*;
 
 public class ClearingHouseLogProcessor implements Processor {
 

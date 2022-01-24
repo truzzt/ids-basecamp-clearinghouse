@@ -18,7 +18,6 @@
 
     <!-- Beans -->
     <bean id="responseProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseOutputProcessor" />
-    <bean id="queryResponseProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseQueryOutputProcessor" />
     <bean id="createPidProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseCreatePidProcessor" />
     <bean id="logProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseLogProcessor" />
     <bean id="queryProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseQueryProcessor" />
@@ -59,7 +58,7 @@
             <from uri="direct:query"/>
             <process ref="queryProcessor" />
             <to uri="http://clearing-house-api:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
-            <process ref="queryResponseProcessor" />
+            <process ref="responseProcessor" />
         </route>
     </camelContext>
 </beans>

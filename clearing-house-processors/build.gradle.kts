@@ -87,6 +87,7 @@ dependencies {
     implementation("de.fhg.aisec.ids", "camel-idscp2", libraryVersions["idscp2"])
 
     implementation("org.apache.camel", "camel-core", libraryVersions["camel"])
+    implementation("org.apache.camel", "camel-api", libraryVersions["camel"])
     implementation("org.apache.camel", "camel-jetty", libraryVersions["camel"])
     implementation("org.apache.camel", "camel-http4", libraryVersions["camelHttp4"])
 

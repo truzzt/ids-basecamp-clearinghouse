@@ -1,6 +1,6 @@
 [package]
 name = "ch-lib"
-version = "0.7.2"
+version = "0.7.3"
 authors = [
     "Mark Gall <mark.gall@aisec.fraunhofer.de>",
     "Georg Bramm <georg.bramm@aisec.fraunhofer.de>",
