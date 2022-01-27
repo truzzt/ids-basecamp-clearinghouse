@@ -89,7 +89,6 @@ dependencies {
     implementation("org.apache.camel", "camel-core", libraryVersions["camel"])
     implementation("org.apache.camel", "camel-api", libraryVersions["camel"])
     implementation("org.apache.camel", "camel-jetty", libraryVersions["camel"])
-    implementation("org.apache.camel", "camel-http4", libraryVersions["camelHttp4"])
 
     implementation("org.apache.httpcomponents", "httpcore", libraryVersions["httpcore"])
     implementation("org.apache.httpcomponents", "httpclient", libraryVersions["httpclient"])
