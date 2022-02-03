@@ -55,7 +55,7 @@ public class ClearingHouseOutputProcessor implements Processor {
     String boundary = UUID.randomUUID().toString();
     final var egetIn = exchange.getIn();
     final var typeHeader = egetIn.getHeader(TYPE_HEADER).toString();
-    final var idsHeader = egetIn.getHeader(IDS_HEADER).toString();
+    final var idsHeader = egetIn.getHeader(IDS_HEADER) == null? "" : egetIn.getHeader(IDS_HEADER).toString();
     final var securityRequirements = new SecurityRequirements.Builder()
             .setRequiredSecurityLevel(SecurityProfile.TRUSTED)
             .build();

@@ -1,5 +1,6 @@
 #[macro_use] extern crate rocket;
 
+use std::path::Path;
 use core_lib::api::client::{ApiClientConfigurator, ApiClientEnum};
 use core_lib::model::JwksCache;
 use core_lib::util::setup_logger;
@@ -23,9 +24,15 @@ pub fn add_server_info() -> AdHoc {
 }
 
 pub fn add_signing_key() -> AdHoc {
-    AdHoc::on_ignite("Adding Signing Key", |rocket| async {
+    AdHoc::try_on_ignite("Adding Signing Key", |rocket| async {
         let private_key_path = rocket.figment().extract_inner(SIGNING_KEY).unwrap_or(String::from("keys/private_key.der"));
-        rocket.manage(private_key_path)
+        if Path::new(&private_key_path).exists(){
+            Ok(rocket.manage(private_key_path))
+        }
+        else{
+            error!("Signing key not found! Aborting startup! Please configure signing_key!");
+            return Err(rocket)
+        }
     })
 }
 
