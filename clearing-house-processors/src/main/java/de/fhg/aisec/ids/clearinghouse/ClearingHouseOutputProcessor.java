@@ -159,7 +159,7 @@ public class ClearingHouseOutputProcessor implements Processor {
   }
 
   private String addSecurityToken(String idsheader, String token){
-    String message = idsheader.substring(0,idsheader.length()-2).concat(",").concat(token).concat("]}");
+    String message = idsheader.substring(0,idsheader.length()-1).concat(",").concat(token).concat("}");
     return message;
   }
 }
