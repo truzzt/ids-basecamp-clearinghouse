@@ -62,57 +62,54 @@ async fn log(
             }
 
             // prepare credentials for authorization check
-            let user = match apikey.sub() {
-                Some(subject) => subject,
-                None => {
-                    // No credentials, ergo no authorization possible
-                    error!("Cannot authorize user. Missing credentials");
-                    error = String::from("Cannot authorize user. Missing credentials");
-                    String::new()
-                }
-            };
+            let user = getConnectorIdentifier(&apikey);
+            if user.is_none() {
+                // cannot authenticate user without credentials
+                unauth = true;
+            }
+            else{
+                // convenience: if process does not exist, we create it but only if no error occurred before
+                if error.is_empty() {
+                    match db.get_process(&pid).await {
+                        Ok(Some(_p)) => {
+                            debug!("Requested pid '{}' exists. Nothing to create.", &pid);
+                        }
+                        Ok(None) => {
+                            info!("Requested pid '{}' does not exist. Creating...", &pid);
+                            // create a new process
+                            let new_process = Process::new(pid.clone(), vec!(user.as_ref().unwrap().clone()));
 
-            // convenience: if process does not exist, we create it but only if no error occurred before
-            if error.is_empty(){
-                match db.get_process(&pid).await{
-                    Ok(Some(_p)) => {
-                        debug!("Requested pid '{}' exists. Nothing to create.", &pid);
-                    }
-                    Ok(None) => {
-                        info!("Requested pid '{}' does not exist. Creating...", &pid);
-                        // create a new process
-                        let new_process = Process::new(pid.clone(), vec!(user.clone()));
-
-                        if db.store_process(new_process).await.is_err(){
-                            error!("Error while creating process '{}'", &pid);
-                            error = String::from("Error while creating process");
+                            if db.store_process(new_process).await.is_err() {
+                                error!("Error while creating process '{}'", &pid);
+                                error = String::from("Error while creating process");
+                            }
+                        }
+                        Err(_) => {
+                            error!("Error while getting process '{}'", &pid);
+                            error = String::from("Error while getting process");
                         }
                     }
-                    Err(_) => {
-                        error!("Error while getting process '{}'", &pid);
-                        error = String::from("Error while getting process");
-                    }
                 }
-            }
 
-            // now check if user is authorized to write to pid
-            match db.is_authorized(&user, &pid).await {
-                Ok(true) => info!("User authorized."),
-                Ok(false) => {
-                    warn!("User is not authorized to write to pid '{}'", &pid);
-                    error = String::from("User not authorized");
-                    unauth = true;
-                }
-                Err(_) => {
-                    error!("Error while checking authorization of user '{}' for '{}'", &user, &pid);
-                    error = String::from("Error during authorization");
+                // now check if user is authorized to write to pid
+                match db.is_authorized(&user.as_ref().unwrap(), &pid).await {
+                    Ok(true) => info!("User authorized."),
+                    Ok(false) => {
+                        warn!("User is not authorized to write to pid '{}'", &pid);
+                        error = String::from("User not authorized");
+                        unauth = true;
+                    }
+                    Err(_) => {
+                        error!("Error while checking authorization of user '{}' for '{}'", user.as_ref().unwrap(), &pid);
+                        error = String::from("Error during authorization");
+                    }
                 }
             }
 
             // if previously no error occured, log message
             if error.is_empty(){
                 debug!("logging message for pid {}", &pid);
-                log_message(apikey, db,user, doc_api, key_path.inner().as_str(), m.clone()).await
+                log_message(apikey, db, user.unwrap(), doc_api, key_path.inner().as_str(), m.clone()).await
             }
             else{
                 if unauth{
@@ -159,8 +156,8 @@ async fn create_process(
                     ApiResponse::BadRequest(String::from("Document already exists"))
                 },
                 false => {
-                    // prepare credentials of user
-                    match apikey.sub() {
+                    // prepare credentials for authorization check
+                    match getConnectorIdentifier(&apikey) {
                         None => {
                             // No credentials, so we can't identify the owner later.
                             error!("Cannot create pid without user credentials");
@@ -311,26 +308,20 @@ async fn query_pid(
     let mut authorized = false;
 
     // prepare credentials for authorization check
-    let user = match apikey.sub() {
-        Some(subject) => subject,
-        None => {
-            // No credentials, ergo no authorization possible
-            error!("Cannot authorize user. Missing credentials");
-            String::new()
-        }
-    };
-
-    // now check if user is authorized to read infos in pid
-    match db.is_authorized(&user, &pid).await {
-        Ok(true) => {
-            info!("User authorized.");
-            authorized = true;
-        },
-        Ok(false) => {
-            warn!("User is not authorized to write to pid '{}'", &pid);
-        }
-        Err(_) => {
-            error!("Error while checking authorization of user '{}' for '{}'", &user, &pid);
+    let user = getConnectorIdentifier(&apikey);
+    if user.is_some(){
+        // now check if user is authorized to read infos in pid
+        match db.is_authorized(user.as_ref().unwrap(), &pid).await {
+            Ok(true) => {
+                info!("User authorized.");
+                authorized = true;
+            },
+            Ok(false) => {
+                warn!("User is not authorized to write to pid '{}'", &pid);
+            }
+            Err(_) => {
+                error!("Error while checking authorization of user '{}' for '{}'", &user.unwrap(), &pid);
+            }
         }
     }
 
@@ -409,26 +400,20 @@ async fn query_id(server_info: &State<ServerInfo>, apikey: ApiKey<IdsClaims, Emp
     let mut authorized = false;
 
     // prepare credentials for authorization check
-    let user = match apikey.sub() {
-        Some(subject) => subject,
-        None => {
-            // No credentials, ergo no authorization possible
-            error!("Cannot authorize user. Missing credentials");
-            String::new()
-        }
-    };
-
-    // now check if user is authorized to read infos in pid
-    match db.is_authorized(&user, &pid).await {
-        Ok(true) => {
-            info!("User authorized.");
-            authorized = true;
-        },
-        Ok(false) => {
-            warn!("User is not authorized to write to pid '{}'", &pid);
-        }
-        Err(_) => {
-            error!("Error while checking authorization of user '{}' for '{}'", &user, &pid);
+    let user = getConnectorIdentifier(&apikey);
+    if user.is_some(){
+        // now check if user is authorized to read infos in pid
+        match db.is_authorized(&user.as_ref().unwrap(), &pid).await {
+            Ok(true) => {
+                info!("User authorized.");
+                authorized = true;
+            },
+            Ok(false) => {
+                warn!("User is not authorized to write to pid '{}'", &pid);
+            }
+            Err(_) => {
+                error!("Error while checking authorization of user '{}' for '{}'", &user.unwrap(), &pid);
+            }
         }
     }
 
@@ -475,7 +460,6 @@ async fn get_public_sign_key(key_path: &State<String>) -> ApiResponse {
     }
 }
 
-
 pub fn mount_api() -> AdHoc {
     AdHoc::on_ignite("Mounting Clearing House API", |rocket| async {
         rocket
@@ -485,4 +469,15 @@ pub fn mount_api() -> AdHoc {
                    routes![query_id, query_pid, unauth_query_id, unauth_query_pid])
             .mount(format!("{}", ROCKET_PK_API).as_str(), routes![get_public_sign_key])
     })
+}
+
+fn getConnectorIdentifier(apikey: &ApiKey<IdsClaims, Empty>) -> Option<String> {
+    match apikey.sub() {
+        Some(subject) => Some(subject),
+        None => {
+            // No credentials, ergo no authorization possible
+            error!("Cannot authorize user. Missing credentials");
+            None
+        }
+    }
 }
