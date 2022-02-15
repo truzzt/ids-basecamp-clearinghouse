@@ -56,6 +56,7 @@ public class ClearingHouseLogProcessor implements Processor {
     exchange.getIn().removeHeader(TYPE_HEADER);
     // Copy Content-Type from payload part populate body with new payload
     exchange.getIn().setHeader(TYPE_HEADER, TYPE_JSON);
+    exchange.getIn().setHeader(IDS_HEADER_COPY, converted.header);
     exchange.getIn().setHeader(AUTH_HEADER, parser.getToken());
     exchange.getIn().setBody(converted.toJson());
   }

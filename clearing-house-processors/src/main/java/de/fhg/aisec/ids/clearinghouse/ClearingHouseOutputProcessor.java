@@ -34,10 +34,14 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.datatype.DatatypeFactory;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
@@ -47,8 +51,6 @@ public class ClearingHouseOutputProcessor implements Processor {
 
   private final Logger LOG = LoggerFactory.getLogger(ClearingHouseOutputProcessor.class);
   private static final Serializer SERIALIZER = new Serializer();
-  private static final Integer STATUS_CODE_OK = 200;
-  private static final Integer STATUS_CODE_CREATED = 201;
 
   @Override
   public void process(Exchange exchange) throws Exception {
@@ -68,6 +70,7 @@ public class ClearingHouseOutputProcessor implements Processor {
     }
 
     final var statusCode = ((Integer) headers.get("CamelHttpResponseCode")).intValue();
+    final var original_request = (Message)exchange.getIn().getHeader(IDS_HEADER_COPY);
 
     // Clean up the headers
     exchange.getIn().removeHeader(AUTH_HEADER);
@@ -75,11 +78,18 @@ public class ClearingHouseOutputProcessor implements Processor {
     exchange.getIn().removeHeader(PID_HEADER);
     exchange.getIn().removeHeader(SERVER);
     exchange.getIn().removeHeader(TYPE_HEADER);
+    exchange.getIn().removeHeader(IDS_HEADER_COPY);
 
     // preparation
     MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
     multipartEntityBuilder.setMode(HttpMultipartMode.STRICT);
     multipartEntityBuilder.setBoundary(boundary);
+
+    // get DAPS token
+    DynamicAttributeToken dapsToken = new DynamicAttributeTokenBuilder()
+            ._tokenFormat_(TokenFormat.JWT)
+            ._tokenValue_(new String(dapsDriver.getToken(), StandardCharsets.UTF_8))
+            .build();
 
     // handling IDS header
     if (!idsHeader.isEmpty()) {
@@ -87,56 +97,67 @@ public class ClearingHouseOutputProcessor implements Processor {
         LOG.debug("IDS-Header is not empty, using header from original message");
       }
 
-      // We'll need this to store the modified idsHeader
-      String headerWithDat;
-      // The real token
-      DynamicAttributeToken dapsToken = new DynamicAttributeTokenBuilder()
-              ._tokenFormat_(TokenFormat.JWT)
-              ._tokenValue_(new String(dapsDriver.getToken(), StandardCharsets.UTF_8))
-              .build();
-
-      // To add the DAT we need to deserialize the IDS message in the header and add the DAT
-      // Depending on the status code we get different IDS messages
-      LOG.debug("status code is: {}", statusCode);
-      LOG.debug("ids header: {}", idsHeader);
-      String secToken = createSecurityToken(dapsToken);
-      LOG.debug("daps token: {}", secToken);
-      headerWithDat = addSecurityToken(idsHeader, secToken);
-      LOG.debug("message: {}", headerWithDat);
-
-      multipartEntityBuilder.addPart(
-            ClearingHouseConstants.MULTIPART_HEADER,
-            new StringBody(headerWithDat, ContentType.APPLICATION_JSON));
-    }
-    else{
-      if (LOG.isDebugEnabled()) {
-        LOG.warn("IDS-Header is empty, using header from self description");
-      }
-      //TODO: Actually this is not supposed to happen. But we should be defensive about this and add it
-      //The following code is from tc multipart processor
-      //InfoModel infoModel: InfoModel = MultiPartComponent.infoModelManager
-      //val rdfHeader = infoModel.connectorAsJsonLd
-      multipartEntityBuilder.addPart(
-              ClearingHouseConstants.MULTIPART_HEADER,
-              new StringBody(idsHeader, ContentType.APPLICATION_JSON));
-    }
-
-    // get the body of the Clearing House message and put it into the payload
-    String payload = exchange.getIn().getBody(String.class);
-    if (payload != null) {
-      if (LOG.isDebugEnabled()) {
-          LOG.debug("Payload is not empty");
-      }
-      //message from the Clearing House are small, so we use Strings instead of Streams
-      multipartEntityBuilder.addPart(
-          ClearingHouseConstants.MULTIPART_PAYLOAD,
-          new StringBody(payload, ContentType.create(typeHeader)));
-
     }
     else {
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Payload is empty");
+        LOG.warn("IDS-Header is empty");
       }
+    }
+
+    // creating IDS header for the response
+    String responseHeader;
+    switch (statusCode){
+      case 200:
+        responseHeader = SERIALIZER.serialize(new ResultMessageBuilder()
+                ._issued_(DatatypeFactory.newInstance().newXMLGregorianCalendar(LocalDateTime.now().toString()))
+                ._modelVersion_(Configuration.getInfomodelVersion())
+                ._issuerConnector_(new URI(Configuration.getIssuerConnector()))
+                ._senderAgent_(new URI(Configuration.getSenderAgent()))
+                ._correlationMessage_(original_request.getId())
+                ._recipientAgent_(Arrays.asList(new URI[]{original_request.getSenderAgent()}))
+                ._recipientConnector_(Arrays.asList(new URI[]{original_request.getIssuerConnector()}))
+                ._securityToken_(dapsToken).build());
+        break;
+      case 201:
+        responseHeader = SERIALIZER.serialize(new MessageProcessedNotificationMessageBuilder()
+                ._issued_(DatatypeFactory.newInstance().newXMLGregorianCalendar(LocalDateTime.now().toString()))
+                ._modelVersion_(Configuration.getInfomodelVersion())
+                ._issuerConnector_(new URI(Configuration.getIssuerConnector()))
+                ._senderAgent_(new URI(Configuration.getSenderAgent()))
+                ._correlationMessage_(original_request.getId())
+                ._recipientAgent_(Arrays.asList(new URI[]{original_request.getSenderAgent()}))
+                ._recipientConnector_(Arrays.asList(new URI[]{original_request.getIssuerConnector()}))
+                ._securityToken_(dapsToken).build());
+        break;
+      default:
+        responseHeader = SERIALIZER.serialize(new RejectionMessageBuilder()
+                ._issued_(DatatypeFactory.newInstance().newXMLGregorianCalendar(LocalDateTime.now().toString()))
+                ._modelVersion_(Configuration.getInfomodelVersion())
+                ._issuerConnector_(new URI(Configuration.getIssuerConnector()))
+                ._senderAgent_(new URI(Configuration.getSenderAgent()))
+                ._correlationMessage_(original_request.getId())
+                ._recipientAgent_(Arrays.asList(new URI[]{original_request.getSenderAgent()}))
+                ._recipientConnector_(Arrays.asList(new URI[]{original_request.getIssuerConnector()}))
+                ._securityToken_(dapsToken).build());
+    }
+
+    multipartEntityBuilder.addPart(
+            ClearingHouseConstants.MULTIPART_HEADER,
+            new StringBody(responseHeader, ContentType.APPLICATION_JSON));
+
+    // get the body of the Clearing House message and put it into the payload
+    String payload = exchange.getIn().getBody(String.class);
+    // add body only in case of success
+    switch (statusCode){
+      case 200:
+      case 201:
+        //message from the Clearing House are small, so we use Strings instead of Streams
+        multipartEntityBuilder.addPart(
+                ClearingHouseConstants.MULTIPART_PAYLOAD,
+                new StringBody(payload, ContentType.create(typeHeader)));
+        break;
+      default:
+        LOG.warn("Status Code: {} with Payload: {}", statusCode, payload);
     }
 
     // Wrap up message
@@ -147,20 +168,6 @@ public class ClearingHouseOutputProcessor implements Processor {
     resultEntity.writeTo(out);
     InputStream inputStream = new ByteArrayInputStream(out.toByteArray());
     exchange.getIn().setBody(inputStream);
-  }
-
-  private String createSecurityToken(DynamicAttributeToken dapsToken) {
-
-    String token = "\"ids:securityToken\" : { \"@type\" : \"ids:DynamicAttributeToken\"," +
-            "\"@id\" : \"" + dapsToken.getId().toString() + "\"," +
-            "\"ids:tokenFormat\" : { \"@id\" : \"idsc:JWT\"}," +
-            "\"ids:tokenValue\" : \"" + dapsToken.getTokenValue() + "\"}";
-    return token;
-  }
-
-  private String addSecurityToken(String idsheader, String token){
-    String message = idsheader.substring(0,idsheader.length()-1).concat(",").concat(token).concat("}");
-    return message;
   }
 }
 
