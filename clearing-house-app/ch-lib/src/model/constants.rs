@@ -1,8 +1,4 @@
 pub const CONTENT_TYPE: &'static str = "Content-Type";
-pub const IDS_HEADER: &'static str = "IDS-Header";
-pub const SERVER_AGENT: &'static str = "server_agent";
-pub const SERVER_CONNECTOR_NAME: &'static str = "connector_name";
-pub const SERVER_MODEL_VERSION: &'static str = "infomodel_version";
 pub const APPLICATION_JSON: &'static str = "application/json";
 pub const SIGNING_KEY: &'static str = "signing_key";
 

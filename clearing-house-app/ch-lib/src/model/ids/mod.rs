@@ -4,7 +4,6 @@ use std::fmt::{Display, Formatter, Result};
 
 pub mod message;
 pub mod request;
-pub mod response;
 #[cfg(test)] mod tests;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

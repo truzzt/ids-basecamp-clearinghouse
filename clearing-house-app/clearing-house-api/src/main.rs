@@ -8,20 +8,9 @@ use rocket::{Build, Rocket};
 use rocket::fairing::AdHoc;
 
 use ch_lib::db::ProcessStoreConfigurator;
-use ch_lib::model::constants::{SERVER_AGENT, SERVER_CONNECTOR_NAME, SERVER_MODEL_VERSION, SIGNING_KEY};
-use ch_lib::model::ServerInfo;
+use ch_lib::model::constants::SIGNING_KEY;
 
 pub mod clearing_house_api;
-
-pub fn add_server_info() -> AdHoc {
-    AdHoc::on_ignite("Adding Server Info", |rocket| async {
-        let server_agent = rocket.figment().extract_inner(SERVER_AGENT).unwrap_or(String::new());
-        let connector_name = rocket.figment().extract_inner(SERVER_CONNECTOR_NAME).unwrap_or(String::new());
-        let model_version = rocket.figment().extract_inner(SERVER_MODEL_VERSION).unwrap_or(String::new());
-        let info = ServerInfo::new(model_version, connector_name, server_agent);
-        rocket.manage(info)
-    })
-}
 
 pub fn add_signing_key() -> AdHoc {
     AdHoc::try_on_ignite("Adding Signing Key", |rocket| async {
@@ -43,7 +32,6 @@ fn rocket() -> Rocket<Build> {
 
     rocket::build()
         .attach(ProcessStoreConfigurator)
-        .attach(add_server_info())
         .attach(add_signing_key())
         .attach(ApiClientConfigurator::new(ApiClientEnum::Daps))
         .attach(ApiClientConfigurator::new(ApiClientEnum::Document))

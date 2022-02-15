@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use crate::model::ids::{InfoModelDateTime, InfoModelId, SecurityToken, MessageType};
 use core_lib::model::document::{Document, DocumentPart};
-use crate::model::ServerInfo;
 use crate::model::ids::InfoModelId::SimpleId;
 
 pub const DOC_TYPE: &'static str = "IDS_MESSAGE";
@@ -133,15 +132,6 @@ impl Default for IdsMessage {
 }
 
 impl IdsMessage {
-    pub fn new(server_info: &ServerInfo, id_type: &str) -> IdsMessage {
-        IdsMessage {
-            id: Some(autogen(id_type)),
-            model_version: server_info.im_version.to_string(),
-            issuer_connector: InfoModelId::new(server_info.connector.to_string()),
-            ..Default::default()
-        }
-    }
-
     pub fn processed(msg: IdsMessage) -> IdsMessage {
         let mut message = IdsMessage::clone(msg);
         message.id = Some(autogen(MESSAGE_PROC_NOTIFICATION_MESSAGE));
@@ -182,19 +172,6 @@ impl IdsMessage {
             payload: msg.payload.clone(),
             content_version: msg.content_version.clone(),
             payload_type: msg.payload.clone()
-        }
-    }
-
-    pub fn respond_to(msg: IdsMessage, server_info: &ServerInfo) -> IdsMessage{
-        IdsMessage {
-            model_version: server_info.im_version.to_string(),
-            issuer_connector: InfoModelId::new(server_info.connector.to_string()),
-            sender_agent: server_info.agent.to_string(),
-            correlation_message: msg.id.clone(),
-            recipient_connector: Some(vec!(msg.issuer_connector)),
-            recipient_agent: Some(vec!(SimpleId(msg.sender_agent))),
-            //TODO: security token, auth token
-            ..Default::default()
         }
     }
 

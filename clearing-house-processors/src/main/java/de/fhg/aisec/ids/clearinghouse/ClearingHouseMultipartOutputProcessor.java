@@ -47,9 +47,9 @@ import java.util.UUID;
 
 import static de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.*;
 
-public class ClearingHouseOutputProcessor implements Processor {
+public class ClearingHouseMultipartOutputProcessor implements Processor {
 
-  private final Logger LOG = LoggerFactory.getLogger(ClearingHouseOutputProcessor.class);
+  private final Logger LOG = LoggerFactory.getLogger(ClearingHouseMultipartOutputProcessor.class);
   private static final Serializer SERIALIZER = new Serializer();
 
   @Override
@@ -57,7 +57,6 @@ public class ClearingHouseOutputProcessor implements Processor {
     String boundary = UUID.randomUUID().toString();
     final var egetIn = exchange.getIn();
     final var typeHeader = egetIn.getHeader(TYPE_HEADER).toString();
-    final var idsHeader = egetIn.getHeader(IDS_HEADER) == null? "" : egetIn.getHeader(IDS_HEADER).toString();
     final var securityRequirements = new SecurityRequirements.Builder()
             .setRequiredSecurityLevel(SecurityProfile.TRUSTED)
             .build();
@@ -70,7 +69,7 @@ public class ClearingHouseOutputProcessor implements Processor {
     }
 
     final var statusCode = ((Integer) headers.get("CamelHttpResponseCode")).intValue();
-    final var original_request = (Message)exchange.getIn().getHeader(IDS_HEADER_COPY);
+    final var original_request = (Message)exchange.getIn().getHeader(IDS_HEADER);
 
     // Clean up the headers
     exchange.getIn().removeHeader(AUTH_HEADER);
@@ -78,7 +77,6 @@ public class ClearingHouseOutputProcessor implements Processor {
     exchange.getIn().removeHeader(PID_HEADER);
     exchange.getIn().removeHeader(SERVER);
     exchange.getIn().removeHeader(TYPE_HEADER);
-    exchange.getIn().removeHeader(IDS_HEADER_COPY);
 
     // preparation
     MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
@@ -90,19 +88,6 @@ public class ClearingHouseOutputProcessor implements Processor {
             ._tokenFormat_(TokenFormat.JWT)
             ._tokenValue_(new String(dapsDriver.getToken(), StandardCharsets.UTF_8))
             .build();
-
-    // handling IDS header
-    if (!idsHeader.isEmpty()) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("IDS-Header is not empty, using header from original message");
-      }
-
-    }
-    else {
-      if (LOG.isDebugEnabled()) {
-        LOG.warn("IDS-Header is empty");
-      }
-    }
 
     // creating IDS header for the response
     String responseHeader;

@@ -26,9 +26,11 @@ final class ClearingHouseConstants {
   static final String MULTIPART_HEADER = "header";
   static final String MULTIPART_PAYLOAD = "payload";
   static final String IDS_HEADER = "IDS-Header";
-  static final String IDS_HEADER_COPY = "IDS-Header-Copy";
+  static final String PROCESS_FAILED = "process_failed";
   static final String PID_HEADER = "pid";
   static final String TYPE_HEADER = "Content-Type";
+  static final String IDSCP2_PAYLOAD_HEADER = "Idscp2-payload";
+  static final String IDSCP2_PAYLOAD_TYPE_HEADER = "Idscp2-payload-type";
   static final String AUTH_HEADER = "Authorization";
   static final String TYPE_JSON = "application/json";
   static final String SERVER = "Server";

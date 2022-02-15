@@ -37,7 +37,7 @@ import java.nio.charset.StandardCharsets;
 
 import static de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.*;
 
-public class ClearingHouseParser<T extends Message> implements UploadContext {
+public class ClearingHouseParser implements UploadContext {
 
   private static final Logger LOG = LoggerFactory.getLogger(ClearingHouseParser.class);
   private static final Serializer SERIALIZER = new Serializer();
@@ -48,7 +48,7 @@ public class ClearingHouseParser<T extends Message> implements UploadContext {
   private String payloadContentType;
   private String token;
 
-  <T extends Message> ClearingHouseParser(final InputStream multipartInput, Class<T> clazz) throws FileUploadException, IOException {
+  ClearingHouseParser(final InputStream multipartInput) throws FileUploadException, IOException {
     this.multipartInput = multipartInput;
     multipartInput.mark(10240);
     try (BufferedReader reader =
@@ -65,7 +65,7 @@ public class ClearingHouseParser<T extends Message> implements UploadContext {
         if (MULTIPART_HEADER.equals(fieldName)) {
           header = SERIALIZER.deserialize(
                   new String(i.getInputStream().readAllBytes(), StandardCharsets.UTF_8),
-                  clazz
+                  Message.class
           );
           if (header.getProperties() != null) {
             LOG.debug("keyset size: {}", header.getProperties().keySet().size());
