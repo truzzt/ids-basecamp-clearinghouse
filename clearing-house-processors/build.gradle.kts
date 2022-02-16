@@ -1,8 +1,10 @@
 import org.yaml.snakeyaml.Yaml
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.FileInputStream
 import java.util.*
 
 plugins {
+    kotlin("jvm") version "1.6.10" apply true
     `java-library`
     `maven-publish`
 }
@@ -40,7 +42,7 @@ buildscript {
             }
         }   
     }
-    
+
     dependencies {
         classpath("org.yaml:snakeyaml:1.26")
     }
@@ -98,10 +100,16 @@ dependencies {
     testImplementation("junit", "junit", libraryVersions["junit4"])
 }
 
-tasks.compileJava {
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+}
+
+tasks.withType<JavaCompile> {
+    options.encoding = "UTF-8"
     sourceCompatibility = "11"
     targetCompatibility = "11"
-    options.encoding = "UTF-8"
 }
 
 tasks.jar {

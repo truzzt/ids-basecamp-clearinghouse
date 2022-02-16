@@ -17,17 +17,20 @@
     </camel:sslContextParameters>
 
     <!-- Beans -->
-    <bean id="outputProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseMultipartOutputProcessor" />
-    <bean id="inputProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseMultipartInputProcessor" />
+    <bean id="CHOutputProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseOutputProcessor" />
+    <bean id="MultipartOutputProcessor" class="de.fhg.aisec.ids.clearinghouse.MultipartOutputProcessor" />
+    <bean id="InfoModelParsingProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseInfomodelParsingProcessor" />
+    <bean id="TokenValidationProcessor" class="de.fhg.aisec.ids.clearinghouse.TokenValidationProcessor" />
     <bean id="idscp2Processor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseIdscp2InputProcessor" />
+    <bean id="MultipartInputProcessor" class="de.fhg.aisec.ids.camel.multipart.MultiPartInputProcessor" />
     <bean id="TypeExtractionProcessor" class="de.fhg.aisec.ids.camel.processors.IdsMessageTypeExtractionProcessor" />
+
 
     <!-- Routes -->
     <camelContext xmlns="http://camel.apache.org/schema/spring">
         <restConfiguration scheme="https" component="jetty" host="0.0.0.0" port="9999" bindingMode="off">
             <endpointProperty key="sslContextParameters" value="#ChSslContext"/>
         </restConfiguration>
-
         <rest id="CH_REST">
             <post uri="/messages/query/{pid}" id="CH_QUERY_PID">
                 <to uri="direct:multipart" />
@@ -42,11 +45,41 @@
                 <to uri="direct:multipart" />
             </post>
         </rest>
+
         <route id="CH_MULTIPART_ROUTE">
             <from uri="direct:multipart"/>
-            <process ref="inputProcessor" />
-            <to uri="http://clearing-house-api:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
-            <process ref="outputProcessor" />
+            <onException>
+                <exception>java.io.IOException</exception>
+                <exception>java.lang.SecurityException</exception>
+                <exception>java.lang.IllegalArgumentException</exception>
+                <handled>
+                    <constant>true</constant>
+                </handled>
+                <transform><simple>${exception.message}</simple></transform>
+                <log message="### Handle ${exception.class} ###"/>
+                <removeHeader name="idsMultipartHeader"/>
+                <removeHeader name="pid"/>
+                <choice>
+                    <when>
+                        <simple>${exception.class} == 'java.lang.SecurityException' || ${exception.class} == 'java.lang.IllegalArgumentException'</simple>
+                        <setHeader name="CamelHttpResponseCode"><simple>401</simple></setHeader>
+                    </when>
+                    <when>
+                        <simple>${exception.class} == 'java.io.IOException'</simple>
+                        <setHeader name="CamelHttpResponseCode"><simple>400</simple></setHeader>
+                    </when>
+                    <otherwise>
+                        <setHeader name="CamelHttpResponseCode"><simple>500</simple></setHeader>
+                        <transform><constant>Internal Server Error</constant></transform>
+                    </otherwise>
+                </choice>
+            </onException>
+            <process ref="MultipartInputProcessor" />
+            <process ref="InfoModelParsingProcessor" />
+            <process ref="TokenValidationProcessor" />
+            <to uri="http://host.docker.internal:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+            <process ref="CHOutputProcessor" />
+            <process ref="MultipartOutputProcessor" />
         </route>
     </camelContext>
 </beans>

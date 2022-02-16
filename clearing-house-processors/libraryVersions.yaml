@@ -3,15 +3,15 @@
 # Keep this file in sync to avoid wrong dependency information    #
 ###################################################################
 
-idscp2: "0.4.5"
-ktlint: "0.41.0"
+idscp2: "0.9.2"
+ktlint: "0.43.2"
 
 # Pinning
 okhttp: "4.9.1"
 
 # Kotlin library/compiler version
-kotlin: "1.5.20"
-kotlinxCoroutines: "1.4.3"
+kotlin: "1.6.10"
+kotlinxCoroutines: "1.5.2"
 # basically, the first requirement, all other libraries depend on this version
 karaf: "4.2.10"
 # Jetty version should fit bundled version in karaf
