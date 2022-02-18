@@ -72,12 +72,8 @@ class ClearingHouseInfomodelParsingProcessor : Processor {
 
             // prepare compound message for Clearing House Service API
             val converted = ClearingHouseMessage()
-            converted.setHeader(idsHeader)
-            converted.setPayloadType(headers[TYPE_HEADER] as String?)
-
-            exchange.message.let {
-                it.body
-            }
+            converted.header = idsHeader
+            converted.payloadType = headers[TYPE_HEADER] as String?
 
             when (converted.payloadType){
                 null -> {
@@ -85,7 +81,7 @@ class ClearingHouseInfomodelParsingProcessor : Processor {
                     converted.payload = ""
                 }
                 "text/plain", "application/json" -> {
-                    converted.setPayload(IOUtils.toByteArray(exchange.message.body as InputStream?).toString(Charset.defaultCharset()))
+                    converted.payload = IOUtils.toByteArray(exchange.message.body as InputStream?).toString(Charset.defaultCharset())
                 }
                 else -> {
                     converted.payloadType = "application/octet-stream"

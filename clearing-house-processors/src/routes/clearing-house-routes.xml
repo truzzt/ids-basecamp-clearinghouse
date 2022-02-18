@@ -77,7 +77,7 @@
             <process ref="MultipartInputProcessor" />
             <process ref="InfoModelParsingProcessor" />
             <process ref="TokenValidationProcessor" />
-            <to uri="http://host.docker.internal:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+            <to uri="http://clearing-house-api:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
             <process ref="CHOutputProcessor" />
             <process ref="MultipartOutputProcessor" />
         </route>
