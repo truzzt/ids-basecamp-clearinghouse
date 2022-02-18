@@ -84,12 +84,12 @@ The Clearing House Processors are written in Java for use in the Camel Component
 Besides those files that are specific for the configuration of the Clearing House Service API, the Trusted Connector requires other files for its configuration, e.g. a truststore and a keystore with appropriate key material. Please refer to the [Documentation](https://industrial-data-space.github.io/trusted-connector-documentation/) of the Trusted Connector for more information or check the [Examples](https://github.com/industrial-data-space/trusted-connector/tree/master/examples).
 
 #### Environment Variables
-The Clearing House Processors can override some standard configuration settings of the Trusted Connector using environment variables. If these variables are not set, the Clearing House Processors will use the standard values provided by the Trusted Connector:
+The Clearing House Processors can override some standard configuration settings of the Trusted Connector using environment variables. If these variables are not set, the Clearing House Processors will use the standard values provided by the Trusted Connector. Some of the variables are mandatory and have to be set:
 - `TC_DAPS_URL`: The url of the DAPS used by the Clearing House. The Trusted Connector uses `https://daps.aisec.fraunhofer.de/v2` as the default DAPS url.
 - `TC_KEYSTORE_PW`: The password of the key store mounted in the Trusted Connector. Defaults to `password`.
 - `TC_TRUSTSTORE_PW`: The password of the trust store mounted in the Trusted Connector. Defaults to `password`.
-- `TC_CH_ISSUER_CONNECTOR`: Issuer connector needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
-- `TC_CH_AGENT`: Server agent needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
+- `TC_CH_ISSUER_CONNECTOR`(mandatory): Issuer connector needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
+- `TC_CH_AGENT`(mandatory): Server agent needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
 
 
 #### Example Configuration (docker-compose)
