@@ -34,9 +34,6 @@ The Clearing House App is configured using the configuration file [`Rocket.toml`
 - `keyring_api_url`: Specifies the URL of the Keyring API
 - `document_api_url`: Specifies the URL of the Document API
 - `database_url`: Specifies the URL of the database to store process information. Currently only mongodb is supported so URL is supposed to be `mongodb://<host>:<port>`
-- `infomodel_version`: Specifies which Version of the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel) is used by the Clearing House. Currently: `4.0.0`
-- `connector_name`: Needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
-- `server_agent`: Needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
 - `clear_db`: `true` or `false` indicates if the database should be cleared when starting the Service API or not. If `true` a restart will wipe the database! Starting the Service API on a clean database will initialize the database.
 - `signing_key`: Location of the private key (DER format) used for signing the Receipts. Clearing House uses PS512 algorithm for signing.
 
@@ -91,6 +88,9 @@ The Clearing House Processors can override some standard configuration settings 
 - `TC_DAPS_URL`: The url of the DAPS used by the Clearing House. The Trusted Connector uses `https://daps.aisec.fraunhofer.de/v2` as the default DAPS url.
 - `TC_KEYSTORE_PW`: The password of the key store mounted in the Trusted Connector. Defaults to `password`.
 - `TC_TRUSTSTORE_PW`: The password of the trust store mounted in the Trusted Connector. Defaults to `password`.
+- `TC_CH_ISSUER_CONNECTOR`: Issuer connector needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
+- `TC_CH_AGENT`: Server agent needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
+
 
 #### Example Configuration (docker-compose)
 ```
@@ -104,7 +104,7 @@ tc-core:
         - ./data/trusted-connector/allow-all-flows.pl:/root/deploy/allow-all-flows.pl
         - ./data/trusted-connector/ch-ids.p12:/root/etc/keystore.p12
         - ./data/trusted-connector/truststore.p12:/root/etc/truststore.p12
-        - ./data/trusted-connector/clearing-house-processors-0.7.2.jar:/root/jars/clearing-house-processors.jar
+        - ./data/trusted-connector/clearing-house-processors-0.7.5.jar:/root/jars/clearing-house-processors.jar
         - ./data/trusted-connector/routes/clearing-house-routes.xml:/root/deploy/clearing-house-routes.xml
     environment:
         TC_DAPS_URL: https://<my-daps-url>
