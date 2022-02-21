@@ -61,11 +61,11 @@
                 <removeHeader name="pid"/>
                 <choice>
                     <when>
-                        <simple>${exception.class} == 'java.lang.SecurityException' || ${exception.class} == 'java.lang.IllegalArgumentException'</simple>
+                        <simple>${exception.class} == 'java.lang.SecurityException'</simple>
                         <setHeader name="CamelHttpResponseCode"><simple>401</simple></setHeader>
                     </when>
                     <when>
-                        <simple>${exception.class} == 'java.io.IOException'</simple>
+                        <simple>${exception.class} == 'java.io.IOException' || ${exception.class} == 'java.lang.IllegalArgumentException'</simple>
                         <setHeader name="CamelHttpResponseCode"><simple>400</simple></setHeader>
                     </when>
                     <otherwise>
@@ -81,5 +81,6 @@
             <process ref="CHOutputProcessor" />
             <process ref="MultipartOutputProcessor" />
         </route>
+        
     </camelContext>
 </beans>
