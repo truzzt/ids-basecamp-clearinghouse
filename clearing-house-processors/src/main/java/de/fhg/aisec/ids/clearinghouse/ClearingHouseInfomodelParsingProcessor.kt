@@ -70,18 +70,46 @@ class ClearingHouseInfomodelParsingProcessor : Processor {
                 throw IOException("Invalid InfoModel Message!")
             }
 
-            // prepare compound message for Clearing House Service API
+            // Parsing Content-Type and Charset
+            val contentTypeHeader = (headers[TYPE_HEADER] as String?)
+            val contentType : String
+            val charset: String
+            if (contentTypeHeader != null) {
+                val parts = contentTypeHeader.split(";")
+                when (parts.size){
+                    1 -> {
+                        contentType = parts[0]
+                        charset = Charset.defaultCharset().toString()
+                    }
+                    2 -> {
+                        contentType = parts[0]
+                        val charsetInput = parts[1].split("=")
+                        if (charsetInput != null && charsetInput.size == 2){
+                            charset = charsetInput[1]
+                            LOG.debug("Using Charset from Content-Type header: {}", charset)
+                        }
+                        else{
+                            charset = Charset.defaultCharset().toString()
+                        }
+                    }
+                    else -> {
+                        contentType = "text/plain"
+                        charset = Charset.defaultCharset().toString()
+                    }
+                }
+            }
+            else{
+                contentType = "application/octet-stream"
+                charset = Charset.defaultCharset().toString()
+            }
+
+            // Prepare compound message for Clearing House Service API
             val converted = ClearingHouseMessage()
             converted.header = idsHeader
-            converted.payloadType = headers[TYPE_HEADER] as String?
-
+            converted.payloadType = contentType
             when (converted.payloadType){
-                null -> {
-                    converted.payloadType = "text/plain"
-                    converted.payload = ""
-                }
-                "text/plain", "application/json" -> {
-                    converted.payload = IOUtils.toByteArray(exchange.message.body as InputStream?).toString(Charset.defaultCharset())
+                "text/plain", "application/json", "application/ld+json" -> {
+                    converted.payload = IOUtils.toByteArray(exchange.message.body as InputStream?).toString(Charset.forName(charset))
                 }
                 else -> {
                     converted.payloadType = "application/octet-stream"
@@ -89,9 +117,11 @@ class ClearingHouseInfomodelParsingProcessor : Processor {
                 }
             }
 
-            LOG.debug("payload: {}", converted.payload)
+            if (LOG.isTraceEnabled) {
+                LOG.trace("Received payload: {}", converted.payload)
+            }
 
-            // input validation: check that payload type of create pid message is application/json
+            // Input validation: check that payload type of create pid message is application/json
             if (converted.header is RequestMessage && converted.header !is QueryMessage) {
                 val expectedContentType = ContentType.create("application/json")
                 if (expectedContentType.mimeType != converted.payloadType) {
@@ -100,7 +130,7 @@ class ClearingHouseInfomodelParsingProcessor : Processor {
                 }
             }
 
-            // store ids header for response processor
+            // Store ids header for response processor
             exchange.setProperty(IDS_MESSAGE_HEADER, idsHeader)
 
             // Set Content-Type from payload part of compound message and populate body with new payload
