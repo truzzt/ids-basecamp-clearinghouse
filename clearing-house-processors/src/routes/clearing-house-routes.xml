@@ -21,10 +21,8 @@
     <bean id="MultipartOutputProcessor" class="de.fhg.aisec.ids.clearinghouse.MultipartOutputProcessor" />
     <bean id="InfoModelParsingProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseInfomodelParsingProcessor" />
     <bean id="TokenValidationProcessor" class="de.fhg.aisec.ids.clearinghouse.TokenValidationProcessor" />
-    <bean id="idscp2Processor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseIdscp2InputProcessor" />
     <bean id="MultipartInputProcessor" class="de.fhg.aisec.ids.camel.multipart.MultiPartInputProcessor" />
     <bean id="TypeExtractionProcessor" class="de.fhg.aisec.ids.camel.processors.IdsMessageTypeExtractionProcessor" />
-
 
     <!-- Routes -->
     <camelContext xmlns="http://camel.apache.org/schema/spring">
@@ -81,6 +79,5 @@
             <process ref="CHOutputProcessor" />
             <process ref="MultipartOutputProcessor" />
         </route>
-        
     </camelContext>
 </beans>
