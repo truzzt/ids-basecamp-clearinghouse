@@ -23,75 +23,71 @@ import de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.*
 import de.fraunhofer.iais.eis.Message
 import de.fraunhofer.iais.eis.QueryMessage
 import de.fraunhofer.iais.eis.RequestMessage
-import de.fraunhofer.iais.eis.ids.jsonld.Serializer
 import org.apache.camel.Exchange
 import org.apache.camel.Processor
 import org.apache.http.entity.ContentType
 import org.slf4j.LoggerFactory
-import java.io.IOException
-import java.io.InputStream
 
-/**
- * This processor parses the previously extracted IDS header and creates an InfoModel class.
- * It also checks that the payload type matches the expected payload type and prepares
- * the body of the message for the Clearing House Service API
- */
-class ClearingHouseInfomodelParsingProcessor : Processor {
+class ClearingHouseIdscp2InputProcessor : Processor {
     override fun process(exchange: Exchange) {
-       processMultipartInput(exchange)
+        processIdsc2Input(exchange)
     }
 
     companion object {
-        val LOG = LoggerFactory.getLogger(ClearingHouseInfomodelParsingProcessor::class.java)
-        private val SERIALIZER = Serializer()
+        val LOG = LoggerFactory.getLogger(ClearingHouseIdscp2InputProcessor::class.java)
 
-        fun processMultipartInput(exchange: Exchange){
+        fun processIdsc2Input(exchange: Exchange) {
             val egetIn = exchange.getIn()
             val headers = egetIn.headers
 
             if (LOG.isTraceEnabled) {
-                LOG.trace("[IN] ${ClearingHouseInfomodelParsingProcessor::class.java.simpleName}")
+                LOG.trace("[IN] ${ClearingHouseIdscp2InputProcessor::class.java.simpleName}")
                 for (header in headers.keys) {
                     LOG.trace("Found header '{}':'{}'", header, headers[header])
                 }
             }
 
-            exchange.getIn().setHeader(IDS_PROTOCOL, PROTO_MULTIPART)
-
-            // parse IDS header
-            var idsHeader: Message?
-            try {
-                 idsHeader = SERIALIZER.deserialize(headers[CAMEL_MULTIPART_HEADER] as String?,
-                    Message::class.java)
-            }
-            catch (exception: IOException){
-                LOG.warn("Invalid Infomodel Message!")
-                throw IOException("Invalid InfoModel Message!")
-            }
+            // First step: store ids header for response processor so it's ready even if there's an exception later on
+            val idsHeader = exchange.message.getHeader(IDSCP2_IDS_HEADER) as Message
+            exchange.setProperty(IDS_MESSAGE_HEADER, idsHeader)
+            exchange.getIn().setHeader(IDS_PROTOCOL, PROTO_IDSCP2)
 
             // Prepare compound message for Clearing House Service API
             val contentTypeHeader = (headers[TYPE_HEADER] as String?)
-            val converted = ClearingHouseMessage(idsHeader, contentTypeHeader, (exchange.message.body as InputStream).readBytes())
+            val converted = ClearingHouseMessage(idsHeader, contentTypeHeader, exchange.message.body as ByteArray)
 
-            if (LOG.isTraceEnabled) {
-                LOG.trace("Received payload: {}", converted.payload)
+            if (ClearingHouseInfomodelParsingProcessor.LOG.isTraceEnabled) {
+                ClearingHouseInfomodelParsingProcessor.LOG.trace("Received payload: {}", converted.payload)
             }
 
             // Input validation: check that payload type of create pid message is application/json
             if (converted.header is RequestMessage && converted.header !is QueryMessage) {
                 val expectedContentType = ContentType.create("application/json")
-                if (converted.payload != null && converted.payload!!.isNotEmpty() && expectedContentType.mimeType != converted.payloadType) {
-                    LOG.warn("Expected application/json, got {}", converted.payloadType)
+                if (expectedContentType.mimeType != converted.payloadType) {
+                    ClearingHouseInfomodelParsingProcessor.LOG.warn("Expected application/json, got {}", converted.payloadType)
                     throw IllegalArgumentException("Expected content-type application/json")
                 }
             }
+            // Input validation: check if there's a document id for query
+            if (converted.header is QueryMessage){
+                if (headers.contains(IDSCP_ID_HEADER)){
+                    val queryPath = (headers[CAMEL_HTTP_PATH] as String) + "/" + (headers[IDSCP_ID_HEADER] as String)
+                    exchange.getIn().setHeader(CAMEL_HTTP_PATH, queryPath)
+                }
+            }
 
-            // Store ids header for response processor
-            exchange.setProperty(IDS_MESSAGE_HEADER, idsHeader)
+            // store ids header for response processor and clean up idscp2 specific header
+            exchange.getIn().removeHeader(IDSCP2_IDS_HEADER)
+            exchange.getIn().removeHeader(IDSCP_ID_HEADER)
+            exchange.getIn().removeHeader(IDSCP_PID_HEADER)
 
-            // Set Content-Type from payload part of compound message and populate body with new payload
+            // Remove current Content-Type header before setting the new one
+            exchange.getIn().removeHeader(TYPE_HEADER)
+
+            // Copy Content-Type from payload part populate body with new payload
             exchange.getIn().setHeader(TYPE_HEADER, TYPE_JSON)
             exchange.getIn().body = converted.toJson()
+
         }
     }
 }

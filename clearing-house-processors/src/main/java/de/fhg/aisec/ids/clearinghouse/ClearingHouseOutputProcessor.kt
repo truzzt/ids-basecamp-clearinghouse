@@ -70,9 +70,8 @@ class ClearingHouseOutputProcessor : Processor {
 
             val statusCode = (headers[CAMEL_HTTP_STATUS_CODE_HEADER] as Int?)!!.toInt()
             // creating IDS header for the response
-            val responseHeader = when (statusCode) {
-                200 -> SERIALIZER.serialize(
-                    ResultMessageBuilder()
+            val responseMessage = when (statusCode) {
+                200 -> ResultMessageBuilder()
                         ._issued_(
                             DatatypeFactory.newInstance().newXMLGregorianCalendar(LocalDateTime.now().toString())
                         )
@@ -83,9 +82,7 @@ class ClearingHouseOutputProcessor : Processor {
                         ._recipientAgent_(listOf(originalRequest.senderAgent))
                         ._recipientConnector_(listOf(originalRequest.issuerConnector))
                         ._securityToken_(dapsToken).build()
-                )
-                201 -> SERIALIZER.serialize(
-                    MessageProcessedNotificationMessageBuilder()
+                201 -> MessageProcessedNotificationMessageBuilder()
                         ._issued_(
                             DatatypeFactory.newInstance().newXMLGregorianCalendar(LocalDateTime.now().toString())
                         )
@@ -96,9 +93,7 @@ class ClearingHouseOutputProcessor : Processor {
                         ._recipientAgent_(listOf(originalRequest.senderAgent))
                         ._recipientConnector_(listOf(originalRequest.issuerConnector))
                         ._securityToken_(dapsToken).build()
-                )
-                else -> SERIALIZER.serialize(
-                    RejectionMessageBuilder()
+                else -> RejectionMessageBuilder()
                         ._issued_(
                             DatatypeFactory.newInstance().newXMLGregorianCalendar(LocalDateTime.now().toString())
                         )
@@ -109,10 +104,16 @@ class ClearingHouseOutputProcessor : Processor {
                         ._recipientAgent_(listOf(originalRequest.senderAgent))
                         ._recipientConnector_(listOf(originalRequest.issuerConnector))
                         ._securityToken_(dapsToken).build()
-                )
             }
-            // set the IDS header for the multipart processor
-            egetIn.setHeader(CAMEL_MULTIPART_HEADER, responseHeader)
+
+            // set the IDS header
+            when (headers[IDS_PROTOCOL] as String){
+                PROTO_IDSCP2 -> egetIn.setHeader(IDSCP2_IDS_HEADER, responseMessage)
+                PROTO_MULTIPART -> egetIn.setHeader(CAMEL_MULTIPART_HEADER, SERIALIZER.serialize(responseMessage))
+            }
+
+            // clean up headers
+            egetIn.removeHeader(IDS_PROTOCOL)
         }
     }
 }

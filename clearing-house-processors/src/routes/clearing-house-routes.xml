@@ -21,6 +21,8 @@
     <bean id="MultipartOutputProcessor" class="de.fhg.aisec.ids.clearinghouse.MultipartOutputProcessor" />
     <bean id="InfoModelParsingProcessor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseInfomodelParsingProcessor" />
     <bean id="TokenValidationProcessor" class="de.fhg.aisec.ids.clearinghouse.TokenValidationProcessor" />
+    <bean id="idscp2Processor" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseIdscp2InputProcessor" />
+    <bean id="Idscp2ErrorHandler" class="de.fhg.aisec.ids.clearinghouse.ClearingHouseExceptionProcessor" />
     <bean id="MultipartInputProcessor" class="de.fhg.aisec.ids.camel.multipart.MultiPartInputProcessor" />
     <bean id="TypeExtractionProcessor" class="de.fhg.aisec.ids.camel.processors.IdsMessageTypeExtractionProcessor" />
 
@@ -59,11 +61,11 @@
                 <removeHeader name="pid"/>
                 <choice>
                     <when>
-                        <simple>${exception.class} == 'java.lang.SecurityException'</simple>
+                        <simple>${exception.class} == 'java.lang.SecurityException' || ${exception.class} == 'java.lang.IllegalArgumentException'</simple>
                         <setHeader name="CamelHttpResponseCode"><simple>401</simple></setHeader>
                     </when>
                     <when>
-                        <simple>${exception.class} == 'java.io.IOException' || ${exception.class} == 'java.lang.IllegalArgumentException'</simple>
+                        <simple>${exception.class} == 'java.io.IOException'</simple>
                         <setHeader name="CamelHttpResponseCode"><simple>400</simple></setHeader>
                     </when>
                     <otherwise>
@@ -78,6 +80,59 @@
             <to uri="http://clearing-house-api:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
             <process ref="CHOutputProcessor" />
             <process ref="MultipartOutputProcessor" />
+        </route>
+        <route id="CH_IDSCP2_ROUTE">
+            <from uri="idscp2server://0.0.0.0:29292?sslContextParameters=#ChSslContext&amp;useIdsMessages=true"/>
+            <onException>
+                <exception>java.io.IOException</exception>
+                <exception>java.lang.SecurityException</exception>
+                <exception>java.lang.IllegalArgumentException</exception>
+                <handled>
+                    <constant>true</constant>
+                </handled>
+                <log message="### Handle ${exception.class} ###"/>
+                <removeHeader name="idsMultipartHeader"/>
+                <removeHeader name="pid"/>
+                <process ref="Idscp2ErrorHandler"/>
+            </onException>
+            <process ref="TypeExtractionProcessor"/>
+            <choice>
+                <when>
+                    <simple>${exchangeProperty.ids-type} == 'RequestMessage'</simple>
+                    <log message="### Handle RequestMessage ###"/>
+                    <setHeader name="CamelHttpMethod"><simple>POST</simple></setHeader>
+                    <setHeader name="CamelHttpPath"><simple>/process/${headers.ch-ids-pid}</simple></setHeader>
+                    <process ref="idscp2Processor"/>
+                    <process ref="TokenValidationProcessor" />
+                    <to uri="http://host.docker.internal:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+                    <process ref="CHOutputProcessor" />
+                </when>
+                <when>
+                    <simple>${exchangeProperty.ids-type} == 'QueryMessage'</simple>
+                    <log message="### Handle QueryMessage ###"/>
+                    <setHeader name="CamelHttpMethod"><simple>POST</simple></setHeader>
+                    <setHeader name="CamelHttpPath"><simple>/messages/query/${headers.ch-ids-pid}</simple></setHeader>
+                    <process ref="idscp2Processor"/>
+                    <process ref="TokenValidationProcessor" />
+                    <to uri="http://host.docker.internal:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+                    <process ref="CHOutputProcessor" />
+                </when>
+                <when>
+                    <simple>${exchangeProperty.ids-type} == 'LogMessage'</simple>
+                    <log message="### Handle LogMessage ###"/>
+                    <setHeader name="CamelHttpMethod"><simple>POST</simple></setHeader>
+                    <setHeader name="CamelHttpPath"><simple>/messages/log/${headers.ch-ids-pid}</simple></setHeader>
+                    <process ref="idscp2Processor"/>
+                    <process ref="TokenValidationProcessor" />
+                    <to uri="http://host.docker.internal:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+                    <process ref="CHOutputProcessor" />
+                </when>
+                <otherwise>
+                    <log loggingLevel="ERROR" message="### Server received unexpected message (otherwise branch):\n${body}\n### Header: ###\n${headers[idscp2-header]}"/>
+                    <removeHeader name="idscp2-header" />
+                    <setBody><simple>${null}</simple></setBody>
+                </otherwise>
+            </choice>
         </route>
     </camelContext>
 </beans>
