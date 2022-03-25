@@ -9,7 +9,7 @@ edition = "2018"
 
 [dependencies]
 biscuit = { git = "https://github.com/lawliet89/biscuit", branch = "master" }
-core-lib = { git = "https://github.com/Fraunhofer-AISEC/ids-clearing-house-core.git" }
+core-lib = { git = "https://github.com/Fraunhofer-AISEC/ids-clearing-house-core.git", tag = "v0.7.5" }
 chrono = { version = "0.4", features = ["serde"] }
 error-chain = "0.12.4"
 fern = "0.5"
