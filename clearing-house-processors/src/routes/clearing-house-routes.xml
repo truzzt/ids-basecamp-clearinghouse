@@ -104,7 +104,7 @@
                     <setHeader name="CamelHttpPath"><simple>/process/${headers.ch-ids-pid}</simple></setHeader>
                     <process ref="idscp2Processor"/>
                     <process ref="TokenValidationProcessor" />
-                    <to uri="http://host.docker.internal:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+                    <to uri="http://clearing-house-api:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
                     <process ref="CHOutputProcessor" />
                 </when>
                 <when>
@@ -114,7 +114,7 @@
                     <setHeader name="CamelHttpPath"><simple>/messages/query/${headers.ch-ids-pid}</simple></setHeader>
                     <process ref="idscp2Processor"/>
                     <process ref="TokenValidationProcessor" />
-                    <to uri="http://host.docker.internal:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+                    <to uri="http://clearing-house-api:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
                     <process ref="CHOutputProcessor" />
                 </when>
                 <when>
@@ -124,7 +124,7 @@
                     <setHeader name="CamelHttpPath"><simple>/messages/log/${headers.ch-ids-pid}</simple></setHeader>
                     <process ref="idscp2Processor"/>
                     <process ref="TokenValidationProcessor" />
-                    <to uri="http://host.docker.internal:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+                    <to uri="http://clearing-house-api:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
                     <process ref="CHOutputProcessor" />
                 </when>
                 <otherwise>
