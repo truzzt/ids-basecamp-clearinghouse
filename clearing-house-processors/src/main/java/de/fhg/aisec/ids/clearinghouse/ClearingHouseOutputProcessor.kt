@@ -108,7 +108,16 @@ class ClearingHouseOutputProcessor : Processor {
 
             // set the IDS header
             when (headers[IDS_PROTOCOL] as String){
-                PROTO_IDSCP2 -> egetIn.setHeader(IDSCP2_IDS_HEADER, responseMessage)
+                PROTO_IDSCP2 -> {
+                    egetIn.setHeader(IDSCP2_IDS_HEADER, responseMessage)
+                    when(statusCode){
+                        400 -> egetIn.body = "Bad Request"
+                        401 -> egetIn.body = "Unauthorized"
+                        403 -> egetIn.body = "Forbidden"
+                        404 -> egetIn.body = "Not Found"
+                        500 -> egetIn.body = "Internal Server Error"
+                    }
+                }
                 PROTO_MULTIPART -> egetIn.setHeader(CAMEL_MULTIPART_HEADER, SERIALIZER.serialize(responseMessage))
             }
 

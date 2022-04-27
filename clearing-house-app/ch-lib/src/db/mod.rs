@@ -180,11 +180,15 @@ impl ProcessStore {
         return match self.get_process(&pid).await{
             Ok(Some(process)) => {
                 let authorized = process.owners.iter().any(|o| {
-                    debug!("found owner {}", o);
+                    trace!("found owner {}", o);
                     user.eq(o)
                 });
                 Ok(authorized)
             }
+            Ok(None) => {
+                trace!("didn't find process");
+                Ok(false)
+            },
             _ => {
                 Err(format!("User '{}' could not be authorized", &user).into())
             }

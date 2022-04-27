@@ -4,7 +4,8 @@ import java.io.FileInputStream
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "1.6.10" apply true
+    kotlin("jvm") version "1.6.20" apply true
+    kotlin("plugin.serialization") version "1.6.20"
     `java-library`
     `maven-publish`
 }
@@ -15,6 +16,29 @@ val fis = FileInputStream("../clearing-house-app/clearing-house-api/Cargo.toml")
 val props = Properties()
 props.load(fis)
 version = props.getProperty("version").removeSurrounding("\"")
+
+sourceSets{
+    create("intTest"){
+    }
+}
+
+val intTestImplementation by configurations.getting {
+    extendsFrom(configurations.testImplementation.get())
+}
+
+configurations["intTestRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
+
+val integrationTest = task<Test>("integrationTest") {
+    testLogging.showStandardStreams = true
+    useJUnitPlatform()
+
+    description = "Runs integration tests."
+    group = "verification"
+
+    testClassesDirs = sourceSets["intTest"].output.classesDirs
+    classpath = sourceSets["intTest"].runtimeClasspath
+    shouldRunAfter("test")
+}
 
 tasks.register("printChVersion") {
 
@@ -97,7 +121,11 @@ dependencies {
     implementation("org.apache.httpcomponents", "httpmime", libraryVersions["httpclient"])
     implementation("commons-fileupload", "commons-fileupload", libraryVersions["commonsFileUpload"])
 
-    testImplementation("junit", "junit", libraryVersions["junit4"])
+    testApi("org.slf4j", "slf4j-simple", libraryVersions["slf4j"])
+    testImplementation("org.junit.jupiter", "junit-jupiter", libraryVersions["junit5"])
+    testImplementation("com.squareup.okhttp3", "okhttp", libraryVersions["okhttp"])
+    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlinx", "kotlinx-serialization-json", "1.3.2")
 }
 
 tasks.withType<KotlinCompile> {

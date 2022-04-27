@@ -26,6 +26,7 @@ use rocket::fairing::AdHoc;
 use std::convert::TryFrom;
 use core_lib::model::SortingOrder;
 use core_lib::model::SortingOrder::Ascending;
+use rocket::form::validate::Contains;
 
 #[post( "/<pid>", format = "json", data = "<message>")]
 async fn log(
@@ -43,6 +44,22 @@ async fn log(
     m.payload_type = msg.payload_type;
     m.pid = Some(pid.clone());
 
+    // validate that there is a payload
+    if m.payload.is_none() || (m.payload.is_some() && m.payload.as_ref().unwrap().trim().is_empty()){
+        error!("Trying to log an empty payload!");
+        return ApiResponse::BadRequest(String::from("No payload received for logging!"))
+    }
+
+    // get credentials for user [this should not happen, the connector should make sure of it]
+    let user;
+    match getConnectorIdentifier(&apikey){
+        None => {
+            // cannot authenticate user without credentials
+            return ApiResponse::Unauthorized(String::from("Invalid user!"));
+        },
+        Some(u) => user = u
+    };
+
     // filter out calls for default process id and call application logic
     match DEFAULT_PROCESS_ID.eq(pid.as_str()){
         true => {
@@ -50,73 +67,43 @@ async fn log(
             ApiResponse::BadRequest(String::from("Document already exists"))
         },
         false => {
-            // track if an error occurs
-            let mut error = String::new();
-            let mut unauth = false;
-            // validate that there is a payload
-            if m.payload.is_none(){
-                error!("Trying to log an empty payload!");
-                error = String::from("No payload received for logging");
-            }
+            // convenience: if process does not exist, we create it but only if no error occurred before
+            match db.get_process(&pid).await {
+                Ok(Some(_p)) => {
+                    debug!("Requested pid '{}' exists. Nothing to create.", &pid);
+                }
+                Ok(None) => {
+                    info!("Requested pid '{}' does not exist. Creating...", &pid);
+                    // create a new process
+                    let new_process = Process::new(pid.clone(), vec!(user.clone()));
 
-            // prepare credentials for authorization check
-            let user = getConnectorIdentifier(&apikey);
-            if user.is_none() {
-                // cannot authenticate user without credentials
-                unauth = true;
-            }
-            else{
-                // convenience: if process does not exist, we create it but only if no error occurred before
-                if error.is_empty() {
-                    match db.get_process(&pid).await {
-                        Ok(Some(_p)) => {
-                            debug!("Requested pid '{}' exists. Nothing to create.", &pid);
-                        }
-                        Ok(None) => {
-                            info!("Requested pid '{}' does not exist. Creating...", &pid);
-                            // create a new process
-                            let new_process = Process::new(pid.clone(), vec!(user.as_ref().unwrap().clone()));
-
-                            if db.store_process(new_process).await.is_err() {
-                                error!("Error while creating process '{}'", &pid);
-                                error = String::from("Error while creating process");
-                            }
-                        }
-                        Err(_) => {
-                            error!("Error while getting process '{}'", &pid);
-                            error = String::from("Error while getting process");
-                        }
+                    if db.store_process(new_process).await.is_err() {
+                        error!("Error while creating process '{}'", &pid);
+                        return ApiResponse::InternalError(String::from("Error while creating process"))
                     }
                 }
-
-                // now check if user is authorized to write to pid
-                match db.is_authorized(&user.as_ref().unwrap(), &pid).await {
-                    Ok(true) => info!("User authorized."),
-                    Ok(false) => {
-                        warn!("User is not authorized to write to pid '{}'", &pid);
-                        error = String::from("User not authorized");
-                        unauth = true;
-                    }
-                    Err(_) => {
-                        error!("Error while checking authorization of user '{}' for '{}'", user.as_ref().unwrap(), &pid);
-                        error = String::from("Error during authorization");
-                    }
+                Err(_) => {
+                    error!("Error while getting process '{}'", &pid);
+                    return ApiResponse::InternalError(String::from("Error while getting process"))
                 }
             }
 
-            // if previously no error occured, log message
-            if error.is_empty(){
-                debug!("logging message for pid {}", &pid);
-                log_message(apikey, db, user.unwrap(), doc_api, key_path.inner().as_str(), m.clone()).await
-            }
-            else{
-                if unauth{
-                    ApiResponse::Unauthorized(String::from("User not authorized."))
+            // now check if user is authorized to write to pid
+            match db.is_authorized(&user, &pid).await {
+                Ok(true) => info!("User authorized."),
+                Ok(false) => {
+                    warn!("User is not authorized to write to pid '{}'", &pid);
+                    warn!("This is the forbidden branch");
+                    return ApiResponse::Forbidden(String::from("User not authorized!"))
                 }
-                else{
-                    ApiResponse::InternalError(error)
+                Err(_) => {
+                    error!("Error while checking authorization of user '{}' for '{}'", &user, &pid);
+                    return ApiResponse::InternalError(String::from("Error during authorization"))
                 }
             }
+
+            debug!("logging message for pid {}", &pid);
+            log_message(apikey, db, user, doc_api, key_path.inner().as_str(), m.clone()).await
         }
     }
 }
@@ -133,14 +120,46 @@ async fn create_process(
     m.payload = msg.payload;
     m.payload_type = msg.payload_type;
 
-    // validate payload (happens mostly in camel)
+    // get credentials for user [this should not happen, the connector should make sure of it]
+    let user;
+    match getConnectorIdentifier(&apikey){
+        None => {
+            // cannot authenticate user without credentials
+            return ApiResponse::Unauthorized(String::from("Invalid user!"))
+        },
+        Some(u) => user = u
+    };
+
+    // validate payload
+    let mut owners = vec!(user.clone());
     let payload = m.payload.clone().unwrap_or(String::new());
+    if !payload.is_empty() {
+        trace!("OwnerList: '{:#?}'", &payload);
+        match serde_json::from_str::<OwnerList>(&payload){
+            Ok(owner_list) => {
+                for o in owner_list.owners{
+                    if !owners.contains(&o){
+                        owners.push(o);
+                    }
+                }
+            },
+            Err(e) => {
+                error!("Error while creating process '{}': {}", &pid, e);
+                return ApiResponse::BadRequest(String::from("Invalid owner list!"))
+            }
+        };
+    };
 
     // check if the pid already exists
     match db.get_process(&pid).await{
         Ok(Some(p)) => {
             warn!("Requested pid '{}' already exists.", &p.id);
-            ApiResponse::BadRequest(String::from("Process already exists"))
+            if !p.owners.contains(user) {
+                ApiResponse::Forbidden(String::from("User not authorized!"))
+            }
+            else {
+                ApiResponse::BadRequest(String::from("Process already exists!"))
+            }
         }
         _ => {
             // filter out calls for default process id
@@ -150,56 +169,19 @@ async fn create_process(
                     ApiResponse::BadRequest(String::from("Document already exists"))
                 },
                 false => {
-                    // prepare credentials for authorization check
-                    match getConnectorIdentifier(&apikey) {
-                        None => {
-                            // No credentials, so we can't identify the owner later.
-                            error!("Cannot create pid without user credentials");
-                            ApiResponse::BadRequest(String::from("Cannot create pid without user credentials"))
-                        },
-                        Some(user) => {
-                            // track if an error occurs
-                            let mut error = String::new();
-                            let mut owners = vec!(user);
-                            // check list of owners and add them if they exist
-                            if !payload.is_empty() {
-                                debug!("OwnerList: '{:#?}'", &payload);
-                                match serde_json::from_str::<OwnerList>(&payload){
-                                    Ok(owner_list) => {
-                                        for o in owner_list.owners{
-                                            if !owners.contains(&o){
-                                                owners.push(o);
-                                            }
-                                        }
-                                    },
-                                    Err(e) => {
-                                        error!("Error while creating process '{}': {}", &pid, e);
-                                        error = String::from("Error while creating process");
-                                    }
-                                };
+                    info!("Requested pid '{}' will have {} owners", &pid, owners.len());
 
-                            }
-                            info!("Requested pid '{}' will have {} owners", &pid, owners.len());
+                    // create process
+                    info!("Requested pid '{}' does not exist. Creating...", &pid);
+                    let new_process = Process::new(pid.clone(), owners);
 
-                            // if previously no error occured, create a new process and store it
-                            if error.is_empty(){
-                                // create process
-                                info!("Requested pid '{}' does not exist. Creating...", &pid);
-                                let new_process = Process::new(pid.clone(), owners);
-
-                                match db.store_process(new_process).await{
-                                    Ok(_) => {
-                                        ApiResponse::SuccessCreate(json!(pid.clone()))
-                                    }
-                                    Err(e) => {
-                                        error!("Error while creating process '{}': {}", &pid, e);
-                                        ApiResponse::InternalError(String::from("Error while creating process"))
-                                    }
-                                }
-                            }
-                            else{
-                                ApiResponse::BadRequest(error)
-                            }
+                    match db.store_process(new_process).await{
+                        Ok(_) => {
+                            ApiResponse::SuccessCreate(json!(pid.clone()))
+                        }
+                        Err(e) => {
+                            error!("Error while creating process '{}': {}", &pid, e);
+                            ApiResponse::InternalError(String::from("Error while creating process"))
                         }
                     }
                 }
@@ -286,23 +268,38 @@ async fn query_pid(
 ) -> ApiResponse {
     debug!("page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
 
-    let mut authorized = false;
+    // get credentials for user [this should not happen, the connector should make sure of it]
+    let user;
+    match getConnectorIdentifier(&apikey){
+        None => {
+            // cannot authenticate user without credentials
+            return ApiResponse::Unauthorized(String::from("Invalid user!"))
+        },
+        Some(u) => user = u
+    };
 
-    // prepare credentials for authorization check
-    let user = getConnectorIdentifier(&apikey);
-    if user.is_some() {
-        // now check if user is authorized to read infos in pid
-        match db.is_authorized(user.as_ref().unwrap(), &pid).await {
-            Ok(true) => {
-                info!("User authorized.");
-                authorized = true;
-            },
-            Ok(false) => {
-                warn!("User is not authorized to write to pid '{}'", &pid);
-            }
-            Err(_) => {
-                error!("Error while checking authorization of user '{}' for '{}'", &user.unwrap(), &pid);
-            }
+    // check if process exists
+    match db.exists_process(&pid).await {
+        Ok(true) => info!("User authorized."),
+        Ok(false) => return ApiResponse::NotFound(String::from("Process does not exist!")),
+        Err(e) => {
+            error!("Error while checking process '{}' for user '{}'", &pid, &user);
+            return ApiResponse::InternalError(String::from("Cannot authorize user!"))
+        }
+    };
+
+    // now check if user is authorized to read infos in pid
+    match db.is_authorized(&user, &pid).await {
+        Ok(true) => {
+            info!("User authorized.");
+        },
+        Ok(false) => {
+            warn!("User is not authorized to write to pid '{}'", &pid);
+            return ApiResponse::Forbidden(String::from("User not authorized!"))
+        }
+        Err(_) => {
+            error!("Error while checking authorization of user '{}' for '{}'", &user, &pid);
+            return ApiResponse::InternalError(String::from("Cannot authorize user!"))
         }
     }
 
@@ -342,71 +339,71 @@ async fn query_pid(
         None => Ascending
     };
 
-    let api_response =
-        if !authorized {
-            ApiResponse::Unauthorized(String::from("User not authorized."))
-        } else {
-            match doc_api.get_documents_for_pid_paginated(&apikey.raw, &pid, sanitized_page, sanitized_size, sanitized_sort) {
-                Ok(docs) => {
-                    let messages: Vec<IdsMessage> = docs.iter().map(|d| IdsMessage::from(d.clone())).collect();
-                    ApiResponse::SuccessOk(json!(messages))
-                },
-                Err(e) => {
-                    error!("Error while retrieving message: {:?}", e);
-                    ApiResponse::InternalError(format!("Error while retrieving messages for pid {}!", &pid))
-                }
-            }
-        };
-
-    return api_response;
+    match doc_api.get_documents_for_pid_paginated(&apikey.raw, &pid, sanitized_page, sanitized_size, sanitized_sort) {
+        Ok(docs) => {
+            let messages: Vec<IdsMessage> = docs.iter().map(|d| IdsMessage::from(d.clone())).collect();
+            ApiResponse::SuccessOk(json!(messages))
+        },
+        Err(e) => {
+            error!("Error while retrieving message: {:?}", e);
+            ApiResponse::InternalError(format!("Error while retrieving messages for pid {}!", &pid))
+        }
+    }
 }
 
 #[post("/<pid>/<id>", format = "json", data = "<message>")]
 async fn query_id(apikey: ApiKey<IdsClaims, Empty>, db: &State<ProcessStore>, doc_api: &State<DocumentApiClient>, pid: String, id: String, message: Json<ClearingHouseMessage>) -> ApiResponse {
 
-    let mut authorized = false;
+    // get credentials for user [this should not happen, the connector should make sure of it]
+    let user;
+    match getConnectorIdentifier(&apikey){
+        None => {
+            // cannot authenticate user without credentials
+            return ApiResponse::Unauthorized(String::from("Invalid user!"))
+        },
+        Some(u) => user = u
+    };
 
-    // prepare credentials for authorization check
-    let user = getConnectorIdentifier(&apikey);
-    if user.is_some(){
-        // now check if user is authorized to read infos in pid
-        match db.is_authorized(&user.as_ref().unwrap(), &pid).await {
-            Ok(true) => {
-                info!("User authorized.");
-                authorized = true;
-            },
-            Ok(false) => {
-                warn!("User is not authorized to write to pid '{}'", &pid);
-            }
-            Err(_) => {
-                error!("Error while checking authorization of user '{}' for '{}'", &user.unwrap(), &pid);
-            }
+    // check if process exists
+    match db.exists_process(&pid).await {
+        Ok(true) => info!("User authorized."),
+        Ok(false) => return ApiResponse::NotFound(String::from("Process does not exist!")),
+        Err(e) => {
+            error!("Error while checking process '{}' for user '{}'", &pid, &user);
+            return ApiResponse::InternalError(String::from("Cannot authorize user!"))
+        }
+    };
+
+    // now check if user is authorized to read infos in pid
+    match db.is_authorized(&user, &pid).await {
+        Ok(true) => {
+            info!("User authorized.");
+        },
+        Ok(false) => {
+            warn!("User is not authorized to write to pid '{}'", &pid);
+            return ApiResponse::Forbidden(String::from("User not authorized!"))
+        }
+        Err(_) => {
+            error!("Error while checking authorization of user '{}' for '{}'", &user, &pid);
+            return ApiResponse::InternalError(String::from("Cannot authorize user!"))
         }
     }
 
-    let api_response =
-        if !authorized {
-            ApiResponse::Unauthorized(String::from("User not authorized."))
+    match doc_api.get_document(&apikey.raw, &pid, &id) {
+        Ok(Some(doc)) => {
+            // transform document to IDS message
+            let queried_message = IdsMessage::from(doc);
+            ApiResponse::SuccessOk(json!(queried_message))
+        },
+        Ok(None) => {
+            debug!("Queried a non-existing document: {}", &id);
+            ApiResponse::NotFound(format!("No message found with id {}!", &id))
+        },
+        Err(e) => {
+            error!("Error while retrieving message: {:?}", e);
+            ApiResponse::InternalError(format!("Error while retrieving message with id {}!", &id))
         }
-        else {
-            match doc_api.get_document(&apikey.raw, &pid, &id) {
-                Ok(Some(doc)) => {
-                    // transform document to IDS message
-                    let queried_message = IdsMessage::from(doc);
-                    ApiResponse::SuccessOk(json!(queried_message))
-                },
-                Ok(None) => {
-                    debug!("Queried a non-existing document: {}", &id);
-                    ApiResponse::NotFound(format!("No message found with id {}!", &id))
-                },
-                Err(e) => {
-                    error!("Error while retrieving message: {:?}", e);
-                    ApiResponse::InternalError(format!("Error while retrieving message with id {}!", &id))
-                }
-            }
-        };
-
-    return api_response;
+    }
 }
 
 #[get("/.well-known/jwks.json", format = "json")]
