@@ -24,7 +24,7 @@ The Document API is responsible for storing the data, while the Keyring API prov
 
 The Clearing House Service API requires a Trusted Connector [Trusted Connector](https://github.com/industrial-data-space/trusted-connector) for deployment. The process of setting up a Trusted Connector is described [here](https://industrial-data-space.github.io/trusted-connector-documentation/docs/getting_started/). Using a docker image of the Trusted Connector should be sufficient for most deployments:
 
-`docker pull fraunhoferaisec/trusted-connector-core:6.0.0`
+`docker pull fraunhoferaisec/trusted-connector-core:6.3.0`
 
 ## Configuration
 
@@ -96,7 +96,7 @@ The Clearing House Processors can override some standard configuration settings 
 ```
 tc-core:
     container_name: "tc-core"
-    image: fraunhoferaisec/trusted-connector-core:6.0.0
+    image: fraunhoferaisec/trusted-connector-core:6.3.0
     tty: true
     stdin_open: true
     volumes:
@@ -104,7 +104,7 @@ tc-core:
         - ./data/trusted-connector/allow-all-flows.pl:/root/deploy/allow-all-flows.pl
         - ./data/trusted-connector/ch-ids.p12:/root/etc/keystore.p12
         - ./data/trusted-connector/truststore.p12:/root/etc/truststore.p12
-        - ./data/trusted-connector/clearing-house-processors-0.7.5.jar:/root/jars/clearing-house-processors.jar
+        - ./data/trusted-connector/clearing-house-processors-0.7.7.jar:/root/jars/clearing-house-processors.jar
         - ./data/trusted-connector/routes/clearing-house-routes.xml:/root/deploy/clearing-house-routes.xml
     environment:
         TC_DAPS_URL: https://<my-daps-url>
