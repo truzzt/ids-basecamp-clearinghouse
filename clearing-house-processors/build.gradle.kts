@@ -12,7 +12,7 @@ plugins {
 
 group = "de.fhg.aisec.ids.clearinghouse"
 
-val fis = FileInputStream("../clearing-house-app/clearing-house-api/Cargo.toml")
+val fis = FileInputStream("../clearing-house-app/logging-service/Cargo.toml")
 val props = Properties()
 props.load(fis)
 version = props.getProperty("version").removeSurrounding("\"")
@@ -29,7 +29,8 @@ val intTestImplementation by configurations.getting {
 configurations["intTestRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
 
 val integrationTest = task<Test>("integrationTest") {
-    testLogging.showStandardStreams = true
+    // set to true for debugging
+    testLogging.showStandardStreams = false
     useJUnitPlatform()
 
     description = "Runs integration tests."

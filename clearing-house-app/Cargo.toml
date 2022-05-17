@@ -1,6 +1,8 @@
 [workspace]
 
 members = [
-    "ch-lib",
-    "clearing-house-api"
+    "core-lib",
+    "document-api",
+    "keyring-api",
+    "logging-service"
 ]
