@@ -18,6 +18,7 @@ RUN mkdir /server
 WORKDIR /server
 
 COPY clearing-house-app/target/release/logging-service .
+COPY docker/entrypoint.sh .
 
 ENTRYPOINT ["/server/entrypoint.sh"]
 CMD ["/server/logging-service"]
