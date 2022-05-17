@@ -9,7 +9,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  IMAGE_NAME: ids-clearing-house-api
+  IMAGE_NAME_LS: ids-ch-logging-service
+  IMAGE_NAME_DA: ids-ch-document-api
+  IMAGE_NAME_KA: ids-ch-keyring-api
+
 
 jobs:
   build:
@@ -30,19 +33,25 @@ jobs:
         ssh-add - <<< "${{ secrets.IDS_CLEARING_HOUSE_CORE_TOKEN }}"
         cargo build --release
 
-    - name: Build build image
+    - name: Build build images
       run: |        
-        docker build . --file docker/clearing-house-api.Dockerfile --tag $IMAGE_NAME
+        docker build . --file docker/logging-service.Dockerfile --tag $IMAGE_NAME_LS
+        docker build . --file docker/document-api.Dockerfile --tag $IMAGE_NAME_DA
+        docker build . --file docker/keyring-api.Dockerfile --tag $IMAGE_NAME_KA
     
     - name: Log into registry
       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
     - name: Push image
       run: |
-        IMAGE_ID=ghcr.io/Fraunhofer-AISEC/$IMAGE_NAME
+        IMAGE_ID_LS=ghcr.io/Fraunhofer-AISEC/$IMAGE_NAME_LS
+        IMAGE_ID_DA=ghcr.io/Fraunhofer-AISEC/$IMAGE_NAME_DA
+        IMAGE_ID_KA=ghcr.io/Fraunhofer-AISEC/$IMAGE_NAME_KA
 
         # Change all uppercase to lowercase
-        IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+        IMAGE_ID_LS=$(echo $IMAGE_ID_LS | tr '[A-Z]' '[a-z]')
+        IMAGE_ID_DA=$(echo $IMAGE_ID_DA | tr '[A-Z]' '[a-z]')
+        IMAGE_ID_KA=$(echo $IMAGE_ID_KA | tr '[A-Z]' '[a-z]')
 
         # Strip git ref prefix from version
         VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
@@ -53,10 +62,13 @@ jobs:
         # Use Docker `latest` tag convention
         [ "$VERSION" == "master" ] && VERSION=latest
 
-        echo IMAGE_ID=$IMAGE_ID
-        echo VERSION=$VERSION
+        docker tag $IMAGE_NAME_LS $IMAGE_ID_LS:$VERSION
+        docker push $IMAGE_ID_LS:$VERSION
 
-        docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-        docker push $IMAGE_ID:$VERSION
+        docker tag $IMAGE_NAME_DA $IMAGE_ID_DA:$VERSION
+        docker push $IMAGE_ID_DA:$VERSION
+        
+        docker tag $IMAGE_NAME_KA $IMAGE_ID_KA:$VERSION
+        docker push $IMAGE_ID_KA:$VERSION
       
       
