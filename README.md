@@ -52,7 +52,7 @@ tc-core:
         - ./data/trusted-connector/allow-all-flows.pl:/root/deploy/allow-all-flows.pl
         - ./data/trusted-connector/ch-ids.p12:/root/etc/keystore.p12
         - ./data/trusted-connector/truststore.p12:/root/etc/truststore.p12
-        - ./data/trusted-connector/clearing-house-processors-0.7.7.jar:/root/jars/clearing-house-processors.jar
+        - ./data/trusted-connector/clearing-house-processors-0.8.0.jar:/root/jars/clearing-house-processors.jar
         - ./data/trusted-connector/routes/clearing-house-routes.xml:/root/deploy/clearing-house-routes.xml
     environment:
         TC_DAPS_URL: https://<my-daps-url>
