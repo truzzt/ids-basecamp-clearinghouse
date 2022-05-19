@@ -44,7 +44,7 @@ logging-service:
     depends_on:
         - document-api
         - keyring-api
-        - clearing-house-mongo
+        - logging-service-mongo
     environment:
         # Allowed levels: Off, Error, Warn, Info, Debug, Trace
         - API_LOG_LEVEL=Debug
