@@ -3,9 +3,9 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:camel="http://camel.apache.org/schema/spring"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-          http://www.springframework.org/schema/beans/spring-beans.xsd
+          https://www.springframework.org/schema/beans/spring-beans.xsd
           http://camel.apache.org/schema/spring
-          http://camel.apache.org/schema/spring-xml/camel-spring-xml-3.16.0.xsd">
+          https://camel.apache.org/schema/spring/camel-spring-3.16.0.xsd">
 
     <camel:sslContextParameters id="ChSslContext">
         <camel:keyManagers keyPassword="password">

@@ -54,15 +54,6 @@ class LogMessageTests {
         failLogMessage(pid, payload, 403)
     }
 
-    @Test
-    fun logMessage5(){
-        val pid = formatId("mp-log5")
-        val payload = "This message is logged"
-
-        // test: Logging an empty payload
-        failEarlyLogMessage(pid, payload, 401)
-    }
-
     companion object{
 
         fun failEarlyLogMessage(pid: String, payload: String, code: Int){
