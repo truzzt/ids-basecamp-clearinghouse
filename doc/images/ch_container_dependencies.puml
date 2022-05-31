@@ -1,0 +1,21 @@
+@startuml
+
+component tccore as "Trusted Connector"
+
+component logservice as "logging-service"
+component docapi as "document-api"
+component keyapi as "keyring-api"
+
+database chmongo as "clearing-house-mongo"
+database docmongo as "document-mongo"
+database keymongo as "keyring-mongo"
+
+tccore --> logservice
+logservice -- chmongo
+logservice --> docapi
+logservice --> keyapi
+docapi -- docmongo
+docapi --> keyapi
+keyapi -- keymongo
+
+@enduml
