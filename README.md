@@ -14,9 +14,6 @@ The IDS Clearing House Service currently implements the [`Logging Service`](http
 
 The `Clearing House App` is a REST API written in [Rust](https://www.rust-lang.org) that implements the business logic of the Clearing House. The `Clearing House Processors` is a library written in Java that integrates the `Clearing House App` into the [Trusted Connector](https://github.com/industrial-data-space/trusted-connector). The `Clearing House Processors` provide the `multipart` and `idscp2` endpoints described in the [IDS-G](https://github.com/International-Data-Spaces-Association/IDS-G/tree/main) (or [IDS-G-Pre](https://github.com/International-Data-Spaces-Association/IDS-G-Pre/tree/main)). These are used by the IDS connectors to interact with the Clearing House.
 
-### Container Dependencies
-![Container Dependencies](doc/images/ch_container_dependencies.png)
-
 ## Requirements
 - [OpenSSL](https://www.openssl.org)
 - [MongoDB](https://www.mongodb.com)
@@ -75,6 +72,10 @@ To build the containers check out the repository and in the main directory execu
 
 `docker build -f docker/<dockerfile> . -t <image-name>`
 
+### Container Dependencies
+![Container Dependencies](doc/images/ch_container_dependencies.png)
+
+### Configuration
 Please read the Configuration section of the service ([`Logging Service`](https://github.com/Fraunhofer-AISEC/ids-clearing-house-service/tree/architecture-revamp/clearing-house-app#logging-service), [`Document API`](https://github.com/Fraunhofer-AISEC/ids-clearing-house-service/tree/architecture-revamp/clearing-house-app#document-api), [`Keyring API`](https://github.com/Fraunhofer-AISEC/ids-clearing-house-service/tree/architecture-revamp/clearing-house-app#keyring-api)) you are trying to run, before using `docker run` oder `docker-compose`. All Containers build with the provided dockerfiles require two volumes:
 1. The configuration file `Rocket.toml`is expected at `/server/Rocket.toml`
 2. The folder containing the DAPS certificate is expected at `/server/certs`
