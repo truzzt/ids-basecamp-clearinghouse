@@ -12,7 +12,7 @@ The IDS Clearing House Service currently implements the [`Logging Service`](http
 1. [`Clearing House App`](clearing-house-app)
 2. [`Clearing House Processors`](clearing-house-processors)
 
-The `Clearing House App` is a REST API written in [Rust](https://www.rust-lang.org) that implements the business logic of the Clearing House. The `Clearing House Processors` is a library written in Java that integrates the `Clearing House App` into the [Trusted Connector](https://github.com/industrial-data-space/trusted-connector). The `Clearing House Processors` provide the `multipart` and `idscp2` endpoints described in the [IDS-G](https://github.com/International-Data-Spaces-Association/IDS-G/tree/main) (or [IDS-G-Pre](https://github.com/International-Data-Spaces-Association/IDS-G-Pre/tree/main)). These are used by the IDS connectors to interact with the Clearing House.
+The `Clearing House App` is a REST API written in [Rust](https://www.rust-lang.org) that implements the business logic of the Clearing House. The `Clearing House Processors` is a library written in Java that integrates the `Clearing House App` into the [Trusted Connector](https://github.com/industrial-data-space/trusted-connector). The `Clearing House Processors` provide the `multipart` and `idscp2` endpoints described in the [IDS-G](https://github.com/International-Data-Spaces-Association/IDS-G/tree/main) (or [IDS-G-Pre](https://github.com/International-Data-Spaces-Association/IDS-G-Pre/tree/main)). These are used by the IDS connectors to interact with the Clearing House. Both `Clearing House App` and `Clearing House Processors` are needed to provide the `Clearing House Service`.
 
 ## Requirements
 - [OpenSSL](https://www.openssl.org)
