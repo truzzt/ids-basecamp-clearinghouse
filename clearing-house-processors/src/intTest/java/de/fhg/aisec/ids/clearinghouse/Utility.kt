@@ -9,7 +9,7 @@ import de.fraunhofer.iais.eis.*
 import de.fraunhofer.iais.eis.ids.jsonld.Serializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 import okhttp3.Headers
 import okhttp3.MultipartReader
 import java.net.URI
@@ -22,12 +22,6 @@ import java.util.*
 import javax.xml.datatype.DatatypeFactory
 
 @Serializable
-private data class ChReceipt(val data: String)
-
-@Serializable
-data class OwnerList(val owners: List<String>)
-
-@Serializable
 data class ChJwt(val transaction_id: String,
                          val timestamp: Int,
                          val process_id: String,
@@ -36,6 +30,21 @@ data class ChJwt(val transaction_id: String,
                          val chain_hash: String,
                          val client_id: String,
                          val clearing_house_version: String)
+
+@Serializable
+private data class ChReceipt(val data: String)
+
+@Serializable
+data class QueryResult(val date_from: String,
+                       val date_to: String,
+                       val page: Int,
+                       val size: Int,
+                       val order: String,
+                       val documents: List<String>)
+
+@Serializable
+data class OwnerList(val owners: List<String>)
+
 
 enum class MessageType{
     LOG, PID, QUERY
@@ -148,8 +157,16 @@ class Utility {
             return Json.decodeFromString(payload)
         }
 
-        fun parseQueryResult(body: String): List<Message>{
-            return Json.decodeFromString(body)
+        fun parseQueryResult(body: String): QueryResult{
+            val json = Json.parseToJsonElement(body).jsonObject
+            return QueryResult(
+                json["date_from"]!!.jsonPrimitive.content,
+                json["date_to"]!!.jsonPrimitive.content,
+                json["page"]!!.jsonPrimitive.int,
+                json["size"]!!.jsonPrimitive.int,
+                json["order"]!!.jsonPrimitive.content,
+                json["documents"]!!.jsonArray.map { it.toString() }
+            )
         }
 
         fun getMessage(type: MessageType, token: DynamicAttributeToken): Message{

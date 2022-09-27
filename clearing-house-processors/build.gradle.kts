@@ -1,12 +1,12 @@
-import org.yaml.snakeyaml.Yaml
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.FileInputStream
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "1.6.20" apply true
-    kotlin("plugin.serialization") version "1.6.20"
-    `java-library`
+    java
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.spring.dependencyManagement)
     `maven-publish`
 }
 
@@ -67,10 +67,6 @@ buildscript {
             }
         }   
     }
-
-    dependencies {
-        classpath("org.yaml:snakeyaml:1.26")
-    }
 }
 
 publishing {
@@ -104,29 +100,25 @@ repositories {
 }
 
 dependencies {
-    @Suppress("UNCHECKED_CAST") val libraryVersions =
-            Yaml().load(File("${rootDir}/libraryVersions.yaml").inputStream()) as Map<String, String>
-
     // Imported from IDS feature in TC at runtime
-    implementation("de.fraunhofer.iais.eis.ids.infomodel", "java", libraryVersions["infomodel"])
-    implementation("de.fraunhofer.iais.eis.ids", "infomodel-serializer", libraryVersions["infomodel"])
+    implementation(libs.infomodel.model)
+    implementation(libs.infomodel.serializer)
 
-    implementation("de.fhg.aisec.ids", "camel-idscp2", libraryVersions["idscp2"])
+    implementation(libs.camel.idscp2)
+    implementation(libs.camel.core)
+    implementation(libs.camel.api)
+    implementation(libs.camel.jetty)
 
-    implementation("org.apache.camel", "camel-core", libraryVersions["camel"])
-    implementation("org.apache.camel", "camel-api", libraryVersions["camel"])
-    implementation("org.apache.camel", "camel-jetty", libraryVersions["camel"])
+    implementation(libs.apacheHttp.core)
+    implementation(libs.apacheHttp.client)
+    implementation(libs.apacheHttp.mime)
+    implementation(libs.commons.fileupload)
 
-    implementation("org.apache.httpcomponents", "httpcore", libraryVersions["httpcore"])
-    implementation("org.apache.httpcomponents", "httpclient", libraryVersions["httpclient"])
-    implementation("org.apache.httpcomponents", "httpmime", libraryVersions["httpclient"])
-    implementation("commons-fileupload", "commons-fileupload", libraryVersions["commonsFileUpload"])
-
-    testApi("org.slf4j", "slf4j-simple", libraryVersions["slf4j"])
-    testImplementation("org.junit.jupiter", "junit-jupiter", libraryVersions["junit5"])
-    testImplementation("com.squareup.okhttp3", "okhttp", libraryVersions["okhttp"])
+    testApi(libs.slf4j.simple)
+    testImplementation(libs.junit5)
+    testImplementation(libs.okhttp3)
     testImplementation(kotlin("test"))
-    testImplementation("org.jetbrains.kotlinx", "kotlinx-serialization-json", "1.3.2")
+    testImplementation(libs.kotlin.serialization.json)
 }
 
 tasks.withType<KotlinCompile> {

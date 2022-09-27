@@ -15,6 +15,7 @@ pub mod errors {
             HexError(hex::FromHexError);
             Io(::std::io::Error) #[cfg(unix)];
             Mongodb(mongodb::error::Error);
+            MongodbBson(mongodb::bson::de::Error);
             SetLogger(log::SetLoggerError);
             ParseLogLevel(log::ParseLevelError);
             Reqwest(reqwest::Error);

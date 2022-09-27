@@ -56,13 +56,13 @@ class MultipartClient {
             return makeRequest(url, m, payload, false)
         }
 
-        fun queryMessage(pid: String, id: String?, payload: String, authenticated: Boolean = true, client: Int = 1): Request{
+        fun queryMessage(pid: String, id: String?, payload: String, authenticated: Boolean = true, client: Int = 1, page: Int = 1, size: Int = 100, sort: String = "desc"): Request{
             val m = if (authenticated){
                 MultipartEndpointTest.getMessage(MessageType.QUERY, client)
             } else{
                 MultipartEndpointTest.getInvalidMessage(MessageType.QUERY)
             }
-            val url = if (id == null) "$BASE_URL$QUERY_URL$pid" else "$BASE_URL$QUERY_URL$pid/$id"
+            val url = if (id == null) "$BASE_URL$QUERY_URL$pid?page=$page&size=$size&sort=$sort" else "$BASE_URL$QUERY_URL$pid/$id"
             return makeRequest(url, m, payload, false)
         }
 

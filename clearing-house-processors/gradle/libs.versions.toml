@@ -1,0 +1,65 @@
+[versions]
+idscp2 = "0.11.1"
+ktlint = "0.46.1"
+
+# Kotlin library/compiler version
+kotlin = "1.7.10"
+kotlinxCoroutines = "1.6.4"
+kotlinxSerialization = "1.4.0"
+
+# HTTP client
+ktor = "2.1.0"
+okhttp = "4.9.1"
+
+# The used version of the infomodel from IESE
+infomodel = "4.1.0"
+
+camel = "3.18.1"
+
+slf4j = "2.0.0"
+junit5 = "5.9.0"
+mockito = "4.7.0"
+httpcore = "4.4.15"
+httpclient = "4.5.13"
+
+# Needed for camel multipart processor
+commonsFileUpload = "1.4"
+
+springBoot = "2.7.3"
+
+[libraries]
+# common libraries
+slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+camel-core = { group = "org.apache.camel", name = "camel-core", version.ref = "camel" }
+camel-api = { group = "org.apache.camel", name = "camel-api", version.ref = "camel" }
+okhttp3 = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+
+# common test libraries
+mockito = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
+camel-test = { group = "org.apache.camel", name = "camel-test", version.ref = "camel" }
+junit5 = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit5" }
+kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+# camel-multipart-processor
+camel-jetty = { group = "org.apache.camel", name = "camel-jetty", version.ref = "camel" }
+camel-http = { group = "org.apache.camel", name = "camel-http", version.ref = "camel" }
+apacheHttp-core = { group = "org.apache.httpcomponents", name = "httpcore", version.ref = "httpcore" }
+apacheHttp-client = { group = "org.apache.httpcomponents", name = "httpclient", version.ref = "httpclient" }
+apacheHttp-mime = { group = "org.apache.httpcomponents", name = "httpmime", version.ref = "httpclient" }
+commons-fileupload = { group = "commons-fileupload", name = "commons-fileupload", version.ref = "commonsFileUpload" }
+
+# camel-processors
+camel-idscp2 = { group = "de.fhg.aisec.ids", name = "camel-idscp2", version.ref = "idscp2" }
+infomodel-model = { group = "de.fraunhofer.iais.eis.ids.infomodel", name = "java", version.ref = "infomodel" }
+infomodel-serializer = { group = "de.fraunhofer.iais.eis.ids", name = "infomodel-serializer", version.ref = "infomodel" }
+
+[bundles]
+test5 = ["junit5", "mockito"]
+
+[plugins]
+springboot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dependencyManagement = { id = "io.spring.dependency-management", version = "1.0.13.RELEASE" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-plugin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

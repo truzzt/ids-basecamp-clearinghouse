@@ -59,7 +59,6 @@ class ClearingHouseIdscp2InputProcessor : Processor {
             if (ClearingHouseInfomodelParsingProcessor.LOG.isTraceEnabled) {
                 ClearingHouseInfomodelParsingProcessor.LOG.trace("Received payload: {}", converted.payload)
             }
-
             // Input validation: check that payload type of create pid message is application/json
             if (converted.header is RequestMessage && converted.header !is QueryMessage) {
                 val expectedContentType = ContentType.create("application/json")
@@ -70,10 +69,24 @@ class ClearingHouseIdscp2InputProcessor : Processor {
             }
             // Input validation: check if there's a document id for query
             if (converted.header is QueryMessage){
-                if (headers.contains(IDSCP_ID_HEADER)){
-                    val queryPath = (headers[CAMEL_HTTP_PATH] as String) + "/" + (headers[IDSCP_ID_HEADER] as String)
-                    exchange.getIn().setHeader(CAMEL_HTTP_PATH, queryPath)
+                val queryPath = if (headers.contains(IDSCP_ID_HEADER)) {
+                    (headers[CAMEL_HTTP_PATH] as String) + "/" + (headers[IDSCP_ID_HEADER] as String)
+                } else{
+                        var paginationPath = if (headers.contains(IDSCP_PAGE_HEADER)){
+                            (headers[CAMEL_HTTP_PATH] as String) + "?page=" + exchange.message.getHeader(IDSCP_PAGE_HEADER)
+                        } else{
+                            (headers[CAMEL_HTTP_PATH] as String) + "?page=1"
+                        }
+
+                        if (headers.contains(IDSCP_SIZE_HEADER)){
+                            paginationPath = paginationPath + "&size=" + exchange.message.getHeader(IDSCP_SIZE_HEADER)
+                        }
+                        if (headers.contains(IDSCP_SORT_HEADER)){
+                            paginationPath = "$paginationPath?sort=desc"
+                        }
+                        paginationPath
                 }
+                exchange.getIn().setHeader(CAMEL_HTTP_PATH, queryPath)
             }
 
             // store ids header for response processor and clean up idscp2 specific header

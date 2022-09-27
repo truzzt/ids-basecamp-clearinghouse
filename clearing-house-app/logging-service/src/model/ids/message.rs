@@ -1,9 +1,7 @@
 use std::collections::HashMap;
+use core_lib::constants::DEFAULT_DOC_TYPE;
 use core_lib::model::document::{Document, DocumentPart};
 use crate::model::ids::{InfoModelDateTime, InfoModelId, SecurityToken, MessageType};
-use crate::model::ids::InfoModelId::SimpleId;
-
-pub const DOC_TYPE: &'static str = "IDS_MESSAGE";
 
 const MESSAGE_ID: &'static str = "message_id";
 const MODEL_VERSION: &'static str = "model_version";
@@ -370,7 +368,7 @@ impl From<IdsMessage> for Document {
         ));
 
         // pid
-        Document::new(m.pid.unwrap(), DOC_TYPE.to_string(), -1, doc_parts)
+        Document::new(m.pid.unwrap(), DEFAULT_DOC_TYPE.to_string(), -1, doc_parts)
     }
 }
 

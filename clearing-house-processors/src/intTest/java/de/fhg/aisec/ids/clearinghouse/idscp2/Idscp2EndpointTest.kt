@@ -2,8 +2,8 @@ package de.fhg.aisec.ids.clearinghouse.idscp2
 
 import de.fhg.aisec.ids.clearinghouse.MessageType
 import de.fhg.aisec.ids.clearinghouse.Utility
-import de.fhg.aisec.ids.idscp2.default_drivers.remote_attestation.dummy.RaProverDummy
-import de.fhg.aisec.ids.idscp2.default_drivers.remote_attestation.dummy.RaVerifierDummy
+import de.fhg.aisec.ids.idscp2.default_drivers.remote_attestation.dummy.RaProverDummy2
+import de.fhg.aisec.ids.idscp2.default_drivers.remote_attestation.dummy.RaVerifierDummy2
 import de.fhg.aisec.ids.idscp2.default_drivers.secure_channel.tlsv1_3.NativeTlsConfiguration
 import de.fhg.aisec.ids.idscp2.idscp_core.api.configuration.AttestationConfig
 import de.fhg.aisec.ids.idscp2.idscp_core.api.configuration.Idscp2Configuration
@@ -16,8 +16,8 @@ class Idscp2EndpointTest {
     companion object {
 
         private val localAttestationConfig = AttestationConfig.Builder()
-            .setSupportedRaSuite(arrayOf(RaProverDummy.RA_PROVER_DUMMY_ID))
-            .setExpectedRaSuite(arrayOf(RaVerifierDummy.RA_VERIFIER_DUMMY_ID))
+            .setSupportedRaSuite(arrayOf(RaProverDummy2.RA_PROVER_DUMMY2_ID))
+            .setExpectedRaSuite(arrayOf(RaVerifierDummy2.RA_VERIFIER_DUMMY2_ID))
             .setRaTimeoutDelay(300 * 1000L) // 300 seconds
             .build()
 
@@ -78,7 +78,7 @@ class Idscp2EndpointTest {
             return Idscp2EndpointTest.client.send(m, header, p)
         }
 
-        fun queryMessage(pid: String, id: String?, payload: String, authenticated: Boolean = true, client: Int = 1): Triple<Message?, ByteArray?, Map<String, String>?> {
+        fun queryMessage(pid: String, id: String?, payload: String, authenticated: Boolean = true, client: Int = 1, page: Int = 1, size: Int = 100, sort: String = "desc"): Triple<Message?, ByteArray?, Map<String, String>?> {
             val m = if (authenticated){
                 getMessage(MessageType.QUERY, client)
             } else{
@@ -88,7 +88,7 @@ class Idscp2EndpointTest {
                 mapOf("ch-ids-pid" to pid, "ch-ids-id" to id, "Content-Type" to "application/json" )
             }
             else{
-                mapOf("ch-ids-pid" to pid, "Content-Type" to "application/json" )
+                mapOf("ch-ids-pid" to pid, "ch-ids-page" to page.toString(), "ch-ids-size" to size.toString(), "ch-ids-sort" to sort, "Content-Type" to "application/json" )
             }
             val p = payload.toByteArray()
             return Idscp2EndpointTest.client.send(m, header, p)

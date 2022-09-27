@@ -1,6 +1,6 @@
 [package]
 name = "logging-service"
-version = "0.8.0"
+version = "0.9.0"
 authors = [
     "Mark Gall <mark.gall@aisec.fraunhofer.de>",
     "Georg Bramm <georg.bramm@aisec.fraunhofer.de>",
@@ -14,7 +14,7 @@ chrono = { version = "0.4", features = ["serde"] }
 error-chain = "0.12.1"
 fern = "0.5"
 log = "0.4"
-mongodb ="2.0.1"
+mongodb ="2.3.0"
 percent-encoding = "2.1.0"
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
 serde = "1.0"

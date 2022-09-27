@@ -20,8 +20,8 @@
 package de.fhg.aisec.ids.clearinghouse.idscp2
 
 import de.fhg.aisec.ids.idscp2.app_layer.AppLayerConnection
-import de.fhg.aisec.ids.idscp2.default_drivers.remote_attestation.dummy.RaProverDummy
-import de.fhg.aisec.ids.idscp2.default_drivers.remote_attestation.dummy.RaVerifierDummy
+import de.fhg.aisec.ids.idscp2.default_drivers.remote_attestation.dummy.RaProverDummy2
+import de.fhg.aisec.ids.idscp2.default_drivers.remote_attestation.dummy.RaVerifierDummy2
 import de.fhg.aisec.ids.idscp2.default_drivers.secure_channel.tlsv1_3.NativeTLSDriver
 import de.fhg.aisec.ids.idscp2.default_drivers.secure_channel.tlsv1_3.NativeTlsConfiguration
 import de.fhg.aisec.ids.idscp2.idscp_core.FastLatch
@@ -42,11 +42,11 @@ class Idscp2Client constructor(configuration: Idscp2Configuration, nativeTlsConf
     init{
         // register ra drivers
         RaProverDriverRegistry.registerDriver(
-            RaProverDummy.RA_PROVER_DUMMY_ID, ::RaProverDummy, null
+            RaProverDummy2.RA_PROVER_DUMMY2_ID, ::RaProverDummy2, null
         )
 
         RaVerifierDriverRegistry.registerDriver(
-            RaVerifierDummy.RA_VERIFIER_DUMMY_ID, ::RaVerifierDummy, null
+            RaVerifierDummy2.RA_VERIFIER_DUMMY2_ID, ::RaVerifierDummy2, null
         )
     }
 

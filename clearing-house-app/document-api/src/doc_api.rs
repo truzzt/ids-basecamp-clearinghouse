@@ -7,21 +7,25 @@ use core_lib::{
         auth::ApiKey,
         claims::IdsClaims,
         client::keyring_api::KeyringApiClient,
-        DocumentReceipt
+        DocumentReceipt,
+        QueryResult,
     },
-    constants::ROCKET_DOC_API,
+    constants::{DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES, PAYLOAD_PART, ROCKET_DOC_API},
     model::{
         crypto::{KeyCt, KeyCtList},
-        document::Document
-    }
+        document::Document,
+        parse_date,
+        sanitize_dates,
+        SortingOrder,
+        SortingOrder::{Ascending, Descending},
+        validate_dates,
+    },
 };
 use rocket::fairing::AdHoc;
 use rocket::serde::json::{json, Json};
 use std::convert::TryFrom;
+use core_lib::constants::DEFAULT_DOC_TYPE;
 use crate::db::DataStore;
-use core_lib::constants::{DEFAULT_NUM_RESPONSE_ENTRIES, PAYLOAD_PART};
-use core_lib::model::SortingOrder;
-use core_lib::model::SortingOrder::Ascending;
 
 #[post("/", format = "json", data = "<document>")]
 async fn create_enc_document(
@@ -111,7 +115,7 @@ async fn create_enc_document(
             debug!("storing document ....");
             // store document
             //TODO store encrypted keys
-            match db.add_document(enc_doc).await {
+            match db.add_document(&enc_doc).await {
                 Ok(_b) => ApiResponse::SuccessCreate(json!(receipt)),
                 Err(e) => {
                     error!("Error while adding: {:?}", e);
@@ -122,30 +126,7 @@ async fn create_enc_document(
     }
 }
 
-#[delete("/<pid>/<id>", format = "json")]
-async fn delete_document(api_key: ApiKey<IdsClaims, Empty>, db: &State<DataStore>, pid: String, id: String) -> ApiResponse {
-    debug!("delete called...");
-    trace!("user '{:?}' with claims {:?}", api_key.sub(), api_key.claims());
-    // this is only a sanity check, i.e. we make sure id/pid pair exists
-    match db.get_document(&id, &pid).await{
-        Ok(Some(_enc_doc)) => {
-            match db.delete_document(&id).await{
-                Ok(true) => ApiResponse::SuccessNoContent(String::from("Document deleted!")),
-                Ok(false) => ApiResponse::NotFound(String::from("Document does not exist!")),
-                Err(e) => {
-                    error!("Error while deleting document: {:?}", e);
-                    ApiResponse::InternalError(format!("Error while deleting document {}!", &id))
-                }
-            }
-        }
-        _ => {
-            warn!("Document '{}' with pid '{}' not found!", &id, &pid);
-            ApiResponse::NotFound(String::from("Document to delete not found"))
-        }
-    }
-}
-
-#[get("/<pid>?<doc_type>&<page>&<size>&<sort>", format = "json")]
+#[get("/<pid>?<doc_type>&<page>&<size>&<sort>&<date_from>&<date_to>", format = "json")]
 async fn get_enc_documents_for_pid(
     api_key: ApiKey<IdsClaims, Empty>,
     key_api: &State<KeyringApiClient>,
@@ -154,17 +135,18 @@ async fn get_enc_documents_for_pid(
     page: Option<i32>,
     size: Option<i32>,
     sort: Option<SortingOrder>,
+    date_from: Option<String>,
+    date_to: Option<String>,
     pid: String) -> ApiResponse {
     debug!("Trying to retrieve documents for pid '{}'...", &pid);
     trace!("...user '{:?}' with claims {:?}", api_key.sub(), api_key.claims());
     debug!("...page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
 
-    let mut using_pagination = false;
-
-    // parameter sanitization pagination
-    let mut sanitized_page = match page{
+    // Parameter validation for pagination:
+    // Valid pages start from 1
+    // Max page number as of yet unknown
+    let sanitized_page = match page{
         Some(p) => {
-            using_pagination = true;
             if p > 0{
                 u64::try_from(p).unwrap()
             }
@@ -176,10 +158,10 @@ async fn get_enc_documents_for_pid(
         None => 1
     };
 
+    // Valid sizes are between 1 and MAX_NUM_RESPONSE_ENTRIES (1000)
     let sanitized_size = match size{
         Some(s) => {
-            using_pagination = true;
-            if s > 0{
+            if s > 0 && s <= i32::try_from(MAX_NUM_RESPONSE_ENTRIES).unwrap() {
                 u64::try_from(s).unwrap()
             }
             else{
@@ -190,104 +172,55 @@ async fn get_enc_documents_for_pid(
         None => DEFAULT_NUM_RESPONSE_ENTRIES
     };
 
+    // Sorting order is already validated and defaults to descending
     let sanitized_sort = match sort{
         Some(s) => {
-            using_pagination = true;
             s
         },
-        None => Ascending
+        None => Descending
     };
 
-    // either call db with type filter or without to get cts
-    let cts;
-    let start = Local::now();
-    if doc_type.is_some(){
-        debug!("... applying type filter");
-        if using_pagination{
-            debug!("... using pagination with page: {}, size:{} and sort:{:#?}", sanitized_page, sanitized_size, &sanitized_sort);
-            // using the number of docs in db we check that the given page number is valid or limit it
-            match db.count_documents_of_dt_for_pid(doc_type.as_ref().unwrap(), &pid).await{
-                Ok(number_of_docs) => {
-                    // rounded up number of pages
-                    let number_of_pages = (number_of_docs + sanitized_size - 1) / sanitized_size;
-                    if sanitized_page > number_of_pages {
-                        warn!("...invalid page requested. Falling back to {}.", number_of_pages);
-                        sanitized_page = number_of_pages;
-                    }
-                }
-                Err(e) => {
-                    error!("Error while retrieving document: {:?}", e);
-                    return ApiResponse::InternalError(format!("Error while retrieving document for {}", &pid))
-                }
-            }
-            // getting the docs for specified page and size
-            debug!("...but only of document type: '{}'", doc_type.as_ref().unwrap());
-            match db.get_paginated_documents_of_dt_for_pid(doc_type.as_ref().unwrap(), &pid, sanitized_page, sanitized_size, &sanitized_sort).await{
-                Ok(cts_type_filter) => cts = cts_type_filter,
-                Err(e) => {
-                    error!("Error while retrieving document: {:?}", e);
-                    return ApiResponse::InternalError(format!("Error while retrieving document for {}", &pid))
-                }
-            }
-        }
-        else{
-            debug!("...but only of document type: '{}'", doc_type.as_ref().unwrap());
-            match db.get_documents_of_dt_for_pid(doc_type.as_ref().unwrap(), &pid).await{
-                Ok(cts_type_filter) => cts = cts_type_filter,
-                Err(e) => {
-                    error!("Error while retrieving document: {:?}", e);
-                    return ApiResponse::InternalError(format!("Error while retrieving document for {}", &pid))
-                }
-            }
-        }
+    // Parsing the dates for duration queries
+    let parsed_date_from = parse_date(date_from, false);
+    let parsed_date_to = parse_date(date_to, true);
+
+    // Validation of dates with various checks. If none given dates default to date_now (date_to) and (date_now - 2 weeks) (date_from)
+    if !validate_dates(parsed_date_from, parsed_date_to){
+        debug!("date validation failed!");
+        return ApiResponse::BadRequest(String::from("Invalid date parameter!"));
     }
-    else{
-        debug!("...no type filter applied");
-        if using_pagination{
-            debug!("...using pagination with page: {}, size:{} and sort:{:#?}", sanitized_page, sanitized_size, &sanitized_sort);
-            // using the number of docs in db we check that the given page number is valid or limit it
-            match db.count_documents_for_pid(&pid).await{
-                Ok(number_of_docs) => {
-                    // rounded up number of pages
-                    let number_of_pages = (number_of_docs + sanitized_size - 1) / sanitized_size;
-                    if sanitized_page > number_of_pages {
-                        if number_of_pages == 0 {
-                            sanitized_page = 1;
-                        }
-                        else{
-                            sanitized_page = number_of_pages;
-                        }
-                        warn!("...invalid page requested. Falling back to {}.", sanitized_page);
-                    }
-                }
-                Err(e) => {
-                    error!("Error while retrieving document: {:?}", e);
-                    return ApiResponse::InternalError(format!("Error while retrieving document for {}", &pid))
-                }
-            }
-            match db.get_paginated_documents_for_pid(&pid, sanitized_page, sanitized_size, &sanitized_sort).await{
-                Ok(cts_type_filter) => cts = cts_type_filter,
-                Err(e) => {
-                    error!("Error while retrieving document: {:?}", e);
-                    return ApiResponse::InternalError(format!("Error while retrieving document for {}", &pid))
-                }
-            }
-        }
-        else {
-            match db.get_documents_for_pid(&pid).await {
-                //TODO: would like to send "{}" instead of "null" when dt is not found
-                Ok(cts_unfiltered) => cts = cts_unfiltered,
-                Err(e) => {
-                    error!("Error while retrieving document: {:?}", e);
-                    return ApiResponse::InternalError(format!("Error while retrieving document for {}", &pid))
-                }
-            }
-        }
+    let (sanitized_date_from, sanitized_date_to) = sanitize_dates(parsed_date_from, parsed_date_to);
+
+    //TODO: new behavior: if pages are "invalid" return {}. Do not adjust page
+    // either call db with type filter or without to get cts
+    let start = Local::now();
+    debug!("... using pagination with page: {}, size:{} and sort:{:#?}", sanitized_page, sanitized_size, &sanitized_sort);
+
+    let dt_id = match doc_type{
+        Some(dt) => dt,
+        None => String::from(DEFAULT_DOC_TYPE),
     };
+    let cts = match db.get_documents_for_pid(&dt_id, &pid, sanitized_page, sanitized_size, &sanitized_sort, &sanitized_date_from, &sanitized_date_to).await{
+        Ok(cts) => cts,
+        Err(e) => {
+            error!("Error while retrieving document: {:?}", e);
+            return ApiResponse::InternalError(format!("Error while retrieving document for {}", &pid))
+        },
+    };
+
+    let result_size = i32::try_from(sanitized_size).ok();
+    let result_page = i32::try_from(sanitized_page).ok();
+    let result_sort = match sanitized_sort{
+        Ascending => String::from("asc"),
+        Descending => String::from("desc"),
+    };
+
+    let mut result = QueryResult::new(sanitized_date_from.timestamp(), sanitized_date_to.timestamp(), result_page, result_size, result_sort, vec!());
+
     // The db might contain no documents in which case we get an empty vector
     if cts.is_empty(){
         debug!("Queried empty pid: {}", &pid);
-        ApiResponse::SuccessOk(json!(cts))
+        ApiResponse::SuccessOk(json!(result))
     }
     else{
         // Documents found for pid, now decrypting them
@@ -324,7 +257,8 @@ async fn get_enc_documents_for_pid(
         let end = Local::now();
         let diff = end - start;
         info!("Total time taken to run in ms: {}", diff.num_milliseconds());
-        ApiResponse::SuccessOk(json!(pts_bulk))
+        result.documents = pts_bulk;
+        ApiResponse::SuccessOk(json!(result))
     }
 }
 
@@ -380,7 +314,6 @@ async fn get_enc_document(api_key: ApiKey<IdsClaims, Empty>, key_api: &State<Key
 pub fn mount_api() -> AdHoc {
     AdHoc::on_ignite("Mounting Document API", |rocket| async {
         rocket
-            .mount(ROCKET_DOC_API, routes![create_enc_document, delete_document,
-                                            get_enc_document, get_enc_documents_for_pid])
+            .mount(ROCKET_DOC_API, routes![create_enc_document, get_enc_document, get_enc_documents_for_pid])
     })
 }

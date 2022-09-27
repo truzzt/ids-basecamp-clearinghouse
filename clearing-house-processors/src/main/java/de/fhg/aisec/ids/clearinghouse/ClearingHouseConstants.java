@@ -35,6 +35,9 @@ final class ClearingHouseConstants {
   static final String PID_HEADER = "pid";
   static final String IDSCP_PID_HEADER = "ch-ids-pid";
   static final String IDSCP_ID_HEADER = "ch-ids-id";
+  static final String IDSCP_PAGE_HEADER = "ch-ids-page";
+  static final String IDSCP_SIZE_HEADER = "ch-ids-size";
+  static final String IDSCP_SORT_HEADER = "ch-ids-sort";
   static final String TYPE_HEADER = "Content-Type";
   static final String IDSCP2_IDS_HEADER = "idscp2-header";
   static final String AUTH_HEADER = "Authorization";

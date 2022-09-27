@@ -1,4 +1,5 @@
 #[macro_use] extern crate rocket;
+#[macro_use] extern crate serde_derive;
 
 use core_lib::api::client::{ApiClientConfigurator, ApiClientEnum};
 use core_lib::util::setup_logger;

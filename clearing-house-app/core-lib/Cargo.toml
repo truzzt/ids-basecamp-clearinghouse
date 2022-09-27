@@ -1,6 +1,6 @@
 [package]
 name = "core-lib"
-version = "0.8.0"
+version = "0.9.0"
 authors = [
     "Mark Gall <mark.gall@aisec.fraunhofer.de>",
     "Georg Bramm <georg.bramm@aisec.fraunhofer.de>",
@@ -21,7 +21,7 @@ figment = { version = "0.10", features = ["yaml", "env"] }
 generic-array = "0.14.4"
 hex = "0.4.2"
 log = "0.4"
-mongodb ="2.0.1"
+mongodb ="2.3.0"
 num-bigint = "0.4.3"
 openssh-keys = "0.5.0"
 percent-encoding = "2.1.0"

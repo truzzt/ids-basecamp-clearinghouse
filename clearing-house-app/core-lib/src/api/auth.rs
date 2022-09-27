@@ -13,7 +13,6 @@ use rocket::request::{self, Request, FromRequest};
 use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
 use std::fmt::Debug;
-use biscuit::jws::Compact;
 
 use crate::{
     constants::{
@@ -23,7 +22,6 @@ use crate::{
     errors::*,
     api::client::daps_api::DapsApiClient,
 };
-use crate::api::claims::IdsClaims;
 use crate::model::JwksCache;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

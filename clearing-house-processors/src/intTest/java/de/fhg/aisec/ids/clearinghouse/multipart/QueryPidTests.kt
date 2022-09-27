@@ -1,13 +1,17 @@
 package de.fhg.aisec.ids.clearinghouse.multipart
 
+import de.fhg.aisec.ids.clearinghouse.QueryResult
 import de.fhg.aisec.ids.clearinghouse.Utility
 import de.fhg.aisec.ids.clearinghouse.Utility.Companion.CONNECTOR_1
 import de.fhg.aisec.ids.clearinghouse.Utility.Companion.formatId
+import de.fhg.aisec.ids.clearinghouse.Utility.Companion.parseQueryResult
 import de.fhg.aisec.ids.clearinghouse.multipart.CreatePidTests.Companion.succCreatePid
 import de.fhg.aisec.ids.clearinghouse.multipart.LogMessageTests.Companion.succLogMessage
 import de.fhg.aisec.ids.clearinghouse.multipart.MultipartEndpointTest.Companion.client
 import de.fraunhofer.iais.eis.RejectionMessage
 import de.fraunhofer.iais.eis.ResultMessage
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import okhttp3.MultipartReader
 import org.junit.Assert
 import org.junit.jupiter.api.Test
@@ -22,8 +26,7 @@ class QueryPidTests {
 
         // Test: query existing Pid with no documents
         val result = succQueryPid(pid)
-        Assert.assertEquals("Should receive empty JSON array!", "[]", result)
-
+        Assert.assertEquals("Should receive empty array!", 0, result.documents.size)
     }
 
     @Test
@@ -37,9 +40,8 @@ class QueryPidTests {
         }
 
         // Test: query existing Pid with three documents
-        val docs = succQueryPid(pid)
-        println("body: $docs")
-        //TODO: test that we have 3 items in the json
+        val result = succQueryPid(pid)
+        Assert.assertEquals("Should receive empty array!", 3, result.documents.size)
     }
 
     @Test
@@ -50,13 +52,15 @@ class QueryPidTests {
         // create Pid with other user, but user 1 is also authorized
         succCreatePid(pid, owners, client=2)
 
-        // add message
-        succLogMessage(pid, "This message is logged", c=2)
+        // add three messages
+        val messages = listOf("This is the first message", "This is the second message", "This is the third message")
+        messages.forEach{
+            succLogMessage(pid, it, c=2)
+        }
 
         // Test: query existing Pid with user (who did not create pid, but is authorized)
-        val docs = succQueryPid(pid)
-        println("body: $docs")
-        //TODO: test that we have 3 items in the json
+        val result = succQueryPid(pid)
+        Assert.assertEquals("Should receive empty array!", 3, result.documents.size)
     }
 
     @Test
@@ -78,6 +82,18 @@ class QueryPidTests {
         failQueryPid(pid, 403)
     }
 
+    @Test
+    fun queryPid6(){
+        val pid = formatId("mp-qpid6")
+
+        // create Pid
+        succLogMessage(pid, "This is the log message!")
+
+        // Test: query non existing page results in empty array
+        val result = succQueryPid(pid, 2)
+        Assert.assertEquals("Should receive empty array!", 0, result.documents.size)
+    }
+
     companion object{
         fun failQueryPid(pid: String, code: Int){
             val call = client.newCall(MultipartClient.queryMessage(pid, null, ""))
@@ -90,17 +106,17 @@ class QueryPidTests {
             response.close()
         }
 
-        fun succQueryPid(pid: String): String{
-            val call = client.newCall(MultipartClient.queryMessage(pid, null, ""))
+        fun succQueryPid(pid: String, page: Int = 1, size: Int = 100, sort: String = "desc"): QueryResult{
+            val call = client.newCall(MultipartClient.queryMessage(pid, null, "", page=page, size=size, sort=sort))
             val response = call.execute()
             // check http status code
             Assert.assertEquals("Unexpected http status code!", 200, response.code)
             // check IDS message type
             val parts = Utility.getParts(MultipartReader(response.body!!))
             Utility.checkIdsMessage(parts.first, ResultMessage::class.java)
-            //TODO: can't serialize bc json array is of type "message + payload + payload type"
+            val result = parseQueryResult(parts.second)
             response.close()
-            return parts.second
+            return result
         }
     }
 }

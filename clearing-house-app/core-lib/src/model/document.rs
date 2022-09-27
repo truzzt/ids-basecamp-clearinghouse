@@ -5,10 +5,10 @@ use generic_array::GenericArray;
 use std::collections::HashMap;
 use uuid::Uuid;
 use crate::errors::*;
-use crate::constants::{SPLIT_CT, SPLIT_QUOTE, SPLIT_SIGN};
+use crate::constants::{SPLIT_CT};
 use crate::model::new_uuid;
 use crate::model::crypto::{KeyEntry, KeyMap};
-use chrono::Utc;
+use chrono::Local;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct DocumentPart {
@@ -154,7 +154,7 @@ impl Document{
             id: Document::create_uuid(),
             dt_id,
             pid,
-            ts: Utc::now().timestamp(),
+            ts: Local::now().timestamp(),
             tc,
             parts,
         }
@@ -169,31 +169,6 @@ impl Document{
             tc,
             parts,
         }
-    }
-
-    pub fn string_to_vec(value: String) -> Option<Vec<String>> {
-        let mut vec = vec![];
-        for item in value.split(SPLIT_SIGN) {
-            match item {
-                "" => (),
-                _ => vec.push(String::from(item))
-            }
-        }
-        if vec.len() > 0 {
-            Some(vec)
-        }
-        else {
-            None
-        }
-    }
-
-    pub fn vec_to_string<T: ToString>(v: Vec<T>) -> String {
-        let mut value = String::new();
-        for x in v {
-            value.push_str(&format!("{}{}{}{}", SPLIT_QUOTE, x.to_string(), SPLIT_QUOTE, SPLIT_SIGN));
-        }
-        let _remove_last = value.pop();
-        value
     }
 }
 

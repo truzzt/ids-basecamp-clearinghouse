@@ -55,7 +55,7 @@ class LogMessageTests {
     companion object{
 
         fun failLogMessage(pid: String, payload: String, em: String) {
-            val (resultMessage, resultPayload, resultHeaders) = Idscp2EndpointTest.logMessage(pid, payload)
+            val (resultMessage, resultPayload, _) = Idscp2EndpointTest.logMessage(pid, payload)
             // check IDS message type
             Assert.assertTrue(resultMessage is RejectionMessage)
             // payload = http status code message

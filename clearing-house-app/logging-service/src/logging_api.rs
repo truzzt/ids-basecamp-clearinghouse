@@ -12,7 +12,7 @@ use core_lib::{
         document::Document,
         process::Process,
         SortingOrder,
-        SortingOrder::Ascending
+        SortingOrder::Descending
     }
 };
 use rocket::serde::json::{json, Json};
@@ -23,11 +23,11 @@ use std::convert::TryFrom;
 
 use crate::model::{ids::{
     message::IdsMessage,
+    IdsQueryResult,
     request::ClearingHouseMessage,
 }, OwnerList, DataTransaction};
 use crate::db::ProcessStore;
 use crate::model::constants::{ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API, ROCKET_QUERY_API, ROCKET_PROCESS_API, ROCKET_PK_API};
-
 
 #[post( "/<pid>", format = "json", data = "<message>")]
 async fn log(
@@ -53,7 +53,7 @@ async fn log(
 
     // get credentials for user [this should not happen, the connector should make sure of it]
     let user;
-    match getConnectorIdentifier(&apikey){
+    match get_connector_identifier(&apikey){
         None => {
             // cannot authenticate user without credentials
             return ApiResponse::Unauthorized(String::from("Invalid user!"));
@@ -123,7 +123,7 @@ async fn create_process(
 
     // get credentials for user [this should not happen, the connector should make sure of it]
     let user;
-    match getConnectorIdentifier(&apikey){
+    match get_connector_identifier(&apikey){
         None => {
             // cannot authenticate user without credentials
             return ApiResponse::Unauthorized(String::from("Invalid user!"))
@@ -155,7 +155,7 @@ async fn create_process(
     match db.get_process(&pid).await{
         Ok(Some(p)) => {
             warn!("Requested pid '{}' already exists.", &p.id);
-            if !p.owners.contains(user) {
+            if !p.owners.contains(&user) {
                 ApiResponse::Forbidden(String::from("User not authorized!"))
             }
             else {
@@ -209,7 +209,7 @@ async fn log_message(
             doc.tc = tid;
             return match doc_api.create_document(&apikey.raw, &doc){
                 Ok(doc_receipt) => {
-                    debug!("Increase transabtion counter");
+                    debug!("Increase transaction counter");
                     match db.increment_transaction_counter().await{
                         Ok(Some(_tid)) => {
                             debug!("Creating receipt...");
@@ -239,8 +239,13 @@ async fn log_message(
                 }
             }
         },
-        _ => {
+        Ok(None) => {
+            println!("None!");
+            ApiResponse::InternalError(String::from("Internal error while preparing transaction data"))
+        }
+        Err(e) => {
             error!("Error while getting transaction id!");
+            println!("{}", e);
             ApiResponse::InternalError(String::from("Internal error while preparing transaction data"))
         }
     }
@@ -256,13 +261,15 @@ async fn unauth_id(_pid: Option<String>, _id: Option<String>) -> ApiResponse {
     ApiResponse::Unauthorized(String::from("Token not valid!"))
 }
 
-#[post("/<pid>?<page>&<size>&<sort>", format = "json", data = "<message>")]
+#[post("/<pid>?<page>&<size>&<sort>&<date_to>&<date_from>", format = "json", data = "<message>")]
 async fn query_pid(
     apikey: ApiKey<IdsClaims, Empty>,
     db: &State<ProcessStore>,
     page: Option<i32>,
     size: Option<i32>,
     sort: Option<SortingOrder>,
+    date_to: Option<String>,
+    date_from: Option<String>,
     doc_api: &State<DocumentApiClient>,
     pid: String,
     message: Json<ClearingHouseMessage>
@@ -271,7 +278,7 @@ async fn query_pid(
 
     // get credentials for user [this should not happen, the connector should make sure of it]
     let user;
-    match getConnectorIdentifier(&apikey){
+    match get_connector_identifier(&apikey){
         None => {
             // cannot authenticate user without credentials
             return ApiResponse::Unauthorized(String::from("Invalid user!"))
@@ -283,7 +290,7 @@ async fn query_pid(
     match db.exists_process(&pid).await {
         Ok(true) => info!("User authorized."),
         Ok(false) => return ApiResponse::NotFound(String::from("Process does not exist!")),
-        Err(e) => {
+        Err(_e) => {
             error!("Error while checking process '{}' for user '{}'", &pid, &user);
             return ApiResponse::InternalError(String::from("Cannot authorize user!"))
         }
@@ -337,13 +344,15 @@ async fn query_pid(
 
     let sanitized_sort = match sort {
         Some(s) => s,
-        None => Ascending
+        None => Descending
     };
 
-    match doc_api.get_documents_for_pid_paginated(&apikey.raw, &pid, sanitized_page, sanitized_size, sanitized_sort) {
-        Ok(docs) => {
-            let messages: Vec<IdsMessage> = docs.iter().map(|d| IdsMessage::from(d.clone())).collect();
-            ApiResponse::SuccessOk(json!(messages))
+    match doc_api.get_documents(&apikey.raw, &pid, sanitized_page, sanitized_size, sanitized_sort, date_from, date_to) {
+        Ok(r) => {
+            let messages: Vec<IdsMessage> = r.documents.iter().map(|d| IdsMessage::from(d.clone())).collect();
+            let result = IdsQueryResult::new(r.date_from, r.date_to, r.page, r.size, r.order, messages);
+            ApiResponse::SuccessOk(json!(result))
+
         },
         Err(e) => {
             error!("Error while retrieving message: {:?}", e);
@@ -357,7 +366,7 @@ async fn query_id(apikey: ApiKey<IdsClaims, Empty>, db: &State<ProcessStore>, do
 
     // get credentials for user [this should not happen, the connector should make sure of it]
     let user;
-    match getConnectorIdentifier(&apikey){
+    match get_connector_identifier(&apikey){
         None => {
             // cannot authenticate user without credentials
             return ApiResponse::Unauthorized(String::from("Invalid user!"))
@@ -369,7 +378,7 @@ async fn query_id(apikey: ApiKey<IdsClaims, Empty>, db: &State<ProcessStore>, do
     match db.exists_process(&pid).await {
         Ok(true) => info!("User authorized."),
         Ok(false) => return ApiResponse::NotFound(String::from("Process does not exist!")),
-        Err(e) => {
+        Err(_e) => {
             error!("Error while checking process '{}' for user '{}'", &pid, &user);
             return ApiResponse::InternalError(String::from("Cannot authorize user!"))
         }
@@ -426,7 +435,7 @@ pub fn mount_api() -> AdHoc {
     })
 }
 
-fn getConnectorIdentifier(apikey: &ApiKey<IdsClaims, Empty>) -> Option<String> {
+fn get_connector_identifier(apikey: &ApiKey<IdsClaims, Empty>) -> Option<String> {
     match apikey.sub() {
         Some(subject) => Some(subject),
         None => {
