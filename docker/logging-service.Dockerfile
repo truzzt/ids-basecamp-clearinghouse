@@ -4,7 +4,7 @@
 # Copyright 2019 Fraunhofer AISEC
 #
 #########################################################################################
-FROM debian:bullseye-slim
+FROM ubuntu:20.04
 
 RUN apt-get update \
 && echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections \
