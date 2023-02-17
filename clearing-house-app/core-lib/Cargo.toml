@@ -1,6 +1,6 @@
 [package]
 name = "core-lib"
-version = "0.9.0"
+version = "0.10.0"
 authors = [
     "Mark Gall <mark.gall@aisec.fraunhofer.de>",
     "Georg Bramm <georg.bramm@aisec.fraunhofer.de>",
@@ -25,7 +25,7 @@ mongodb ="2.3.0"
 num-bigint = "0.4.3"
 openssh-keys = "0.5.0"
 percent-encoding = "2.1.0"
-reqwest = "0.9.3"
+reqwest = { version="0.11.11", features = ["default", "json"]}
 ring = "0.16.20"
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
 serde = "1.0"

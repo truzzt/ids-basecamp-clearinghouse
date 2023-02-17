@@ -22,6 +22,7 @@ pub mod errors {
             SerdeJson(serde_json::error::Error);
             Uft8Error(std::string::FromUtf8Error);
             BiscuitError(biscuit::errors::Error);
+            EnvVariable(::std::env::VarError);
         }
     }
 }

@@ -1,12 +1,13 @@
 #[macro_use] extern crate rocket;
 #[macro_use] extern crate serde_derive;
 
+use std::env;
 use std::path::Path;
 use core_lib::api::client::{ApiClientConfigurator, ApiClientEnum};
-use core_lib::model::JwksCache;
-use core_lib::util::setup_logger;
+use core_lib::util::{add_service_config, setup_logger};
 use rocket::{Build, Rocket};
 use rocket::fairing::AdHoc;
+use core_lib::constants::ENV_LOGGING_SERVICE_ID;
 
 use db::ProcessStoreConfigurator;
 use model::constants::SIGNING_KEY;
@@ -36,9 +37,8 @@ fn rocket() -> Rocket<Build> {
     rocket::build()
         .attach(ProcessStoreConfigurator)
         .attach(add_signing_key())
-        .attach(ApiClientConfigurator::new(ApiClientEnum::Daps))
+        .attach(add_service_config(ENV_LOGGING_SERVICE_ID.to_string()))
         .attach(ApiClientConfigurator::new(ApiClientEnum::Document))
         .attach(ApiClientConfigurator::new(ApiClientEnum::Keyring))
         .attach(logging_api::mount_api())
-        .manage(JwksCache::new())
 }

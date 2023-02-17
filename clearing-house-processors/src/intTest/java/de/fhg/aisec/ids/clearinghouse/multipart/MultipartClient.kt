@@ -15,7 +15,7 @@ class MultipartClient {
         private val SERIALIZER = Serializer()
         private var JSON = "application/json; charset=utf-8".toMediaTypeOrNull()!!
 
-        private val BASE_URL = "https://provider-core:9999/"
+        private val BASE_URL = "https://tc-core-server:9999/"
         private val LOG_URL = "messages/log/"
         private val QUERY_URL = "messages/query/"
         private val PROCESS_URL = "process/"

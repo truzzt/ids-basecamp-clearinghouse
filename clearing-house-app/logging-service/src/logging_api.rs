@@ -1,11 +1,8 @@
-use biscuit::Empty;
 use core_lib::{
     api::{
         ApiResponse,
-        auth::ApiKey,
         client::document_api::DocumentApiClient,
-        claims::IdsClaims,
-        crypto::get_jwks,
+        crypto::{ChClaims, get_jwks},
     },
     constants::{DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES, DEFAULT_PROCESS_ID},
     model::{
@@ -31,13 +28,15 @@ use crate::model::constants::{ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API, RO
 
 #[post( "/<pid>", format = "json", data = "<message>")]
 async fn log(
-    apikey: ApiKey<IdsClaims, Empty>,
+    ch_claims: ChClaims,
     db: &State<ProcessStore>,
     doc_api: &State<DocumentApiClient>,
     key_path: &State<String>,
     message: Json<ClearingHouseMessage>,
     pid: String
 ) -> ApiResponse {
+    trace!("...user '{:?}'", &ch_claims.client_id);
+    let user = &ch_claims.client_id;
     // Add non-InfoModel information to IdsMessage
     let msg = message.into_inner();
     let mut m = msg.header;
@@ -50,16 +49,6 @@ async fn log(
         error!("Trying to log an empty payload!");
         return ApiResponse::BadRequest(String::from("No payload received for logging!"))
     }
-
-    // get credentials for user [this should not happen, the connector should make sure of it]
-    let user;
-    match get_connector_identifier(&apikey){
-        None => {
-            // cannot authenticate user without credentials
-            return ApiResponse::Unauthorized(String::from("Invalid user!"));
-        },
-        Some(u) => user = u
-    };
 
     // filter out calls for default process id and call application logic
     match DEFAULT_PROCESS_ID.eq(pid.as_str()){
@@ -104,14 +93,14 @@ async fn log(
             }
 
             debug!("logging message for pid {}", &pid);
-            log_message(apikey, db, user, doc_api, key_path.inner().as_str(), m.clone()).await
+            log_message(db, user, doc_api, key_path.inner().as_str(), m.clone()).await
         }
     }
 }
 
 #[post( "/<pid>", format = "json", data = "<message>")]
 async fn create_process(
-    apikey: ApiKey<IdsClaims, Empty>,
+    ch_claims: ChClaims,
     db: &State<ProcessStore>,
     message: Json<ClearingHouseMessage>,
     pid: String
@@ -121,15 +110,8 @@ async fn create_process(
     m.payload = msg.payload;
     m.payload_type = msg.payload_type;
 
-    // get credentials for user [this should not happen, the connector should make sure of it]
-    let user;
-    match get_connector_identifier(&apikey){
-        None => {
-            // cannot authenticate user without credentials
-            return ApiResponse::Unauthorized(String::from("Invalid user!"))
-        },
-        Some(u) => user = u
-    };
+    trace!("...user '{:?}'", &ch_claims.client_id);
+    let user = &ch_claims.client_id;
 
     // validate payload
     let mut owners = vec!(user.clone());
@@ -155,7 +137,7 @@ async fn create_process(
     match db.get_process(&pid).await{
         Ok(Some(p)) => {
             warn!("Requested pid '{}' already exists.", &p.id);
-            if !p.owners.contains(&user) {
+            if !p.owners.contains(user) {
                 ApiResponse::Forbidden(String::from("User not authorized!"))
             }
             else {
@@ -192,13 +174,13 @@ async fn create_process(
 }
 
 async fn log_message(
-    apikey: ApiKey<IdsClaims, Empty>,
     db: &State<ProcessStore>,
-    user: String,
+    user: &String,
     doc_api: &State<DocumentApiClient>,
     key_path: &str,
     message: IdsMessage
 ) -> ApiResponse {
+
     debug!("transforming message to document...");
     let payload = message.payload.as_ref().unwrap().clone();
     // transform message to document
@@ -207,7 +189,7 @@ async fn log_message(
         Ok(Some(tid)) => {
             debug!("Storing document...");
             doc.tc = tid;
-            return match doc_api.create_document(&apikey.raw, &doc){
+            return match doc_api.create_document(&user, &doc).await{
                 Ok(doc_receipt) => {
                     debug!("Increase transaction counter");
                     match db.increment_transaction_counter().await{
@@ -220,7 +202,7 @@ async fn log_message(
                                 document_id: doc_receipt.doc_id,
                                 payload,
                                 chain_hash: doc_receipt.chain_hash,
-                                client_id: user,
+                                client_id: user.clone(),
                                 clearing_house_version: env!("CARGO_PKG_VERSION").to_string(),
                             };
                             debug!("...done. Signing receipt...");
@@ -263,7 +245,7 @@ async fn unauth_id(_pid: Option<String>, _id: Option<String>) -> ApiResponse {
 
 #[post("/<pid>?<page>&<size>&<sort>&<date_to>&<date_from>", format = "json", data = "<message>")]
 async fn query_pid(
-    apikey: ApiKey<IdsClaims, Empty>,
+    ch_claims: ChClaims,
     db: &State<ProcessStore>,
     page: Option<i32>,
     size: Option<i32>,
@@ -276,15 +258,8 @@ async fn query_pid(
 ) -> ApiResponse {
     debug!("page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
 
-    // get credentials for user [this should not happen, the connector should make sure of it]
-    let user;
-    match get_connector_identifier(&apikey){
-        None => {
-            // cannot authenticate user without credentials
-            return ApiResponse::Unauthorized(String::from("Invalid user!"))
-        },
-        Some(u) => user = u
-    };
+    trace!("...user '{:?}'", &ch_claims.client_id);
+    let user = &ch_claims.client_id;
 
     // check if process exists
     match db.exists_process(&pid).await {
@@ -347,7 +322,7 @@ async fn query_pid(
         None => Descending
     };
 
-    match doc_api.get_documents(&apikey.raw, &pid, sanitized_page, sanitized_size, sanitized_sort, date_from, date_to) {
+    match doc_api.get_documents(&user, &pid, sanitized_page, sanitized_size, sanitized_sort, date_from, date_to).await {
         Ok(r) => {
             let messages: Vec<IdsMessage> = r.documents.iter().map(|d| IdsMessage::from(d.clone())).collect();
             let result = IdsQueryResult::new(r.date_from, r.date_to, r.page, r.size, r.order, messages);
@@ -362,17 +337,10 @@ async fn query_pid(
 }
 
 #[post("/<pid>/<id>", format = "json", data = "<message>")]
-async fn query_id(apikey: ApiKey<IdsClaims, Empty>, db: &State<ProcessStore>, doc_api: &State<DocumentApiClient>, pid: String, id: String, message: Json<ClearingHouseMessage>) -> ApiResponse {
+async fn query_id(ch_claims: ChClaims, db: &State<ProcessStore>, doc_api: &State<DocumentApiClient>, pid: String, id: String, message: Json<ClearingHouseMessage>) -> ApiResponse {
 
-    // get credentials for user [this should not happen, the connector should make sure of it]
-    let user;
-    match get_connector_identifier(&apikey){
-        None => {
-            // cannot authenticate user without credentials
-            return ApiResponse::Unauthorized(String::from("Invalid user!"))
-        },
-        Some(u) => user = u
-    };
+    trace!("...user '{:?}'", &ch_claims.client_id);
+    let user = &ch_claims.client_id;
 
     // check if process exists
     match db.exists_process(&pid).await {
@@ -399,7 +367,7 @@ async fn query_id(apikey: ApiKey<IdsClaims, Empty>, db: &State<ProcessStore>, do
         }
     }
 
-    match doc_api.get_document(&apikey.raw, &pid, &id) {
+    match doc_api.get_document(&user, &pid, &id).await {
         Ok(Some(doc)) => {
             // transform document to IDS message
             let queried_message = IdsMessage::from(doc);
@@ -433,15 +401,4 @@ pub fn mount_api() -> AdHoc {
                    routes![query_id, query_pid, unauth, unauth_id])
             .mount(format!("{}", ROCKET_PK_API).as_str(), routes![get_public_sign_key])
     })
-}
-
-fn get_connector_identifier(apikey: &ApiKey<IdsClaims, Empty>) -> Option<String> {
-    match apikey.sub() {
-        Some(subject) => Some(subject),
-        None => {
-            // No credentials, ergo no authorization possible
-            error!("Cannot authorize user. Missing credentials");
-            None
-        }
-    }
 }

@@ -1,18 +1,16 @@
+use std::env;
 use rocket::fairing::{self, Fairing, Info, Kind};
 use rocket::{Rocket, Build};
 use crate::api::ApiClient;
-use crate::api::client::daps_api::DapsApiClient;
 use crate::api::client::keyring_api::KeyringApiClient;
 use crate::api::client::document_api::DocumentApiClient;
+use crate::constants::{ENV_DOCUMENT_SERVICE_ID, ENV_KEYRING_SERVICE_ID};
 
 pub mod document_api;
 pub mod keyring_api;
-pub mod daps_api;
-
 
 #[derive(Clone, Debug)]
 pub enum ApiClientEnum{
-    Daps,
     Document,
     Keyring
 }
@@ -34,12 +32,6 @@ impl ApiClientConfigurator{
 impl Fairing for ApiClientConfigurator {
     fn info(&self) -> Info {
         match self.api {
-            ApiClientEnum::Daps => {
-                Info {
-                    name: "Configuring Daps Api Client",
-                    kind: Kind::Ignite
-                }
-            },
             ApiClientEnum::Document => {
                 Info {
                     name: "Configuring Document Api Client",
@@ -57,10 +49,6 @@ impl Fairing for ApiClientConfigurator {
 
     async fn on_ignite(&self, rocket: Rocket<Build>) -> fairing::Result {
         let config_key = match self.api {
-            ApiClientEnum::Daps => {
-                debug!("Configuring Daps Api Client...");
-                DapsApiClient::get_conf_param()
-            },
             ApiClientEnum::Document => {
                 debug!("Configuring Document Api Client...");
                 DocumentApiClient::get_conf_param()
@@ -74,18 +62,29 @@ impl Fairing for ApiClientConfigurator {
         if api_url.len() > 0 {
             debug!("...found api url: {}", &api_url);
             match self.api {
-                ApiClientEnum::Daps => {
-                    let client: DapsApiClient = ApiClient::new(&api_url);
-                    Ok(rocket.manage(client))
-
-                },
                 ApiClientEnum::Document => {
-                    let client: DocumentApiClient = ApiClient::new(&api_url);
-                    Ok(rocket.manage(client))
+                    match env::var(ENV_DOCUMENT_SERVICE_ID){
+                        Ok(id) => {
+                            let client: DocumentApiClient = ApiClient::new(&api_url, &id);
+                            Ok(rocket.manage(client))
+                        },
+                        Err(_e) => {
+                            error!("Service ID not configured. Please configure environment variable {}", ENV_DOCUMENT_SERVICE_ID);
+                            Err(rocket)
+                        }
+                    }
                 },
                 ApiClientEnum::Keyring => {
-                    let client: KeyringApiClient = ApiClient::new(&api_url);
-                    Ok(rocket.manage(client))
+                    match env::var(ENV_KEYRING_SERVICE_ID){
+                        Ok(id) => {
+                            let client: KeyringApiClient = ApiClient::new(&api_url, &id);
+                            Ok(rocket.manage(client))
+                        },
+                        Err(_e) => {
+                            error!("Service ID not configured. Please configure environment variable {}", ENV_KEYRING_SERVICE_ID);
+                            Err(rocket)
+                        }
+                    }
                 }
             }
         }

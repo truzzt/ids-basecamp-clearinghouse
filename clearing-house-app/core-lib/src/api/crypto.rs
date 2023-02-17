@@ -1,7 +1,66 @@
+use std::env;
+use std::fmt::{Display, Formatter};
+use biscuit::{ClaimPresenceOptions, ClaimsSet, Empty, jwa::SignatureAlgorithm, JWT, RegisteredClaims, SingleOrMultiple, Timestamp, ValidationOptions};
+use biscuit::jwk::{AlgorithmParameters, CommonParameters, JWKSet};
+use biscuit::{jws, jws::Secret};
+use biscuit::Presence::Required;
+use biscuit::Validation::Validate;
+use chrono::{Duration, Utc};
 use num_bigint::BigUint;
 use ring::signature::KeyPair;
-use biscuit::jwk::{AlgorithmParameters, JWKSet, CommonParameters};
-use biscuit::Empty;
+use rocket::http::Status;
+use rocket::request::{Request, FromRequest, Outcome};
+use serde::{Deserialize,Serialize};
+use crate::errors::*;
+use crate::constants::{ENV_SHARED_SECRET, SERVICE_HEADER};
+use crate::util::ServiceConfig;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChClaims{
+    pub client_id: String,
+}
+
+impl ChClaims{
+    pub fn new(client_id: &str) -> ChClaims{
+        ChClaims{
+            client_id: client_id.to_string(),
+        }
+    }
+}
+
+impl Display for ChClaims{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<{}>", self.client_id)
+    }
+}
+
+#[derive(Debug)]
+pub enum ChClaimsError {
+    Missing,
+    Invalid,
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for ChClaims {
+    type Error = ChClaimsError;
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        match request.headers().get_one(&SERVICE_HEADER) {
+            None => Outcome::Failure((Status::BadRequest, ChClaimsError::Missing)),
+            Some(token) => {
+                debug!("...received service header: {:?}", token);
+                let service_config = request.rocket().state::<ServiceConfig>().unwrap();
+                match decode_token::<ChClaims>(token, service_config.service_id.as_str()){
+                    Ok(claims) => {
+                        debug!("...retrieved claims and succeed");
+                        Outcome::Success(claims)
+                    },
+                    Err(_) => Outcome::Failure((Status::BadRequest, ChClaimsError::Invalid))
+                }
+            }
+        }
+    }
+}
 
 pub fn get_jwks(key_path: &str) -> Option<JWKSet<Empty>>{
     let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path).unwrap();
@@ -43,4 +102,69 @@ pub fn get_fingerprint(key_path: &str) -> Option<String>{
         return Some(pk.fingerprint())
     }
     None
+}
+
+pub fn create_service_token(issuer: &str, audience: &str, client_id: &str) -> String{
+    let private_claims = ChClaims::new(client_id);
+    create_token(issuer, audience, &private_claims)
+}
+
+pub fn create_token<T: Display + Clone + Serialize + for<'de> Deserialize<'de>> (issuer: &str, audience: &str, private_claims: &T) -> String{
+    let signing_secret = match env::var(ENV_SHARED_SECRET){
+        Ok(secret) => {
+            Secret::Bytes(secret.to_string().into_bytes())
+        },
+        Err(_) => {
+            panic!("Shared Secret not configured. Please configure environment variable {}", ENV_SHARED_SECRET);
+        }
+    };
+    let expiration_date = Utc::now() + Duration::minutes(5);
+
+    let claims = ClaimsSet::<T>{
+        registered: RegisteredClaims{
+            issuer: Some(issuer.to_string()),
+            issued_at: Some(Timestamp::from(Utc::now())),
+            audience: Some(SingleOrMultiple::Single(audience.to_string())),
+            expiry: Some(Timestamp::from(expiration_date)),
+            ..Default::default()
+        },
+        private: private_claims.clone()
+    };
+
+    // Construct the JWT
+    let jwt = jws::Compact::new_decoded(
+        From::from(jws::RegisteredHeader {
+            algorithm: SignatureAlgorithm::HS256,
+            ..Default::default()
+        }),
+        claims.clone()
+    );
+
+    jwt.into_encoded(&signing_secret).unwrap().unwrap_encoded().to_string()
+}
+
+pub fn decode_token<T: Clone + Serialize + for<'de> Deserialize<'de>>(token: &str, audience: &str) -> Result<T>{
+    let signing_secret = match env::var(ENV_SHARED_SECRET){
+        Ok(secret) => {
+            Secret::Bytes(secret.to_string().into_bytes())
+        },
+        Err(e) => {
+            error!("Shared Secret not configured. Please configure environment variable {}", ENV_SHARED_SECRET);
+            return Err(Error::from(e))
+        }
+    };
+    let jwt: jws::Compact<ClaimsSet<T>, Empty> = JWT::<_, Empty>::new_encoded(token);
+    let decoded_jwt = jwt.decode(&signing_secret,SignatureAlgorithm::HS256)?;
+    let mut val_options = ValidationOptions::default();
+    let mut claim_presence_options = ClaimPresenceOptions::default();
+    claim_presence_options.expiry = Required;
+    claim_presence_options.issuer = Required;
+    claim_presence_options.audience = Required;
+    claim_presence_options.issued_at = Required;
+    val_options.claim_presence_options = claim_presence_options;
+    val_options.issued_at = Validate(Duration::minutes(5));
+    // Issuer is not validated. Wouldn't make much of a difference if we did
+    val_options.audience = Validate(audience.to_string());
+    assert!(decoded_jwt.validate(val_options).is_ok());
+    Ok(decoded_jwt.payload().unwrap().private.clone())
 }

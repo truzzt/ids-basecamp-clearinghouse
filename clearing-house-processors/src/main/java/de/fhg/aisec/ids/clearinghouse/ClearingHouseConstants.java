@@ -25,10 +25,9 @@ final class ClearingHouseConstants {
 
   static final String MULTIPART_HEADER = "header";
   static final String MULTIPART_PAYLOAD = "payload";
-  static final String CAMEL_MULTIPART_HEADER = "idsMultipartHeader";
+  static final String IDS_HEADER = "ids-header";
   static final String CAMEL_HTTP_STATUS_CODE_HEADER = "CamelHttpResponseCode";
   static final String CAMEL_HTTP_PATH = "CamelHttpPath";
-  static final String IDS_MESSAGE_HEADER = "idsc-header";
   static final String IDS_PROTOCOL = "ids-protocol";
   static final String PROTO_IDSCP2 = "idscp2";
   static final String PROTO_MULTIPART = "idsMultipart";
@@ -39,6 +38,8 @@ final class ClearingHouseConstants {
   static final String IDSCP_SIZE_HEADER = "ch-ids-size";
   static final String IDSCP_SORT_HEADER = "ch-ids-sort";
   static final String TYPE_HEADER = "Content-Type";
+  static final String SERVICE_HEADER = "CH-SERVICE";
+  static final String SERVICE_CLAIM = "client_id";
   static final String IDSCP2_IDS_HEADER = "idscp2-header";
   static final String AUTH_HEADER = "Authorization";
   static final String TYPE_JSON = "application/json";

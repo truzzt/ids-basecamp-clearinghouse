@@ -10,6 +10,7 @@ import de.fraunhofer.iais.eis.ResultMessage
 import okhttp3.MultipartReader
 import org.junit.Assert
 import org.junit.jupiter.api.Test
+import java.net.ProtocolException
 
 class QueryIdTests {
 
@@ -51,7 +52,27 @@ class QueryIdTests {
         failQueryId(pid2, receipt.document_id, 404)
     }
 
+    @Test
+    fun queryId4(){
+        val pid = formatId("mp-qid4")
+
+        // create Pid with one document
+        val message = "This is the first message"
+        val receipt = succLogMessage(pid, message)
+
+        // Test: query existing document
+        failEarlyQueryPid(pid, receipt.document_id, 401)
+    }
+
     companion object{
+        fun failEarlyQueryPid(pid: String, id: String, code: Int){
+            val call = client.newCall(MultipartClient.queryMessage(pid, id, "", client=2))
+            val response = call.execute()
+            // check http status code and message
+            Assert.assertEquals("Unexpected http status code!", code, response.code)
+            Assert.assertEquals("Unexpected message", "Unauthorized", response.message)
+        }
+
         fun failQueryId(pid: String, id: String, code: Int){
             val call = client.newCall(MultipartClient.queryMessage(pid, id, ""))
             val response = call.execute()
@@ -71,7 +92,7 @@ class QueryIdTests {
             // check IDS message type
             val parts = Utility.getParts(MultipartReader(response.body!!))
             Utility.checkIdsMessage(parts.first, ResultMessage::class.java)
-            //TODO: can't serialize json array is of type "message + payload + payload type"
+            //TODO: can't serialize. json array is of type "message + payload + payload type"
             response.close()
             return parts.second
         }

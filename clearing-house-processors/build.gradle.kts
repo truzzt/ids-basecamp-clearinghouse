@@ -22,7 +22,7 @@ sourceSets{
     }
 }
 
-val intTestImplementation by configurations.getting {
+val intTestImplementation: Configuration by configurations.getting {
     extendsFrom(configurations.testImplementation.get())
 }
 
@@ -113,8 +113,12 @@ dependencies {
     implementation(libs.apacheHttp.client)
     implementation(libs.apacheHttp.mime)
     implementation(libs.commons.fileupload)
+    implementation(libs.ktor.auth)
+    implementation(libs.ktor.auth.jwt)
+    compileOnly(libs.spring.context)
 
     testApi(libs.slf4j.simple)
+    testImplementation(libs.idscp2.core)
     testImplementation(libs.junit5)
     testImplementation(libs.okhttp3)
     testImplementation(kotlin("test"))
@@ -123,14 +127,14 @@ dependencies {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
 }
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
-    sourceCompatibility = "11"
-    targetCompatibility = "11"
+    sourceCompatibility = JavaVersion.VERSION_17.toString()
+    targetCompatibility = JavaVersion.VERSION_17.toString()
 }
 
 tasks.jar {

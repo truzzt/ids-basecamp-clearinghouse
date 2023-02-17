@@ -1,15 +1,24 @@
 package de.fhg.aisec.ids.clearinghouse
 
 import de.fhg.aisec.ids.clearinghouse.multipart.MultipartEndpointTest
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriver
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriverConfig
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityProfile
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityRequirements
-import de.fraunhofer.iais.eis.*
+import de.fhg.aisec.ids.idscp2.daps.aisecdaps.AisecDapsDriver
+import de.fhg.aisec.ids.idscp2.daps.aisecdaps.AisecDapsDriverConfig
+import de.fhg.aisec.ids.idscp2.keystores.KeyStoreUtil.loadKeyStore
+import de.fraunhofer.iais.eis.DynamicAttributeToken
+import de.fraunhofer.iais.eis.DynamicAttributeTokenBuilder
+import de.fraunhofer.iais.eis.LogMessageBuilder
+import de.fraunhofer.iais.eis.Message
+import de.fraunhofer.iais.eis.QueryMessageBuilder
+import de.fraunhofer.iais.eis.RequestMessageBuilder
+import de.fraunhofer.iais.eis.TokenFormat
 import de.fraunhofer.iais.eis.ids.jsonld.Serializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers
 import okhttp3.MultipartReader
 import java.net.URI
@@ -18,7 +27,8 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
-import java.util.*
+import java.util.Base64
+import java.util.Objects
 import javax.xml.datatype.DatatypeFactory
 
 @Serializable
@@ -52,8 +62,9 @@ enum class MessageType{
 
 class Utility {
     companion object{
-        val CONNECTOR_1 = "A5:0C:A5:F0:84:D9:90:BB:BC:D9:57:3A:04:C8:7F:93:ED:97:A2:52:keyid:CB:8C:C7:B6:85:79:A8:23:A6:CB:15:AB:17:50:2F:E6:65:43:5D:E8"
-        val CONNECTOR_2 = "7A:2B:DD:2A:14:22:A3:50:3D:EA:FB:60:72:6A:FB:2E:58:41:CB:C0:keyid:CB:8C:C7:B6:85:79:A8:23:A6:CB:15:AB:17:50:2F:E6:65:43:5D:E8"
+
+        val CONNECTOR_1 = "D2:70:FE:7F:32:BB:37:BF:DF:F4:08:36:6B:F1:9E:7A:EB:A4:2D:2A:keyid:CB:8C:C7:B6:85:79:A8:23:A6:CB:15:AB:17:50:2F:E6:65:43:5D:E8"
+        val CONNECTOR_2 = "13:09:2E:1C:50:9B:8B:77:DE:01:1F:3B:B5:E0:D2:CC:1B:C5:88:9E:keyid:CB:8C:C7:B6:85:79:A8:23:A6:CB:15:AB:17:50:2F:E6:65:43:5D:E8"
 
         val STATUS_400 = "Bad Request"
         val STATUS_401 = "Unauthorized"
@@ -65,19 +76,17 @@ class Utility {
 
         private val SERIALIZER = Serializer()
 
-
-
         val keyStorePath: Path = Paths.get(
             Objects.requireNonNull(
                 MultipartEndpointTest::class.java.classLoader
-                    .getResource("ssl/consumer-keystore.p12")
+                    .getResource("ssl/client-keystore.p12")
             ).path
         )
 
         val keyStorePathOtherClient: Path = Paths.get(
             Objects.requireNonNull(
                 MultipartEndpointTest::class.java.classLoader
-                    .getResource("ssl/provider-keystore.p12")
+                    .getResource("ssl/server-keystore.p12")
             ).path
         )
 
@@ -88,25 +97,35 @@ class Utility {
             ).path
         )
 
-        val securityRequirements = SecurityRequirements.Builder()
-            .setRequiredSecurityLevel(SecurityProfile.INVALID)
-            .build()
+        val password = "password".toCharArray()
+
+        // Load certificates from local KeyStore
+        val ks = loadKeyStore(keyStorePath, password)
+        val ksOtherClient = loadKeyStore(keyStorePathOtherClient, password)
 
         val dapsDriver = AisecDapsDriver(
             AisecDapsDriverConfig.Builder()
                 .setKeyStorePath(keyStorePath)
+                .setKeyStorePassword(password)
+                .setKeyPassword(password)
+                .setKeyAlias("1")
                 .setTrustStorePath(trustStorePath)
-                .setDapsUrl("https://daps.aisec.fraunhofer.de")
-                .setSecurityRequirements(securityRequirements)
+                .setTrustStorePassword(password)
+                .setDapsUrl("https://daps-dev.aisec.fraunhofer.de/v4")
+                .loadTransportCertsFromKeystore(ks)
                 .build()
         )
 
         val dapsDriverOtherClient = AisecDapsDriver(
             AisecDapsDriverConfig.Builder()
                 .setKeyStorePath(keyStorePathOtherClient)
+                .setKeyStorePassword(password)
+                .setKeyPassword(password)
+                .setKeyAlias("1")
                 .setTrustStorePath(trustStorePath)
-                .setDapsUrl("https://daps.aisec.fraunhofer.de")
-                .setSecurityRequirements(securityRequirements)
+                .setTrustStorePassword(password)
+                .setDapsUrl("https://daps-dev.aisec.fraunhofer.de/v4")
+                .loadTransportCertsFromKeystore(ksOtherClient)
                 .build()
         )
 

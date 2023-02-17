@@ -2,13 +2,11 @@ use std::string::ToString;
 use rocket::serde::json::Value;
 use crate::model::document::Document;
 
-pub mod auth;
-pub mod claims;
 pub mod client;
 pub mod crypto;
 
 pub trait ApiClient{
-    fn new(url: &str) -> Self;
+    fn new(url: &str, service_id: &str) -> Self;
     fn get_conf_param() -> String;
 }
 

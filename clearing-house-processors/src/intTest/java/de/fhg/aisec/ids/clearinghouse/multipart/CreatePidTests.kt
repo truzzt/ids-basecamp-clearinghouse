@@ -2,8 +2,9 @@ package de.fhg.aisec.ids.clearinghouse.multipart
 
 import de.fhg.aisec.ids.clearinghouse.OwnerList
 import de.fhg.aisec.ids.clearinghouse.Utility
-import de.fhg.aisec.ids.clearinghouse.multipart.MultipartEndpointTest.Companion.client
 import de.fhg.aisec.ids.clearinghouse.Utility.Companion.formatId
+import de.fhg.aisec.ids.clearinghouse.multipart.MultipartEndpointTest.Companion.client
+import de.fhg.aisec.ids.clearinghouse.multipart.MultipartEndpointTest.Companion.otherClient
 import de.fraunhofer.iais.eis.MessageProcessedNotificationMessage
 import de.fraunhofer.iais.eis.RejectionMessage
 import kotlinx.serialization.encodeToString
@@ -92,6 +93,15 @@ class CreatePidTests {
         response.close()
     }
 
+    @Test
+    fun createPid8(){
+        val pid = formatId("mp-pid8")
+
+        // Test: Create Pid without matching aki:ski in certificate
+        failEarlyCreatePid(pid, null, 401)
+    }
+
+
     companion object{
 
         fun succCreatePid(pid: String, owners: List<String>?, client: Int = 1){
@@ -122,9 +132,23 @@ class CreatePidTests {
             if (owners != null) {
                 list = Json.encodeToString(OwnerList(owners))
             }
-            val call = client.newCall(MultipartClient.pidMessage(pid, list, client=c))
+            val call = when (c) {
+                1 -> client.newCall(MultipartClient.pidMessage(pid, list, client=c))
+                else -> otherClient.newCall(MultipartClient.pidMessage(pid, list, client=c))
+            }
             return call.execute()
         }
 
+        fun failEarlyCreatePid(pid: String, owners: List<String>?, code: Int){
+            var list = ""
+            if (owners != null) {
+                list = Json.encodeToString(OwnerList(owners))
+            }
+            val call = client.newCall(MultipartClient.pidMessage(pid, list, client=2))
+            val response = call.execute()
+            // check http status code and message
+            Assert.assertEquals("Unexpected http status code!", code, response.code)
+            Assert.assertEquals("Unexpected message", "Unauthorized", response.message)
+        }
     }
 }

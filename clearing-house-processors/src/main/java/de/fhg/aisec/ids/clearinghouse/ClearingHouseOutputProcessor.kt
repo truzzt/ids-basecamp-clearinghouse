@@ -19,110 +19,90 @@
  */
 package de.fhg.aisec.ids.clearinghouse
 
-import de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.*
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.AisecDapsDriver
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityProfile
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityRequirements
-import de.fhg.aisec.ids.idscp2.default_drivers.daps.aisec_daps.SecurityRequirements.Builder
-import de.fraunhofer.iais.eis.*
-import de.fraunhofer.iais.eis.ids.jsonld.Serializer
+import de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.CAMEL_HTTP_STATUS_CODE_HEADER
+import de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.IDS_HEADER
+import de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.IDS_PROTOCOL
+import de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.PROTO_IDSCP2
+import de.fhg.aisec.ids.clearinghouse.ClearingHouseConstants.PROTO_MULTIPART
+import de.fraunhofer.iais.eis.Message
+import de.fraunhofer.iais.eis.MessageProcessedNotificationMessageBuilder
+import de.fraunhofer.iais.eis.RejectionMessageBuilder
+import de.fraunhofer.iais.eis.ResultMessageBuilder
 import org.apache.camel.Exchange
 import org.apache.camel.Processor
 import org.slf4j.LoggerFactory
-import java.net.URI
-import java.nio.charset.StandardCharsets
-import java.time.LocalDateTime
-import javax.xml.datatype.DatatypeFactory
+import org.springframework.stereotype.Component
 
+@Component("chOutputProcessor")
 class ClearingHouseOutputProcessor : Processor {
 
     override fun process(exchange: Exchange) {
-        processClearingHouseOutput(exchange)
+        val egetIn = exchange.getIn()
+        val headers = egetIn.headers
+        if (LOG.isTraceEnabled) {
+            LOG.trace("[IN] ${ClearingHouseOutputProcessor::class.java.simpleName}")
+            for (header in headers.keys) {
+                LOG.trace("Found header '{}':'{}'", header, headers[header])
+            }
+        }
+
+        // If this property is null, the routes are not defined correctly!
+        val originalRequest = exchange.message.getHeader(IDS_HEADER) as Message
+
+        val statusCode = (headers[CAMEL_HTTP_STATUS_CODE_HEADER] as Int?)!!.toInt()
+        // creating IDS header for the response
+        val responseMessage = when (statusCode) {
+            200 -> ResultMessageBuilder()
+                ._correlationMessage_(originalRequest.id)
+                ._recipientAgent_(listOf(originalRequest.senderAgent))
+                ._recipientConnector_(listOf(originalRequest.issuerConnector))
+            201 -> MessageProcessedNotificationMessageBuilder()
+                ._correlationMessage_(originalRequest.id)
+                ._recipientAgent_(listOf(originalRequest.senderAgent))
+                ._recipientConnector_(listOf(originalRequest.issuerConnector))
+            else -> RejectionMessageBuilder()
+                ._correlationMessage_(originalRequest.id)
+                ._recipientAgent_(listOf(originalRequest.senderAgent))
+                ._recipientConnector_(listOf(originalRequest.issuerConnector))
+        }
+
+        // set the IDS header
+        egetIn.setHeader(IDS_HEADER, responseMessage)
+
+        // idscp2 set status code
+        when (headers[IDS_PROTOCOL] as String){
+            PROTO_IDSCP2 -> {
+                when(statusCode){
+                    400 -> egetIn.body = "Bad Request"
+                    401 -> egetIn.body = "Unauthorized"
+                    403 -> egetIn.body = "Forbidden"
+                    404 -> egetIn.body = "Not Found"
+                    500 -> egetIn.body = "Internal Server Error"
+                }
+            }
+            PROTO_MULTIPART -> {
+                when(statusCode){
+                    200, 201 ->
+                        if (LOG.isTraceEnabled) {
+                            LOG.trace("[OUT] ${ClearingHouseOutputProcessor::class.java.simpleName}")
+                            LOG.trace("Message successfully processed.")
+                        }
+                    else -> {
+                        egetIn.body = ""
+                    }
+                }
+            }
+        }
+
+        // Clean up the headers
+        egetIn.removeHeader(ClearingHouseConstants.AUTH_HEADER)
+        egetIn.removeHeader(ClearingHouseConstants.PID_HEADER)
+        egetIn.removeHeader(ClearingHouseConstants.SERVER)
+        egetIn.removeHeader(ClearingHouseConstants.TYPE_HEADER)
+        egetIn.removeHeader(IDS_PROTOCOL)
     }
 
     companion object {
         private val LOG = LoggerFactory.getLogger(ClearingHouseOutputProcessor::class.java)
-        private val SERIALIZER = Serializer()
-
-        fun processClearingHouseOutput(exchange: Exchange) {
-            val egetIn = exchange.getIn()
-            val headers = egetIn.headers
-            if (LOG.isTraceEnabled) {
-                LOG.trace("[IN] ${ClearingHouseOutputProcessor::class.java.simpleName}")
-                for (header in headers.keys) {
-                    LOG.trace("Found header '{}':'{}'", header, headers[header])
-                }
-            }
-
-            // get DAPS token
-            val securityRequirements: SecurityRequirements = Builder()
-                .setRequiredSecurityLevel(SecurityProfile.TRUSTED)
-                .build()
-            val dapsConfig = Configuration.createDapsConfig(securityRequirements)
-            val dapsDriver = AisecDapsDriver(dapsConfig)
-            val dapsToken = DynamicAttributeTokenBuilder()
-                ._tokenFormat_(TokenFormat.JWT)
-                ._tokenValue_(String(dapsDriver.token, StandardCharsets.UTF_8))
-                .build()
-
-            // If this property is null, the routes are not defined correctly!
-            val originalRequest = exchange.getProperty(IDS_MESSAGE_HEADER, Message::class.java)
-
-            val statusCode = (headers[CAMEL_HTTP_STATUS_CODE_HEADER] as Int?)!!.toInt()
-            // creating IDS header for the response
-            val responseMessage = when (statusCode) {
-                200 -> ResultMessageBuilder()
-                        ._issued_(
-                            DatatypeFactory.newInstance().newXMLGregorianCalendar(LocalDateTime.now().toString())
-                        )
-                        ._modelVersion_(Configuration.infomodelVersion)
-                        ._issuerConnector_(URI(Configuration.issuerConnector))
-                        ._senderAgent_(URI(Configuration.senderAgent))
-                        ._correlationMessage_(originalRequest.id)
-                        ._recipientAgent_(listOf(originalRequest.senderAgent))
-                        ._recipientConnector_(listOf(originalRequest.issuerConnector))
-                        ._securityToken_(dapsToken).build()
-                201 -> MessageProcessedNotificationMessageBuilder()
-                        ._issued_(
-                            DatatypeFactory.newInstance().newXMLGregorianCalendar(LocalDateTime.now().toString())
-                        )
-                        ._modelVersion_(Configuration.infomodelVersion)
-                        ._issuerConnector_(URI(Configuration.issuerConnector))
-                        ._senderAgent_(URI(Configuration.senderAgent))
-                        ._correlationMessage_(originalRequest.id)
-                        ._recipientAgent_(listOf(originalRequest.senderAgent))
-                        ._recipientConnector_(listOf(originalRequest.issuerConnector))
-                        ._securityToken_(dapsToken).build()
-                else -> RejectionMessageBuilder()
-                        ._issued_(
-                            DatatypeFactory.newInstance().newXMLGregorianCalendar(LocalDateTime.now().toString())
-                        )
-                        ._modelVersion_(Configuration.infomodelVersion)
-                        ._issuerConnector_(URI(Configuration.issuerConnector))
-                        ._senderAgent_(URI(Configuration.senderAgent))
-                        ._correlationMessage_(originalRequest.id)
-                        ._recipientAgent_(listOf(originalRequest.senderAgent))
-                        ._recipientConnector_(listOf(originalRequest.issuerConnector))
-                        ._securityToken_(dapsToken).build()
-            }
-
-            // set the IDS header
-            when (headers[IDS_PROTOCOL] as String){
-                PROTO_IDSCP2 -> {
-                    egetIn.setHeader(IDSCP2_IDS_HEADER, responseMessage)
-                    when(statusCode){
-                        400 -> egetIn.body = "Bad Request"
-                        401 -> egetIn.body = "Unauthorized"
-                        403 -> egetIn.body = "Forbidden"
-                        404 -> egetIn.body = "Not Found"
-                        500 -> egetIn.body = "Internal Server Error"
-                    }
-                }
-                PROTO_MULTIPART -> egetIn.setHeader(CAMEL_MULTIPART_HEADER, SERIALIZER.serialize(responseMessage))
-            }
-
-            // clean up headers
-            egetIn.removeHeader(IDS_PROTOCOL)
-        }
     }
 }

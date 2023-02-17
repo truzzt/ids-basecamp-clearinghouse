@@ -1,16 +1,14 @@
-use biscuit::Empty;
 use rocket::State;
 use chrono::Local;
 use core_lib::{
     api::{
         ApiResponse,
-        auth::ApiKey,
-        claims::IdsClaims,
         client::keyring_api::KeyringApiClient,
+        crypto::ChClaims,
         DocumentReceipt,
         QueryResult,
     },
-    constants::{DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES, PAYLOAD_PART, ROCKET_DOC_API},
+    constants::{DEFAULT_DOC_TYPE, DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES, PAYLOAD_PART, ROCKET_DOC_API},
     model::{
         crypto::{KeyCt, KeyCtList},
         document::Document,
@@ -24,24 +22,22 @@ use core_lib::{
 use rocket::fairing::AdHoc;
 use rocket::serde::json::{json, Json};
 use std::convert::TryFrom;
-use core_lib::constants::DEFAULT_DOC_TYPE;
 use crate::db::DataStore;
+
 
 #[post("/", format = "json", data = "<document>")]
 async fn create_enc_document(
-    api_key: ApiKey<IdsClaims, Empty>,
+    ch_claims: ChClaims,
     db: &State<DataStore>,
     key_api: &State<KeyringApiClient>,
     document: Json<Document>
 ) -> ApiResponse {
-    trace!("user '{:?}' with claims {:?}", api_key.sub(), api_key.claims());
+    trace!("...user '{:?}'", &ch_claims.client_id);
     let doc: Document = document.into_inner();
-    trace!("requested document is: '{:#?}'", json!(doc));
-
     // data validation
     let payload: Vec<String> = doc.parts.iter()
         .filter(|p| String::from(PAYLOAD_PART) == p.name)
-        .map(|p| p.content.as_ref().unwrap().clone()).collect();
+        .map(|p | p.content.as_ref().unwrap().clone()).collect();
     if payload.len() > 1 {
         return ApiResponse::BadRequest(String::from("Document contains two payloads!"));
     }
@@ -57,11 +53,9 @@ async fn create_enc_document(
         },
         _ => {
             debug!("Document does not exists!");
-
-            //TODO: get keys to encrypt document
             debug!("getting keys");
             let keys;
-            match key_api.generate_keys(&api_key.raw(), &doc.pid, &doc.dt_id) {
+            match key_api.generate_keys(&ch_claims.client_id, &doc.pid, &doc.dt_id).await {
                 Ok(key_map) => {
                     keys = key_map;
                     debug!("got keys");
@@ -114,7 +108,6 @@ async fn create_enc_document(
 
             debug!("storing document ....");
             // store document
-            //TODO store encrypted keys
             match db.add_document(&enc_doc).await {
                 Ok(_b) => ApiResponse::SuccessCreate(json!(receipt)),
                 Err(e) => {
@@ -128,7 +121,7 @@ async fn create_enc_document(
 
 #[get("/<pid>?<doc_type>&<page>&<size>&<sort>&<date_from>&<date_to>", format = "json")]
 async fn get_enc_documents_for_pid(
-    api_key: ApiKey<IdsClaims, Empty>,
+    ch_claims: ChClaims,
     key_api: &State<KeyringApiClient>,
     db: &State<DataStore>,
     doc_type: Option<String>,
@@ -139,7 +132,7 @@ async fn get_enc_documents_for_pid(
     date_to: Option<String>,
     pid: String) -> ApiResponse {
     debug!("Trying to retrieve documents for pid '{}'...", &pid);
-    trace!("...user '{:?}' with claims {:?}", api_key.sub(), api_key.claims());
+    trace!("...user '{:?}'", &ch_claims.client_id);
     debug!("...page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
 
     // Parameter validation for pagination:
@@ -191,8 +184,8 @@ async fn get_enc_documents_for_pid(
     }
     let (sanitized_date_from, sanitized_date_to) = sanitize_dates(parsed_date_from, parsed_date_to);
 
-    //TODO: new behavior: if pages are "invalid" return {}. Do not adjust page
-    // either call db with type filter or without to get cts
+    //new behavior: if pages are "invalid" return {}. Do not adjust page
+    //either call db with type filter or without to get cts
     let start = Local::now();
     debug!("... using pagination with page: {}, size:{} and sort:{:#?}", sanitized_page, sanitized_size, &sanitized_sort);
 
@@ -230,7 +223,7 @@ async fn get_enc_documents_for_pid(
         // caution! we currently only support a single dt per call, so we use the first dt we found
         let key_cts_list = KeyCtList::new(cts[0].dt_id.clone(), key_cts);
         // decrypt cts
-        let key_maps = match key_api.decrypt_multiple_keys(&api_key.raw(), &pid,&key_cts_list){
+        let key_maps = match key_api.decrypt_multiple_keys(&ch_claims.client_id, &pid,&key_cts_list).await{
             Ok(key_map) => {
                 key_map
             }
@@ -264,8 +257,8 @@ async fn get_enc_documents_for_pid(
 
 /// Retrieve document with id for process with pid
 #[get("/<pid>/<id>?<hash>", format = "json")]
-async fn get_enc_document(api_key: ApiKey<IdsClaims, Empty>, key_api: &State<KeyringApiClient>, db: &State<DataStore>, pid: String, id: String, hash: Option<String>) -> ApiResponse {
-    trace!("user '{:?}' with claims {:?}", api_key.sub(), api_key.claims());
+async fn get_enc_document(ch_claims: ChClaims, key_api: &State<KeyringApiClient>, db: &State<DataStore>, pid: String, id: String, hash: Option<String>) -> ApiResponse {
+    trace!("...user '{:?}'", &ch_claims.client_id);
     trace!("trying to retrieve document with id '{}' for pid '{}'", &id, &pid);
     if hash.is_some(){
         debug!("integrity check with hash: {}", hash.as_ref().unwrap());
@@ -276,7 +269,7 @@ async fn get_enc_document(api_key: ApiKey<IdsClaims, Empty>, key_api: &State<Key
         Ok(Some(ct)) => {
             match hex::decode(&ct.keys_ct){
                 Ok(key_ct) => {
-                    match key_api.decrypt_keys(&api_key.raw(), &pid, &ct.dt_id, &key_ct){
+                    match key_api.decrypt_keys(&ch_claims.client_id, &pid, &ct.dt_id, &key_ct).await{
                         Ok(key_map) => {
                             //TODO check the hash
                             match ct.decrypt(key_map.keys){

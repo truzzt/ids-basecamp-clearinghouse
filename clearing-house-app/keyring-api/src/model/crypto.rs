@@ -24,10 +24,6 @@ impl MasterKey{
         let ikm = generate_random_seed();
         let (master_key, _) = Hkdf::<Sha256>::extract(Some(&key_salt), &ikm);
 
-        MasterKey{
-            id: new_uuid(),
-            key: hex::encode_upper(master_key),
-            salt: hex::encode_upper(generate_random_seed())
-        }
+        MasterKey::new(new_uuid(), hex::encode_upper(master_key), hex::encode_upper(generate_random_seed()))
     }
 }

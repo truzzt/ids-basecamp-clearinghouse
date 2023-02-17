@@ -10,11 +10,10 @@ import de.fhg.aisec.ids.clearinghouse.multipart.LogMessageTests.Companion.succLo
 import de.fhg.aisec.ids.clearinghouse.multipart.MultipartEndpointTest.Companion.client
 import de.fraunhofer.iais.eis.RejectionMessage
 import de.fraunhofer.iais.eis.ResultMessage
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import okhttp3.MultipartReader
 import org.junit.Assert
 import org.junit.jupiter.api.Test
+import java.net.ProtocolException
 
 class QueryPidTests {
     @Test
@@ -94,7 +93,27 @@ class QueryPidTests {
         Assert.assertEquals("Should receive empty array!", 0, result.documents.size)
     }
 
+    @Test
+    fun queryPid7(){
+        val pid = formatId("mp-qpid7")
+
+        // create Pid
+        succLogMessage(pid, "This is the log message!")
+
+        // Test: Query pid without matching aki:ski in certificate
+        failEarlyQueryPid(pid, 401)
+    }
+
     companion object{
+
+        fun failEarlyQueryPid(pid: String, code: Int){
+            val call = client.newCall(MultipartClient.queryMessage(pid, null, "", client=2))
+            val response = call.execute()
+            // check http status code and message
+            Assert.assertEquals("Unexpected http status code!", code, response.code)
+            Assert.assertEquals("Unexpected message", "Unauthorized", response.message)
+        }
+
         fun failQueryPid(pid: String, code: Int){
             val call = client.newCall(MultipartClient.queryMessage(pid, null, ""))
             val response = call.execute()

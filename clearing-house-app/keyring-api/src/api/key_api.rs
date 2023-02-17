@@ -1,20 +1,18 @@
-use biscuit::Empty;
 use core_lib::api::ApiResponse;
-use core_lib::api::auth::ApiKey;
-use core_lib::api::claims::IdsClaims;
+use core_lib::api::crypto::ChClaims;
 use core_lib::constants::ROCKET_KEYRING_API;
+use core_lib::model::crypto::{KeyCtList, KeyMapListItem};
 use rocket::fairing::AdHoc;
 use rocket::State;
 use rocket::serde::json::{json, Json};
 
 use crate::db::KeyStore;
 use crate::crypto::{generate_key_map, restore_key_map};
-use core_lib::model::crypto::{KeyCtList, KeyMapListItem};
-
 
 #[get("/generate_keys/<_pid>?<dt_id>", format = "json")]
-async fn generate_keys(api_key: ApiKey<IdsClaims, Empty>, db: &State<KeyStore>, _pid: String, dt_id: String) -> ApiResponse {
-    trace!("user '{:?}' with claims {:?}", api_key.sub(), api_key.claims());
+async fn generate_keys(ch_claims: ChClaims, db: &State<KeyStore>, _pid: String, dt_id: String) -> ApiResponse {
+    trace!("generate_keys");
+    trace!("...user '{:?}'", &ch_claims.client_id);
     match db.get_msk().await{
         Ok(key) => {
             // check that doc type exists for pid
@@ -50,9 +48,10 @@ async fn generate_keys(api_key: ApiKey<IdsClaims, Empty>, db: &State<KeyStore>, 
 }
 
 #[get("/decrypt_keys/<_pid>", format = "json", data = "<key_cts>")]
-async fn decrypt_keys(api_key: ApiKey<IdsClaims, Empty>, db: &State<KeyStore>, _pid: Option<String>, key_cts: Json<KeyCtList>) -> ApiResponse {
+async fn decrypt_keys(ch_claims: ChClaims, db: &State<KeyStore>, _pid: Option<String>, key_cts: Json<KeyCtList>) -> ApiResponse {
+    trace!("decrypt_keys");
+    trace!("...user '{:?}'", &ch_claims.client_id);
     let cts = key_cts.into_inner();
-    trace!("user '{:?}' with claims {:?}", api_key.sub(), api_key.claims());
     debug!("number of cts to decrypt: {}", &cts.cts.len());
 
     // get master key
@@ -120,8 +119,9 @@ async fn decrypt_keys(api_key: ApiKey<IdsClaims, Empty>, db: &State<KeyStore>, _
 }
 
 #[get("/decrypt_keys/<_pid>/<keys_ct>?<dt_id>", format = "json")]
-async fn decrypt_key_map(api_key: ApiKey<IdsClaims, Empty>, db: &State<KeyStore>, keys_ct: String, _pid: Option<String>, dt_id: String) -> ApiResponse {
-    trace!("user '{:?}' with claims {:?}", api_key.sub(), api_key.claims());
+async fn decrypt_key_map(ch_claims: ChClaims, db: &State<KeyStore>, keys_ct: String, _pid: Option<String>, dt_id: String) -> ApiResponse {
+    trace!("decrypt_key_map");
+    trace!("...user '{:?}'", &ch_claims.client_id);
     trace!("ct: {}", &keys_ct);
     // get master key
     match db.get_msk().await{

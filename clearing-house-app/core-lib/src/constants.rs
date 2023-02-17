@@ -6,6 +6,9 @@ pub const DAPS_AUTHHEADER: &'static str = "Authorization";
 pub const DAPS_AUTHBEARER: &'static str = "Bearer";
 pub const DAPS_CERTIFICATES: &'static str = "certs";
 
+// definition of custom headers
+pub const SERVICE_HEADER: &'static str = "CH-SERVICE";
+
 // definition of config parameters (in config files)
 pub const DATABASE_URL: &'static str = "database_url";
 pub const DOCUMENT_API_URL: &'static str = "document_api_url";
@@ -15,6 +18,10 @@ pub const CLEAR_DB: &'static str = "clear_db";
 
 // define here the config options from environment variables
 pub const ENV_API_LOG_LEVEL: &'static str = "API_LOG_LEVEL";
+pub const ENV_SHARED_SECRET: &'static str = "SHARED_SECRET";
+pub const ENV_DOCUMENT_SERVICE_ID: &'static str = "SERVICE_ID_DOC";
+pub const ENV_KEYRING_SERVICE_ID: &'static str = "SERVICE_ID_KEY";
+pub const ENV_LOGGING_SERVICE_ID: &'static str = "SERVICE_ID_LOG";
 
 // definition of rocket mount points
 pub const ROCKET_DOC_API: &'static str = "/doc";
@@ -25,10 +32,10 @@ pub const ROCKET_PROCESS_API: &'static str = "/process";
 pub const ROCKET_KEYRING_API: &'static str = "/keyring";
 pub const ROCKET_USER_API: &'static str = "/users";
 
-// definition of database clients
+// definition of service names
 pub const DOCUMENT_DB_CLIENT: &'static str = "document-api";
 pub const KEYRING_DB_CLIENT: &'static str = "keyring-api";
-pub const PROCESS_DB_CLIENT: &'static str = "clearing-house-api";
+pub const PROCESS_DB_CLIENT: &'static str = "logging-service";
 
 // definition of table names
 pub const MONGO_DB: &'static str = "ch_ids";
@@ -69,7 +76,6 @@ pub const DEFAULT_DOC_TYPE: &'static str = "IDS_MESSAGE";
 pub const SPLIT_QUOTE: &'static str = "'";
 pub const SPLIT_SIGN: &'static str = "~";
 pub const SPLIT_CT: &'static str = "::";
-
 
 // definition of file names and folders
 pub const FOLDER_DB: &'static str = "db_init";

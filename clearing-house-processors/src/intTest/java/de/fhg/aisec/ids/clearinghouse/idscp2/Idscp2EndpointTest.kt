@@ -2,11 +2,11 @@ package de.fhg.aisec.ids.clearinghouse.idscp2
 
 import de.fhg.aisec.ids.clearinghouse.MessageType
 import de.fhg.aisec.ids.clearinghouse.Utility
-import de.fhg.aisec.ids.idscp2.default_drivers.remote_attestation.dummy.RaProverDummy2
-import de.fhg.aisec.ids.idscp2.default_drivers.remote_attestation.dummy.RaVerifierDummy2
-import de.fhg.aisec.ids.idscp2.default_drivers.secure_channel.tlsv1_3.NativeTlsConfiguration
-import de.fhg.aisec.ids.idscp2.idscp_core.api.configuration.AttestationConfig
-import de.fhg.aisec.ids.idscp2.idscp_core.api.configuration.Idscp2Configuration
+import de.fhg.aisec.ids.idscp2.api.configuration.AttestationConfig
+import de.fhg.aisec.ids.idscp2.api.configuration.Idscp2Configuration
+import de.fhg.aisec.ids.idscp2.defaultdrivers.remoteattestation.dummy.RaProverDummy2
+import de.fhg.aisec.ids.idscp2.defaultdrivers.remoteattestation.dummy.RaVerifierDummy2
+import de.fhg.aisec.ids.idscp2.defaultdrivers.securechannel.tls13.NativeTlsConfiguration
 import de.fraunhofer.iais.eis.DynamicAttributeTokenBuilder
 import de.fraunhofer.iais.eis.Message
 import de.fraunhofer.iais.eis.TokenFormat
@@ -29,12 +29,23 @@ class Idscp2EndpointTest {
             .setDapsDriver(Utility.dapsDriver)
             .build()
 
+        private val settingsOtherClient = Idscp2Configuration.Builder()
+            .setAckTimeoutDelay(500) //  500 ms
+            .setHandshakeTimeoutDelay(5 * 1000L) // 5 seconds
+            .setAttestationConfig(localAttestationConfig)
+            .setDapsDriver(Utility.dapsDriverOtherClient)
+            .build()
+
         // create secureChannel config
+
         private val nativeTlsConfiguration = NativeTlsConfiguration.Builder()
             .setKeyStorePath(Utility.keyStorePath)
+            .setKeyPassword(Utility.password)
+            .setKeyStorePassword(Utility.password)
             .setTrustStorePath(Utility.trustStorePath)
-            .setCertificateAlias("1.0.1")
-            .setHost("provider-core")
+            .setTrustStorePassword(Utility.password)
+            .setCertificateAlias("1")
+            .setHost("tc-core-server")
             .build()
 
         val client = Idscp2Client(settings, nativeTlsConfiguration)

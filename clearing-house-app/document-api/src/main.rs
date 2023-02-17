@@ -2,7 +2,7 @@
 #[macro_use] extern crate serde_derive;
 
 use core_lib::api::client::{ApiClientConfigurator, ApiClientEnum};
-use core_lib::util::setup_logger;
+use core_lib::util::{add_service_config, setup_logger};
 use rocket::fairing::AdHoc;
 use rocket::http::Method;
 use rocket::{Rocket, Build};
@@ -10,7 +10,7 @@ use rocket_cors::{
     AllowedHeaders, AllowedOrigins,
     CorsOptions
 };
-use core_lib::model::JwksCache;
+use core_lib::constants::ENV_DOCUMENT_SERVICE_ID;
 use crate::db::DatastoreConfigurator;
 
 mod doc_api;
@@ -68,8 +68,7 @@ fn rocket() -> Rocket<Build> {
     rocket::build()
         .attach(doc_api::mount_api())
         .attach(add_cors_options())
+        .attach(add_service_config(ENV_DOCUMENT_SERVICE_ID.to_string()))
         .attach(DatastoreConfigurator)
-        .attach(ApiClientConfigurator::new(ApiClientEnum::Daps))
         .attach(ApiClientConfigurator::new(ApiClientEnum::Keyring))
-        .manage(JwksCache::new())
 }

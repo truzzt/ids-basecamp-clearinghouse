@@ -17,7 +17,6 @@ The Document API is responsible for storing the data, while the Keyring API prov
 
 ### Logging Service
 The `Logging Service` is configured using the configuration file [`Rocket.toml`](logging-service/Rocket.toml), which must specify a set of configuration options, such as the correct URLs of the database and other service apis:
-- `daps_api_url`: Specifies the URL of the DAPS Service. Required to validate DAPS token
 - `keyring_api_url`: Specifies the URL of the Keyring API
 - `document_api_url`: Specifies the URL of the Document API
 - `database_url`: Specifies the URL of the database to store process information. Currently only mongodb is supported so URL is supposed to be `mongodb://<host>:<port>`
@@ -58,7 +57,6 @@ logging-service:
 
 ### Document API
 The `Document API` is responsible for storing the data and performs basic encryption and decryption for which it depends on the Keyring API. It is configured using the configuration file [`Rocket.toml`](document-api/Rocket.toml), which must specify a set of configuration options, such as the correct URLs of the database and other service apis:
-- `daps_api_url`: Specifies the URL of the DAPS Service. Required to validate DAPS token
 - `keyring_api_url`: Specifies the URL of the Keyring API
 - `database_url`: Specifies the URL of the database to store the encrypted documents. Currently only mongodb is supported so URL is supposed to be `mongodb://<host>:<port>`
 - `clear_db`: `true` or `false` indicates if the database should be cleared when starting the Service API or not. If `true` a restart will wipe the database! Starting the Service API on a clean database will initialize the database.
@@ -86,7 +84,6 @@ document-api:
 
 ### Keyring API
 The `Keyring API` is responsible for creating keys and the actual encryption and decryption of stored data. It is configured using the configuration file [`Rocket.toml`](keyring-api/Rocket.toml), which must specify a set of configuration options, such as the correct URLs of the database and other service apis:
-- `daps_api_url`: Specifies the URL of the DAPS Service. Required to validate DAPS token
 - `database_url`: Specifies the URL of the database to store document types and the master key. Currently only mongodb is supported so URL is supposed to be `mongodb://<host>:<port>`
 - `clear_db`: `true` or `false` indicates if the database should be cleared when starting the Service API or not. If `true` a restart will wipe the database! Starting the Service API on a clean database will initialize the database.
 
@@ -113,12 +110,12 @@ keyring-api:
         - ./data/certs:/server/certs
 ```
 
-### DAPS
-The `Logging Service` and the micro services need to be able to validate the certificate used by the DAPS. If the DAPS uses a self-signed certificate the certificate needs to be added in two places for each service:
-1. `/server/certs`: The service will load certificates in this folder in the container and use them for validation. The certificate needs to be in DER format.
-2. `/usr/local/share/ca-certificates`: The service relies on openssl for parts of the validation and openssl will not trust a self-signed certificate unless it was added in this folder and `update-ca-certificates` was called in the docker container. Once this is done the container might need to be restarted.
-
-If you are using [these dockerfiles](../docker/) and use `daps.aisec.fraunhofer.de` as the DAPS, you only need to follow Step 1. The certificate needed for Step 1 can be found [here](certs).
+### Shared Secret
+The `Logging Service` and the micro services use a shared secret to validate requests from each other. For this, they need the internal IDs of the services as well as the shared secret set as environment variables:
+1. `SERVICE_ID_LOG`: The internal ID of the `Logging Service`
+2. `SERVICE_ID_DOC`: The internal ID of the `Document API`
+3. `SERVICE_ID_KEY`: The internal ID of the `Keyring API`
+4. `SHARED_SECRET`: The shared secret of the services
 
 ### Mongo DB
 Each service requires a MongoDB for storing data. One easy way to ensure this is to configure a docker container for each service like this:

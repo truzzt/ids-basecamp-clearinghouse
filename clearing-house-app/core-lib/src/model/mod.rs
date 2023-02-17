@@ -1,6 +1,3 @@
-use std::sync::RwLock;
-use biscuit::Empty;
-use biscuit::jwk::JWKSet;
 use chrono::{Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime};
 
 pub mod crypto;
@@ -22,19 +19,6 @@ pub enum SortingOrder{
     #[field(value = "desc")]
     #[serde(rename = "desc")]
     Descending
-}
-
-#[derive(Debug)]
-pub struct JwksCache{
-    pub jwks: RwLock<Option<JWKSet<Empty>>>
-}
-
-impl JwksCache{
-    pub fn new() -> JwksCache{
-        JwksCache{
-            jwks: RwLock::new(None)
-        }
-    }
 }
 
 pub fn parse_date(date: Option<String>, to_date: bool) -> Option<NaiveDateTime>{

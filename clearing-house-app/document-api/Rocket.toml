@@ -1,6 +1,5 @@
 [global]
 limits = { json = 5242880 }
-daps_api_url = "https://daps.aisec.fraunhofer.de"
 
 [debug]
 address = "0.0.0.0"

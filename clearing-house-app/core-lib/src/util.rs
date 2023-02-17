@@ -7,10 +7,39 @@ use std::str::FromStr;
 use crate::constants::ENV_API_LOG_LEVEL;
 use crate::errors::*;
 use figment::{Figment, providers::{Format, Yaml}};
+use rocket::fairing::AdHoc;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServiceConfig{
+    pub service_id: String
+}
+
+impl ServiceConfig{
+    pub fn new(service_id: String) -> ServiceConfig{
+        ServiceConfig{
+            service_id
+        }
+    }
+}
 
 pub fn load_from_test_config(key: &str, file: &str) -> String{
     Figment::new().merge(Yaml::file(file)).extract_inner(key).unwrap_or(String::new())
 }
+
+pub fn add_service_config(service_id: String) -> AdHoc{
+    AdHoc::try_on_ignite("Adding Service Config", move |rocket| async move {
+        match env::var(&service_id){
+            Ok(id) => {
+                Ok(rocket.manage(ServiceConfig::new(id)))
+            },
+            Err(_e) => {
+                error!("Service ID not configured. Please configure environment variable {}", &service_id);
+                return Err(rocket)
+            }
+        }
+    })
+}
+
 
 /// setup the fern logger and set log level to environment variable `ENV_API_LOG_LEVEL`
 /// allowed levels: `Off`, `Error`, `Warn`, `Info`, `Debug`, `Trace`

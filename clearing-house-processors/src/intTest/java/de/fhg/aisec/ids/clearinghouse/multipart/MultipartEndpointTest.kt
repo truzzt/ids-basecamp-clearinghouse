@@ -2,18 +2,17 @@ package de.fhg.aisec.ids.clearinghouse.multipart
 
 import de.fhg.aisec.ids.clearinghouse.MessageType
 import de.fhg.aisec.ids.clearinghouse.Utility
-import de.fhg.aisec.ids.idscp2.default_drivers.keystores.PreConfiguration
+import de.fhg.aisec.ids.idscp2.keystores.PreConfiguration
 import de.fraunhofer.iais.eis.DynamicAttributeTokenBuilder
 import de.fraunhofer.iais.eis.Message
 import de.fraunhofer.iais.eis.TokenFormat
 import okhttp3.OkHttpClient
 import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
 
 class MultipartEndpointTest {
 
     companion object {
-        private val trustManagers = PreConfiguration.getX509ExtTrustManager(
+        private val trustManager = PreConfiguration.getX509ExtTrustManager(
             Utility.trustStorePath,
             "password".toCharArray()
         )
@@ -22,28 +21,38 @@ class MultipartEndpointTest {
             "password".toCharArray(),
             Utility.keyStorePath,
             "password".toCharArray(),
-            "1.0.1",
-            "RSA"
         )
 
-        private val sslContext = SSLContext.getInstance("TLS")
+        private val keyManagersOtherClient = PreConfiguration.getX509ExtKeyManager(
+            "password".toCharArray(),
+            Utility.keyStorePathOtherClient,
+            "password".toCharArray(),
+        )
 
-        init{
-            sslContext.init(keyManagers, trustManagers, null);
+        private val sslContext = SSLContext.getInstance("TLS").apply {
+            init(keyManagers, arrayOf(trustManager), null)
+        }
+
+        private val sslContextOtherClient = SSLContext.getInstance("TLS").apply {
+            init(keyManagersOtherClient, arrayOf(trustManager), null)
         }
 
         val client = OkHttpClient.Builder()
-        .sslSocketFactory(sslContext.socketFactory, trustManagers[0] as X509TrustManager)
-        .build();
+            .sslSocketFactory(sslContext.socketFactory, trustManager)
+            .build()
 
-        fun getMessage(type: MessageType, client: Int = 1): Message{
-            return when (client){
+        val otherClient = OkHttpClient.Builder()
+            .sslSocketFactory(sslContextOtherClient.socketFactory, trustManager)
+            .build()
+
+        fun getMessage(type: MessageType, client: Int = 1): Message {
+            return when (client) {
                 2 -> Utility.getMessage(type, Utility.getDapsToken(Utility.dapsDriverOtherClient.token))
                 else -> Utility.getMessage(type, Utility.getDapsToken())
             }
         }
 
-        fun getInvalidMessage(type: MessageType): Message{
+        fun getInvalidMessage(type: MessageType): Message {
             val invToken = DynamicAttributeTokenBuilder()
                 ._tokenFormat_(TokenFormat.JWT)
                 ._tokenValue_("This is not a valid token!")

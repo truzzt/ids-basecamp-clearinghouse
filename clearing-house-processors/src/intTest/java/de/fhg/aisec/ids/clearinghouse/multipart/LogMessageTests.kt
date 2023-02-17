@@ -2,9 +2,10 @@ package de.fhg.aisec.ids.clearinghouse.multipart
 
 import de.fhg.aisec.ids.clearinghouse.ChJwt
 import de.fhg.aisec.ids.clearinghouse.Utility
+import de.fhg.aisec.ids.clearinghouse.Utility.Companion.formatId
 import de.fhg.aisec.ids.clearinghouse.multipart.CreatePidTests.Companion.succCreatePid
 import de.fhg.aisec.ids.clearinghouse.multipart.MultipartEndpointTest.Companion.client
-import de.fhg.aisec.ids.clearinghouse.Utility.Companion.formatId
+import de.fhg.aisec.ids.clearinghouse.multipart.MultipartEndpointTest.Companion.otherClient
 import de.fraunhofer.iais.eis.MessageProcessedNotificationMessage
 import de.fraunhofer.iais.eis.RejectionMessage
 import okhttp3.MultipartReader
@@ -54,18 +55,23 @@ class LogMessageTests {
         failLogMessage(pid, payload, 403)
     }
 
+    @Test
+    fun logMessage5(){
+        val pid = formatId("mp-log5")
+        val payload = "This message is logged"
+
+        // Test: Logging without matching aki:ski in certificate
+        failEarlyLogMessage(pid, payload, 401)
+    }
+
     companion object{
 
         fun failEarlyLogMessage(pid: String, payload: String, code: Int){
-            val call = client.newCall(MultipartClient.logMessage(pid, payload, false))
+            val call = client.newCall(MultipartClient.logMessage(pid, payload, client=2))
             val response = call.execute()
-            // check http status code
+            // check http status code and message
             Assert.assertEquals("Unexpected http status code!", code, response.code)
-            // TODO: check that there is no IDS header
-            println(response.body!!.string())
-            Assert.assertTrue(false)
-            //val parts = Utility.getParts(MultipartReader(response.body!!))
-            //Utility.checkIdsMessage(parts.first, RejectionMessage::class.java)
+            Assert.assertEquals("Unexpected message", "Unauthorized", response.message)
         }
 
         fun failLogMessage(pid: String, payload: String, code: Int){
@@ -79,7 +85,10 @@ class LogMessageTests {
         }
 
         fun succLogMessage(pid: String, payload: String, c: Int = 1): ChJwt {
-            val call = client.newCall(MultipartClient.logMessage(pid, payload, client=c))
+            val call = when (c) {
+                1 -> client.newCall(MultipartClient.logMessage(pid, payload, client=c))
+                else -> otherClient.newCall(MultipartClient.logMessage(pid, payload, client=c))
+            }
             val response = call.execute()
             // check http status code
             Assert.assertEquals("Unexpected http status code!", 201, response.code)
@@ -92,6 +101,7 @@ class LogMessageTests {
             response.close()
             return receipt
         }
+
     }
 
 }

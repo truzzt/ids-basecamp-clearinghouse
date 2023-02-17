@@ -3,10 +3,11 @@ package de.fhg.aisec.ids.clearinghouse
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import de.fraunhofer.iais.eis.Message
+import org.slf4j.LoggerFactory
 import java.nio.charset.Charset
 import javax.xml.bind.DatatypeConverter
 
-class ClearingHouseMessage (var header: Message? = null, var payloadType: String? = null, var payload: String? = null){
+class ClearingHouseMessage (var header: Message? = null, var payloadType: String? =  null, var payload: String? = null){
     private var charset: String = Charset.defaultCharset().toString()
 
     fun toJson(): String {
@@ -20,7 +21,7 @@ class ClearingHouseMessage (var header: Message? = null, var payloadType: String
         parseContentType(contentTypeHeader)
         when (this.payloadType){
             "text/plain", "application/json", "application/ld+json" -> {
-                this.payload = payload.toString(Charset.forName(charset))
+                this.payload = String(payload, Charset.forName(charset))
             }
             else -> {
                 this.payloadType = "application/octet-stream"
@@ -42,7 +43,7 @@ class ClearingHouseMessage (var header: Message? = null, var payloadType: String
                     val charsetInput = parts[1].split("=")
                     if (charsetInput.size == 2){
                         this.charset = charsetInput[1]
-                        ClearingHouseInfomodelParsingProcessor.LOG.debug("Using Charset from Content-Type header: {}", charset)
+                        LOG.debug("Using Charset from Content-Type header: {}", charset)
                     }
                 }
                 else -> {
@@ -53,5 +54,9 @@ class ClearingHouseMessage (var header: Message? = null, var payloadType: String
         else{
             this.payloadType = "application/octet-stream"
         }
+    }
+
+    companion object {
+        private val LOG = LoggerFactory.getLogger(ClearingHouseMessage::class.java)
     }
 }

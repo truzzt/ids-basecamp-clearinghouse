@@ -63,7 +63,7 @@ class QueryIdTests {
             val (resultMessage, resultPayload, resultHeaders) = Idscp2EndpointTest.queryMessage(pid, id, "")
             // check IDS message type
             Assert.assertTrue(resultMessage is ResultMessage)
-            //TODO: can't serialize json array is of type "message + payload + payload type"
+            //TODO: can't serialize json. array is of type "message + payload + payload type"
             val p = String(resultPayload!!)
             return p
         }
