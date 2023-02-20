@@ -47,6 +47,11 @@ logging-service:
     environment:
         # Allowed levels: Off, Error, Warn, Info, Debug, Trace
         - API_LOG_LEVEL=Debug
+        - SERVICE_ID_LOG=<logging service id>
+        - SERVICE_ID_DOC=<document service id>
+        - SERVICE_ID_KEY=<keyring service id>
+        - SHARED_SECRET=<shared secret>
+
     ports:
         - "8000:8000"
     volumes:
@@ -75,6 +80,10 @@ document-api:
     environment:
         # Allowed levels: Off, Error, Warn, Info, Debug, Trace
         - API_LOG_LEVEL=Info
+        - SERVICE_ID_LOG=<logging service id>
+        - SERVICE_ID_DOC=<document service id>
+        - SERVICE_ID_KEY=<keyring service id>
+        - SHARED_SECRET=<shared secret>
     ports:
         - "8001:8001"
     volumes:
@@ -102,6 +111,10 @@ keyring-api:
     environment:
         # Allowed levels: Off, Error, Warn, Info, Debug, Trace
         - API_LOG_LEVEL=Info
+        - SERVICE_ID_LOG=<logging service id>
+        - SERVICE_ID_DOC=<document service id>
+        - SERVICE_ID_KEY=<keyring service id>
+        - SHARED_SECRET=<shared secret>
     ports:
         - "8002:8002"
     volumes:

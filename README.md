@@ -23,11 +23,12 @@ The `Clearing House App` is a REST API written in [Rust](https://www.rust-lang.o
 ## Trusted Connector
 The Clearing House Service API requires a Trusted Connector [Trusted Connector](https://github.com/industrial-data-space/trusted-connector) (Version 7.1.0+) for deployment. The process of setting up a Trusted Connector is described [here](https://industrial-data-space.github.io/trusted-connector-documentation/docs/getting_started/). Using a docker image of the Trusted Connector should be sufficient for most deployments:
 
-`docker pull fraunhoferaisec/trusted-connector-core:7.1.0`
+`docker pull fraunhoferaisec/trusted-connector-core:7.2.0-rc1`
 
 The Clearing House Processors are written in Java for use in the Camel Component of the Trusted Connector. To configure the Trusted Connector for the Clearing House Service API, it needs access to the following files inside the docker container (e.g. mounted as a volume):
 - `clearing-house-processors.jar`: The Clearing House Processors need to be placed in the `/root/jars` folder of the Trusted Connector. The jar file needs to be [build](clearing-house-processors#building-from-source) from the Clearing House Processors using `gradle`.
 - [`clearing-house-routes.xml`](clearing-house-processors/src/routes/clearing-house-routes.xml): The camel routes required by the Clearing House need to be placed in the `/root/deploy` folder of the Trusted Connector.
+- [`application.yml`](docker/application.yml): This is a new configuration file of Trusted Connector 7.0.0+. The file version in this repository enables the use of some of the environment variables documented in the next section.
 
 Besides those files that are specific for the configuration of the Clearing House Service API, the Trusted Connector requires other files for its configuration, e.g. a truststore and a keystore with appropriate key material. Please refer to the [Documentation](https://industrial-data-space.github.io/trusted-connector-documentation/) of the Trusted Connector for more information. Also, please check the [Examples](https://github.com/industrial-data-space/trusted-connector/tree/master/examples) as they contain up-to-date configurations for the Trusted Connector.
 
