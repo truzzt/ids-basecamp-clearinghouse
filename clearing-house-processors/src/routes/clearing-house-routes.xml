@@ -16,18 +16,18 @@
         </camel:trustManagers>
     </camel:sslContextParameters>
 
-    <bean name="rootDaps" class="de.fhg.aisec.ids.idscp2.beans.AisecDapsDriverFactoryBean">
-        <property name="dapsUrl" value="https://daps-dev.aisec.fraunhofer.de/v4"/>
-        <property name="dapsSslParameters" ref="rootServerSslContext"/>
-        <property name="transportCertificatesParameters" ref="rootServerSslContext"/>
-    </bean>
-
     <bean id="jetty" class="org.apache.camel.component.jetty9.JettyHttpComponent9">
         <property name="sslSocketConnectorProperties">
             <map>
                 <entry key="needClientAuth" value="true"/>
             </map>
         </property>
+    </bean>
+
+    <bean name="rootDaps" class="de.fhg.aisec.ids.idscp2.beans.AisecDapsDriverFactoryBean">
+        <property name="dapsUrl" value="https://daps-dev.aisec.fraunhofer.de/v3"/>
+        <property name="dapsSslParameters" ref="rootServerSslContext"/>
+        <property name="transportCertificatesParameters" ref="rootServerSslContext"/>
     </bean>
 
     <bean name="attestationConfig" class="de.fhg.aisec.ids.idscp2.beans.AttestationConfigFactoryBean">
@@ -121,7 +121,7 @@
                         <transform><constant>Internal Server Error</constant></transform>
                     </otherwise>
                 </choice>
-            </onException>            
+            </onException>
             <process ref="idsMultiPartInputProcessor" />
             <setHeader name="ids-protocol"><simple>idsMultipart</simple></setHeader>
             <process ref="chInputValidationProcessor" />
@@ -154,8 +154,8 @@
                     <simple>${exchangeProperty.ids-type} == 'RequestMessage'</simple>
                     <log message="### Handle RequestMessage ###"/>
                     <setHeader name="CamelHttpMethod"><simple>POST</simple></setHeader>
-                    <setHeader name="CamelHttpPath"><simple>/process/${headers.ch-ids-pid}</simple></setHeader>                    
-                    <process ref="chIdscp2InputParser"/>
+                    <setHeader name="CamelHttpPath"><simple>/process/${headers.ch-ids-pid}</simple></setHeader>
+                    <process ref="chInputValidationProcessor"/>
                     <process ref="chSharedSecretProcessor" />
                     <to uri="http://logging-service:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
                     <process ref="chOutputProcessor" />
@@ -165,7 +165,7 @@
                     <log message="### Handle QueryMessage ###"/>
                     <setHeader name="CamelHttpMethod"><simple>POST</simple></setHeader>
                     <setHeader name="CamelHttpPath"><simple>/messages/query/${headers.ch-ids-pid}</simple></setHeader>
-                    <process ref="chIdscp2InputParser"/>
+                    <process ref="chInputValidationProcessor"/>
                     <process ref="chSharedSecretProcessor" />
                     <to uri="http://logging-service:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
                     <process ref="chOutputProcessor" />
@@ -174,8 +174,8 @@
                     <simple>${exchangeProperty.ids-type} == 'LogMessage'</simple>
                     <log message="### Handle LogMessage ###"/>
                     <setHeader name="CamelHttpMethod"><simple>POST</simple></setHeader>
-                    <setHeader name="CamelHttpPath"><simple>/messages/log/${headers.ch-ids-pid}</simple></setHeader>                    
-                    <process ref="chIdscp2InputParser"/>
+                    <setHeader name="CamelHttpPath"><simple>/messages/log/${headers.ch-ids-pid}</simple></setHeader>
+                    <process ref="chInputValidationProcessor"/>
                     <process ref="chSharedSecretProcessor" />
                     <to uri="http://logging-service:8000/?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
                     <process ref="chOutputProcessor" />
@@ -188,6 +188,6 @@
             <removeHeader name="ids-protocol"/>
             <removeHeader name="pid"/>
             <removeHeader name="id"/>
-        </route>        
+        </route>
     </camelContext>
 </beans>
