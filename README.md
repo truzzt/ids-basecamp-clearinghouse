@@ -39,8 +39,8 @@ The Clearing House Processors can override some standard configuration settings 
 - `TC_CH_ISSUER_CONNECTOR`(mandatory): Issuer connector needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
 - `TC_CH_AGENT`(mandatory): Server agent needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
 - `SERVICE_SHARED_SECRET`(mandatory): Shared secret, see Configuration section
-- `SERVICE_ID_TC` (mandatory): Internal ID of the `Trusted Connector` that is used by the `Logging Service` to identify the `Trusted Connector`
-- `SERVICE_ID_LOG (mandatory): Internal ID of the `Logging Service`.
+- `SERVICE_ID_TC` (mandatory): Internal ID of the `Trusted Connector` that is used by the `Logging Service` to identify the `Trusted Connector`.
+- `SERVICE_ID_LOG` (mandatory): Internal ID of the `Logging Service`.
 
 
 #### Example Configuration (docker-compose)
@@ -62,6 +62,10 @@ tc-core:
         - ./data/trusted-connector/routes/clearing-house-routes.xml:/root/deploy/clearing-house-routes.xml
     environment:
         TC_DAPS_URL: https://<my-daps-url>
+        SERVICE_SHARED_SECRET: <shared-secret>
+        SERVICE_ID_TC: <trusted-connector-id>
+        SERVICE_ID_LOG: <logging-service-ic>
+
     ports:
         - "8443:8443"
         - "9999:9999"
