@@ -34,7 +34,7 @@ Besides those files that are specific for the configuration of the Clearing Hous
 
 #### Environment Variables
 The Clearing House Processors can override some standard configuration settings of the Trusted Connector using environment variables. If these variables are not set, the Clearing House Processors will use the standard values provided by the Trusted Connector. Some of the variables are mandatory and have to be set:
-- `TC_DAPS_URL`: The url of the DAPS used by the Clearing House. The Trusted Connector uses `https://daps.aisec.fraunhofer.de/v2` as the default DAPS url.
+- `TC_DAPS_URL`: The url of the DAPS used by the Clearing House. The Trusted Connector uses `https://daps.aisec.fraunhofer.de/v3` as the default DAPS url.
 - `TC_KEYSTORE_PW`: The password of the key store mounted in the Trusted Connector. Defaults to `password`.
 - `TC_TRUSTSTORE_PW`: The password of the trust store mounted in the Trusted Connector. Defaults to `password`.
 - `TC_CH_ISSUER_CONNECTOR`(mandatory): Issuer connector needed for IDS Messages as specified by the [InfoModel](https://github.com/International-Data-Spaces-Association/InformationModel)
@@ -72,6 +72,9 @@ tc-core:
         - "9999:9999"
         - "29292:29292"
 ```
+
+### DAPS Configuration
+Please note that if you are not using the default DAPS, an additional step is required for the Trusted Connector to correctly work. Line 28 in [`clearing-house-routes.xml`](clearing-house-processors/src/routes/clearing-house-routes.xml) must also contain the correct DAPS url.
 
 
 ## Docker Containers
