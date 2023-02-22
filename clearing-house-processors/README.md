@@ -1,7 +1,7 @@
 # Clearing House Processors
 
 ## Building from Source
-The Clearing House Processors are written in Java and require Java 11 and can be build using gradle (version 7.5+):
+The Clearing House Processors are written in Java and require Java 17 and can be build using gradle (version 7.5+):
 
 ```
 cd clearing-house-processors
