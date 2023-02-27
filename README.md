@@ -55,7 +55,6 @@ tc-core:
         - /var/run/docker.sock:/var/run/docker.sock
         - ./data/trusted-connector/application.yml:/root/etc/application.yml 
         - ./data/trusted-connector/allow-all-flows.pl:/root/deploy/allow-all-flows.pl
-        - ./data/trusted-connector/settings.mapdb:/root/etc/settings.mapdb
         - ./data/trusted-connector/tls.properties:/root/etc/tls.properties        
         - ./data/trusted-connector/ch-ids.p12:/root/etc/keystore.p12
         - ./data/trusted-connector/truststore.p12:/root/etc/truststore.p12
