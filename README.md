@@ -23,7 +23,7 @@ The `Clearing House App` is a REST API written in [Rust](https://www.rust-lang.o
 ## Trusted Connector
 The Clearing House Service API requires a Trusted Connector [Trusted Connector](https://github.com/industrial-data-space/trusted-connector) (Version 7.1.0+) for deployment. The process of setting up a Trusted Connector is described [here](https://industrial-data-space.github.io/trusted-connector-documentation/docs/getting_started/). Using a docker image of the Trusted Connector should be sufficient for most deployments:
 
-`docker pull fraunhoferaisec/trusted-connector-core:7.2.0-rc1`
+`docker pull fraunhoferaisec/trusted-connector-core:7.2.0`
 
 The Clearing House Processors are written in Java for use in the Camel Component of the Trusted Connector. To configure the Trusted Connector for the Clearing House Service API, it needs access to the following files inside the docker container (e.g. mounted as a volume):
 - `clearing-house-processors.jar`: The Clearing House Processors need to be placed in the `/root/jars` folder of the Trusted Connector. The jar file needs to be [build](clearing-house-processors#building-from-source) from the Clearing House Processors using `gradle`.
@@ -55,7 +55,6 @@ tc-core:
         - /var/run/docker.sock:/var/run/docker.sock
         - ./data/trusted-connector/application.yml:/root/etc/application.yml 
         - ./data/trusted-connector/allow-all-flows.pl:/root/deploy/allow-all-flows.pl
-        - ./data/trusted-connector/tls.properties:/root/etc/tls.properties        
         - ./data/trusted-connector/ch-ids.p12:/root/etc/keystore.p12
         - ./data/trusted-connector/truststore.p12:/root/etc/truststore.p12
         - ./data/trusted-connector/clearing-house-processors-0.10.0.jar:/root/jars/clearing-house-processors.jar
