@@ -71,10 +71,6 @@ tc-core:
         - "29292:29292"
 ```
 
-### DAPS Configuration
-Please note that if you are not using the default DAPS, an additional step is required for the Trusted Connector to correctly work. Line 28 in [`clearing-house-routes.xml`](clearing-house-processors/src/routes/clearing-house-routes.xml) must also contain the correct DAPS url.
-
-
 ## Docker Containers
 The dockerfiles located [here](docker/) can be used to create containers for the services of the [`Clearing House App`](clearing-house-app). There are two types of dockerfiles:
 1. Simple builds (e.g. [dockerfile](docker/keyring-api.Dockerfile)) that require you to build the Service APIs yourself using [Rust](https://www.rust-lang.org)
