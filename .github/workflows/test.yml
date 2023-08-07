@@ -1,0 +1,64 @@
+name: test
+
+on:
+  pull_request:
+    branches:
+      - master
+      - beta
+      - alpha
+
+
+jobs:
+  test-keyring:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Build and Test
+      run: |
+        cd clearing-house-app/keyring-api
+        cargo build --verbose
+        cargo test --verbose
+
+  test-document:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Build and Test
+      run: |
+        cd clearing-house-app/document-api
+        cargo build --verbose
+        cargo test --verbose
+
+  test-logging:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Build and Test
+      run: |
+        cd clearing-house-app/logging-service
+        cargo build --verbose
+        cargo test --verbose
