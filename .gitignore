@@ -4,5 +4,4 @@ target
 data
 *.log
 .idea/
-**/*.lock
 **/*.iml

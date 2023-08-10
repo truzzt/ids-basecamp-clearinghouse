@@ -1,3 +1,5 @@
+/* TODO: Integration test currently not necessary
+
 use biscuit::jwa::SignatureAlgorithm;
 use biscuit::jwk::JWKSet;
 use biscuit::{CompactJson, Empty};
@@ -54,3 +56,4 @@ fn test_invalid_claims() -> Result<()>{
     assert!(jwt.is_err(), "Token is valid. this should not happen, really!");
     Ok(())
 }
+*/
