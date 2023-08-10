@@ -187,10 +187,18 @@ pub struct IdsQueryResult{
 
 impl IdsQueryResult{
     pub fn new(date_from: i64, date_to: i64, page: Option<i32>, size: Option<i32>, order: String, documents: Vec<IdsMessage>) -> IdsQueryResult{
+        let date_from = NaiveDateTime::from_timestamp_opt(date_from, 0)
+            .expect("Invalid date_from seconds")
+            .format("%Y-%m-%d %H:%M:%S")
+            .to_string();
+        let date_to = NaiveDateTime::from_timestamp_opt(date_to, 0)
+            .expect("Invalid date_to seconds")
+            .format("%Y-%m-%d %H:%M:%S")
+            .to_string();
 
         IdsQueryResult{
-            date_from: NaiveDateTime::from_timestamp(date_from, 0).format("%Y-%m-%d %H:%M:%S").to_string(),
-            date_to: NaiveDateTime::from_timestamp(date_to, 0).format("%Y-%m-%d %H:%M:%S").to_string(),
+            date_from,
+            date_to,
             page: page.unwrap_or(-1),
             size: size.unwrap_or(-1),
             order,

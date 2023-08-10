@@ -1,3 +1,5 @@
+/* TODO: Integration test currently not necessary
+
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // These tests are integration tests and need an up-and-running keyring-api
 // Use config.yml to configure the urls correctly.
@@ -85,3 +87,5 @@ fn test_decrypt_keys() -> Result<()> {
 
     Ok(())
 }
+
+*/

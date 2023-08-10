@@ -1,7 +1,6 @@
 #[macro_use] extern crate rocket;
 #[macro_use] extern crate serde_derive;
 
-use std::env;
 use std::path::Path;
 use core_lib::api::client::{ApiClientConfigurator, ApiClientEnum};
 use core_lib::util::{add_service_config, setup_logger};
