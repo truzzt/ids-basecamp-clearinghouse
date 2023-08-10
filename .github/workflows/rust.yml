@@ -4,8 +4,10 @@ on:
   push:
     branches:
       - master
+      - development
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,7 +18,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Install minimal stable

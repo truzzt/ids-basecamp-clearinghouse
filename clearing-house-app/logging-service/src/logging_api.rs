@@ -243,7 +243,7 @@ async fn unauth_id(_pid: Option<String>, _id: Option<String>) -> ApiResponse {
     ApiResponse::Unauthorized(String::from("Token not valid!"))
 }
 
-#[post("/<pid>?<page>&<size>&<sort>&<date_to>&<date_from>", format = "json", data = "<message>")]
+#[post("/<pid>?<page>&<size>&<sort>&<date_to>&<date_from>", format = "json", data = "<_message>")]
 async fn query_pid(
     ch_claims: ChClaims,
     db: &State<ProcessStore>,
@@ -254,7 +254,7 @@ async fn query_pid(
     date_from: Option<String>,
     doc_api: &State<DocumentApiClient>,
     pid: String,
-    message: Json<ClearingHouseMessage>
+    _message: Json<ClearingHouseMessage>
 ) -> ApiResponse {
     debug!("page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
 
@@ -336,8 +336,8 @@ async fn query_pid(
     }
 }
 
-#[post("/<pid>/<id>", format = "json", data = "<message>")]
-async fn query_id(ch_claims: ChClaims, db: &State<ProcessStore>, doc_api: &State<DocumentApiClient>, pid: String, id: String, message: Json<ClearingHouseMessage>) -> ApiResponse {
+#[post("/<pid>/<id>", format = "json", data = "<_message>")]
+async fn query_id(ch_claims: ChClaims, db: &State<ProcessStore>, doc_api: &State<DocumentApiClient>, pid: String, id: String, _message: Json<ClearingHouseMessage>) -> ApiResponse {
 
     trace!("...user '{:?}'", &ch_claims.client_id);
     let user = &ch_claims.client_id;

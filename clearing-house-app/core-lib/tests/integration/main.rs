@@ -49,7 +49,7 @@ fn insert_test_doc_type_into_keyring(token: &String, pid: &String, dt_id: &Strin
     println!("json_data: {}", json_data);
 
     println!("calling {}", &dt_url);
-    let mut response = client
+    let response = client
         .post(dt_url.as_str())
         .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
         .bearer_auth(token)
@@ -72,7 +72,7 @@ fn delete_test_doc_type_from_keyring(token: &String, pid: &String, dt_id: &Strin
     let dt_url = format!("http://localhost:8002{}/{}/{}", ROCKET_DOC_TYPE_API, pid, dt_id);
 
     println!("calling {}", &dt_url);
-    let mut response = client
+    let response = client
         .delete(dt_url.as_str())
         .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
         .bearer_auth(token)

@@ -1,5 +1,5 @@
-use crate::mongodb::{
-    Bson,
+use mongodb::{
+    bson::Bson,
     db::ThreadedDatabase,
     doc,
     coll::options::FindOneAndUpdateOptions
