@@ -29,11 +29,8 @@ jobs:
     # TODO: do not use caching for actual release builds, aka ones that start with v*
     - uses: Swatinem/rust-cache@v2        
     - name: Build clearing-house-api
-      run: |
-        cd clearing-house-app
-        eval "$(ssh-agent -s)"
-        ssh-add - <<< "${{ secrets.IDS_CLEARING_HOUSE_CORE_TOKEN }}"
-        cargo build --release
+      working-directory: ./clearing-house-app
+      run: cargo build --release
 
     - name: Build build images
       run: |        
