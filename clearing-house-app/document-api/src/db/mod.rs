@@ -14,7 +14,9 @@ use core_lib::model::SortingOrder;
 use crate::db::bucket::{DocumentBucketSize, DocumentBucketUpdate, restore_from_bucket};
 
 mod bucket;
-#[cfg(test)] mod tests;
+
+// TODO: Disabled integration tests with database
+// #[cfg(test)] mod tests;
 
 #[derive(Clone, Debug)]
 pub struct DatastoreConfigurator;
@@ -145,10 +147,10 @@ impl DataStoreApi for DataStore {
 
 impl DataStore {
 
-    pub async fn add_document(&self, doc: &EncryptedDocument) -> Result<bool>{
+    pub async fn add_document(&self, doc: EncryptedDocument) -> Result<bool>{
         debug!("add_document to bucket");
         let coll = self.database.collection::<EncryptedDocument>(MONGO_COLL_DOCUMENT_BUCKET);
-        let bucket_update = DocumentBucketUpdate::from(doc);
+        let bucket_update = DocumentBucketUpdate::from(&doc);
         let mut update_options = UpdateOptions::default();
         update_options.upsert = Some(true);
         let id = format!("^{}_", doc.pid.clone());

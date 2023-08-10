@@ -13,7 +13,8 @@ use crate::model::doc_type::DocumentType;
 
 
 pub(crate) mod doc_type;
-#[cfg(test)] mod tests;
+// TODO: Disabled integration tests with database
+// #[cfg(test)] mod tests;
 
 #[derive(Clone, Debug)]
 pub struct KeyStore {

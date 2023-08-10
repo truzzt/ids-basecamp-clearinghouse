@@ -108,7 +108,7 @@ async fn create_enc_document(
 
             debug!("storing document ....");
             // store document
-            match db.add_document(&enc_doc).await {
+            match db.add_document(enc_doc).await {
                 Ok(_b) => ApiResponse::SuccessCreate(json!(receipt)),
                 Err(e) => {
                     error!("Error while adding: {:?}", e);
