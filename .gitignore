@@ -4,4 +4,6 @@ target
 data
 *.log
 .idea/
+node_modules/
 **/*.iml
+
