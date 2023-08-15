@@ -317,10 +317,7 @@ async fn query_pid(
         None => i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap()
     };
 
-    let sanitized_sort = match sort {
-        Some(s) => s,
-        None => Descending
-    };
+    let sanitized_sort = sort.unwrap_or(SortingOrder::Descending);
 
     match doc_api.get_documents(&user, &pid, sanitized_page, sanitized_size, sanitized_sort, date_from, date_to).await {
         Ok(r) => {

@@ -5,6 +5,8 @@ use core_lib::api::crypto::get_fingerprint;
 
 pub mod constants;
 pub mod ids;
+pub(crate) mod crypto;
+pub(crate) mod doc_type;
 
 #[derive(Serialize, Deserialize)]
 pub struct TransactionCounter{
