@@ -14,6 +14,8 @@ use model::constants::SIGNING_KEY;
 pub mod logging_api;
 pub mod db;
 pub mod model;
+mod services;
+mod crypto;
 
 pub fn add_signing_key() -> AdHoc {
     AdHoc::try_on_ignite("Adding Signing Key", |rocket| async {

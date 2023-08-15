@@ -1,3 +1,6 @@
+pub(crate) mod keystore;
+pub(crate) mod docstore;
+
 use core_lib::constants::{MONGO_ID, MONGO_COLL_PROCESSES, DATABASE_URL, CLEAR_DB, PROCESS_DB, PROCESS_DB_CLIENT, MONGO_COLL_TRANSACTIONS, MONGO_TC};
 use core_lib::db::{DataStoreApi, init_database_client};
 use core_lib::errors::*;
