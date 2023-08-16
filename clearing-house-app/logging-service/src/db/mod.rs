@@ -2,16 +2,15 @@ pub(crate) mod key_store;
 pub(crate) mod doc_store;
 pub(crate) mod config;
 
-use core_lib::constants::{MONGO_ID, MONGO_COLL_PROCESSES, DATABASE_URL, CLEAR_DB, PROCESS_DB, PROCESS_DB_CLIENT, MONGO_COLL_TRANSACTIONS, MONGO_TC};
-use core_lib::db::{DataStoreApi, init_database_client};
+use core_lib::constants::{MONGO_ID, MONGO_COLL_PROCESSES, PROCESS_DB, MONGO_COLL_TRANSACTIONS, MONGO_TC};
+use core_lib::db::DataStoreApi;
 use core_lib::errors::*;
 use core_lib::model::process::Process;
 use mongodb::bson::doc;
 use mongodb::{Client, Database};
-use rocket::fairing::{self, Fairing, Info, Kind};
+use rocket::fairing::Fairing;
 use rocket::futures::TryStreamExt;
-use rocket::{Rocket, Build};
-use mongodb::options::{UpdateModifications, FindOneAndUpdateOptions, WriteConcern, CreateCollectionOptions};
+use mongodb::options::{UpdateModifications, FindOneAndUpdateOptions};
 use crate::model::TransactionCounter;
 
 #[derive(Clone)]

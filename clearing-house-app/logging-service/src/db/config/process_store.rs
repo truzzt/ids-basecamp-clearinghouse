@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use mongodb::options::{CreateCollectionOptions, WriteConcern};
 use rocket::{Build, Rocket};
 use rocket::fairing::Kind;
@@ -28,6 +29,19 @@ impl rocket::fairing::Fairing for ProcessStoreConfigurator {
                 false
             }
         };
+
+        match Self::init_process_store(db_url, clear_db).await {
+            Ok(process_store) => {
+                debug!("...done.");
+                Ok(rocket.manage(process_store))
+            },
+            Err(_) => Err(rocket)
+        }
+    }
+}
+
+impl ProcessStoreConfigurator {
+    pub async fn init_process_store(db_url: String, clear_db: bool) -> anyhow::Result<ProcessStore> {
         debug!("...using database url: '{:#?}'", &db_url);
 
         match init_database_client::<ProcessStore>(&db_url.as_str(), Some(PROCESS_DB_CLIENT.to_string())).await{
@@ -46,7 +60,7 @@ impl rocket::fairing::Fairing for ProcessStoreConfigurator {
                                 }
                                 Err(_) => {
                                     debug!("... failed.");
-                                    return Err(rocket);
+                                    return Err(anyhow!("Failed to drop database"));
                                 }
                             };
                         }
@@ -63,19 +77,20 @@ impl rocket::fairing::Fairing for ProcessStoreConfigurator {
                                 }
                                 Err(_) => {
                                     debug!("... failed.");
-                                    return Err(rocket);
+                                    return Err(anyhow!("Failed to create collection"));
                                 }
                             };
                         }
                         debug!("... database initialized.");
-                        Ok(rocket.manage(process_store))
+                        Ok(process_store)
                     }
                     Err(_) => {
-                        Err(rocket)
+                        Err(anyhow!("Failed to list collections"))
                     }
                 }
             },
-            Err(_) => Err(rocket)
+            Err(_) => Err(anyhow!("Failed to initialize database client"))
         }
     }
+
 }

@@ -30,7 +30,6 @@ impl fairing::Fairing for KeyringDbConfigurator {
                 false
             }
         };
-        debug!("Using database url: '{:#?}'", &db_url);
 
         match Self::init_keystore(db_url, clear_db).await {
             Ok(keystore) => {

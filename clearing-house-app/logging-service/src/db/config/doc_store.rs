@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use mongodb::bson::doc;
 use mongodb::IndexModel;
 use mongodb::options::{CreateCollectionOptions, IndexOptions, WriteConcern};
@@ -29,6 +30,18 @@ impl fairing::Fairing for DatastoreConfigurator {
                 false
             }
         };
+
+        match Self::init_datastore(db_url, clear_db).await {
+            Ok(datastore) => {
+                Ok(rocket.manage(datastore))
+            },
+            Err(_) => Err(rocket)
+        }
+    }
+}
+
+impl DatastoreConfigurator {
+    pub async fn init_datastore(db_url: String, clear_db: bool) -> anyhow::Result<DataStore> {
         debug!("Using mongodb url: '{:#?}'", &db_url);
         match init_database_client::<DataStore>(&db_url.as_str(), Some(DOCUMENT_DB_CLIENT.to_string())).await{
             Ok(datastore) => {
@@ -51,7 +64,7 @@ impl fairing::Fairing for DatastoreConfigurator {
                                 }
                                 Err(_) => {
                                     debug!("... failed.");
-                                    return Err(rocket);
+                                    return Err(anyhow!("Failed to drop database"));
                                 }
                             };
                         }
@@ -68,7 +81,7 @@ impl fairing::Fairing for DatastoreConfigurator {
                                 }
                                 Err(_) => {
                                     debug!("... failed.");
-                                    return Err(rocket);
+                                    return Err(anyhow!("Failed to create collection"));
                                 }
                             };
 
@@ -86,7 +99,7 @@ impl fairing::Fairing for DatastoreConfigurator {
                                 }
                                 Err(_) => {
                                     debug!("... failed.");
-                                    return Err(rocket);
+                                    return Err(anyhow!("Failed to create index"));
                                 }
                             }
 
@@ -101,19 +114,19 @@ impl fairing::Fairing for DatastoreConfigurator {
                                 }
                                 Err(_) => {
                                     debug!("... failed.");
-                                    return Err(rocket);
+                                    return Err(anyhow!("Failed to create compound index"));
                                 }
                             }
                         }
                         debug!("... database initialized.");
-                        Ok(rocket.manage(datastore))
+                        Ok(datastore)
                     }
                     Err(_) => {
-                        Err(rocket)
+                        Err(anyhow!("Failed to list collections"))
                     }
                 }
             },
-            Err(_) => Err(rocket)
+            Err(_) => Err(anyhow!("Failed to initialize database client"))
         }
     }
 }
