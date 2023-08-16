@@ -266,7 +266,7 @@ impl DataStore {
 mod bucket {
     use core_lib::model::document::EncryptedDocument;
 
-    #[derive(Clone, Debug, Serialize, Deserialize)]
+    #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
     pub struct DocumentBucket {
         pub counter: u64,
         pub pid: String,
@@ -276,13 +276,13 @@ mod bucket {
         pub documents: Vec<EncryptedDocument>,
     }
 
-    #[derive(Clone, Debug, Serialize, Deserialize)]
+    #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
     pub struct DocumentBucketSize {
         pub capacity: i32,
         pub size: i32,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub struct DocumentBucketUpdate {
         pub id: String,
         pub ts: i64,

@@ -8,12 +8,12 @@ pub mod ids;
 pub(crate) mod crypto;
 pub(crate) mod doc_type;
 
-#[derive(Serialize, Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct TransactionCounter{
     pub tc: i64
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct OwnerList{
     pub owners: Vec<String>
 }
@@ -26,12 +26,12 @@ impl OwnerList{
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Receipt {
     pub data: Compact<DataTransaction, Empty>
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DataTransaction {
     pub transaction_id: String,
     pub timestamp: i64,

@@ -3,7 +3,7 @@ use hkdf::Hkdf;
 use sha2::Sha256;
 use core_lib::model::new_uuid;
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct MasterKey {
     pub id: String,
     pub key: String,

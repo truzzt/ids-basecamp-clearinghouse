@@ -9,12 +9,18 @@ use core_lib::model::crypto::{KeyCt, KeyCtList};
 use crate::services::keyring_service::KeyringService;
 use crate::db::doc_store::DataStore;
 
+
+#[derive(Clone)]
 pub struct DocumentService {
     db: DataStore,
     key_api: KeyringService,
 }
 
 impl DocumentService {
+    pub fn new(db: DataStore, key_api: KeyringService) -> Self {
+        Self { db, key_api }
+    }
+
     pub(crate) async fn create_enc_document(&self, ch_claims: ChClaims, doc: Document) -> anyhow::Result<DocumentReceipt> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         // data validation

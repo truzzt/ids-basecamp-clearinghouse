@@ -6,11 +6,18 @@ use crate::crypto::restore_key_map;
 use crate::db::key_store::KeyStore;
 use crate::model::doc_type::DocumentType;
 
+#[derive(Clone)]
 pub struct KeyringService {
     db: KeyStore,
 }
 
 impl KeyringService {
+    pub fn new(db: KeyStore) -> KeyringService {
+        KeyringService {
+            db
+        }
+    }
+
     pub async fn generate_keys(&self, ch_claims: ChClaims, _pid: String, dt_id: String) -> anyhow::Result<KeyMap> {
         trace!("generate_keys");
         trace!("...user '{:?}'", &ch_claims.client_id);
