@@ -3,12 +3,14 @@ use aes_gcm_siv::aead::Aead;
 use core_lib::model::crypto::{KeyEntry, KeyMap};
 use generic_array::GenericArray;
 use hkdf::Hkdf;
-use openssl::rand::rand_bytes;
 use sha2::Sha256;
 use std::collections::HashMap;
+use std::sync::Mutex;
 use anyhow::anyhow;
+use once_cell::sync::Lazy;
 use crate::model::doc_type::DocumentType;
 use crate::model::crypto::MasterKey;
+use rand::{RngCore, SeedableRng};
 
 const EXP_KEY_SIZE: usize = 32;
 const EXP_NONCE_SIZE: usize = 12;
@@ -21,9 +23,20 @@ fn initialize_kdf() -> (String, Hkdf<Sha256>) {
     (hex::encode_upper(master_key), kdf)
 }
 
+/// Generates a random seed with 256 bytes.
 pub fn generate_random_seed() -> Vec<u8>{
+    // Init crypto RNG once lazy
+    static RNG: Lazy<Mutex<rand::rngs::StdRng>> = Lazy::new(|| Mutex::new(rand::rngs::StdRng::from_entropy()));
+    // Create a buffer to fill with random bytes
     let mut buf = [0u8; 256];
-    rand_bytes(&mut buf).unwrap(); // TODO: Replace with some other cryptographically secure random number generator
+
+    // Fill buffer with random bytes in a block, so the mutex is locked for a short time.
+    {
+        RNG.lock()
+            .expect("This mutex locking is fine, because it will be release immediately after use and this is the only place of usage ")
+            .fill_bytes(&mut buf);
+    }
+
     buf.to_vec()
 }
 
@@ -156,6 +169,20 @@ pub fn decrypt_secret(key: &[u8], nonce: &[u8], ct: &[u8]) -> anyhow::Result<Str
         },
         Err(e) => {
             Err(anyhow!("Error while decrypting: {}", e))
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_generate_random_seed() {
+        for _ in 1..100 {
+            let seed = super::generate_random_seed();
+            // Check length of seed
+            assert_eq!(256, seed.len());
+            // Check that the seed is not all zeros
+            assert_ne!(0, seed.iter().map(|b| *b as usize).sum::<usize>());
         }
     }
 }

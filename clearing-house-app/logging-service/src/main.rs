@@ -6,7 +6,6 @@ extern crate tracing;
 use std::path::Path;
 use core_lib::util::{add_service_config};
 use rocket::fairing::AdHoc;
-use tracing::subscriber;
 use core_lib::constants::ENV_LOGGING_SERVICE_ID;
 use db::config::doc_store::DatastoreConfigurator;
 use db::config::keyring_store::KeyringDbConfigurator;
