@@ -5,7 +5,7 @@ authors = [
     "Mark Gall <mark.gall@aisec.fraunhofer.de>",
     "Georg Bramm <georg.bramm@aisec.fraunhofer.de>"
 ]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 aes = "0.6.0"
