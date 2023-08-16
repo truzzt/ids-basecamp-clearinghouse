@@ -1,5 +1,6 @@
-pub(crate) mod keystore;
-pub(crate) mod docstore;
+pub(crate) mod key_store;
+pub(crate) mod doc_store;
+pub(crate) mod config;
 
 use core_lib::constants::{MONGO_ID, MONGO_COLL_PROCESSES, DATABASE_URL, CLEAR_DB, PROCESS_DB, PROCESS_DB_CLIENT, MONGO_COLL_TRANSACTIONS, MONGO_TC};
 use core_lib::db::{DataStoreApi, init_database_client};
@@ -12,81 +13,6 @@ use rocket::futures::TryStreamExt;
 use rocket::{Rocket, Build};
 use mongodb::options::{UpdateModifications, FindOneAndUpdateOptions, WriteConcern, CreateCollectionOptions};
 use crate::model::TransactionCounter;
-
-#[derive(Clone, Debug)]
-pub struct ProcessStoreConfigurator;
-
-#[rocket::async_trait]
-impl Fairing for ProcessStoreConfigurator {
-    fn info(&self) -> Info {
-        Info {
-            name: "Configuring Process Database",
-            kind: Kind::Ignite
-        }
-    }
-    async fn on_ignite(&self, rocket: Rocket<Build>) -> fairing::Result {
-        debug!("Preparing to initialize database...");
-        let db_url: String = rocket.figment().extract_inner(DATABASE_URL).clone().unwrap();
-        let clear_db = match rocket.figment().extract_inner(CLEAR_DB){
-            Ok(value) => {
-                debug!("...clear_db: {} found. ", &value);
-                value
-            },
-            Err(_) => {
-                false
-            }
-        };
-        debug!("...using database url: '{:#?}'", &db_url);
-
-        match init_database_client::<ProcessStore>(&db_url.as_str(), Some(PROCESS_DB_CLIENT.to_string())).await{
-            Ok(process_store) => {
-                debug!("...check if database is empty...");
-                match process_store.client.database(PROCESS_DB)
-                    .list_collection_names(None)
-                    .await{
-                    Ok(colls) => {
-                        debug!("... found collections: {:#?}", &colls);
-                        if colls.len() > 0 && clear_db{
-                            debug!("...database not empty and clear_db == true. Dropping database...");
-                            match process_store.client.database(PROCESS_DB).drop(None).await{
-                                Ok(_) => {
-                                    debug!("... done.");
-                                }
-                                Err(_) => {
-                                    debug!("... failed.");
-                                    return Err(rocket);
-                                }
-                            };
-                        }
-                        if colls.len() == 0 || clear_db{
-                            debug!("..database empty. Need to initialize...");
-                            let mut write_concern = WriteConcern::default();
-                            write_concern.journal = Some(true);
-                            let mut options = CreateCollectionOptions::default();
-                            options.write_concern = Some(write_concern);
-                            debug!("...create collection {} ...", MONGO_COLL_TRANSACTIONS);
-                            match process_store.client.database(PROCESS_DB).create_collection(MONGO_COLL_TRANSACTIONS, options).await{
-                                Ok(_) => {
-                                    debug!("... done.");
-                                }
-                                Err(_) => {
-                                    debug!("... failed.");
-                                    return Err(rocket);
-                                }
-                            };
-                        }
-                        debug!("... database initialized.");
-                        Ok(rocket.manage(process_store))
-                    }
-                    Err(_) => {
-                        Err(rocket)
-                    }
-                }
-            },
-            Err(_) => Err(rocket)
-        }
-    }
-}
 
 #[derive(Clone)]
 pub struct ProcessStore {

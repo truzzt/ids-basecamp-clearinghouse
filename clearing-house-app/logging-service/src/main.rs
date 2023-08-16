@@ -4,13 +4,12 @@
 #[macro_use] extern crate serde_derive;
 
 use std::path::Path;
-use core_lib::api::client::{ApiClientConfigurator, ApiClientEnum};
 use core_lib::util::{add_service_config, setup_logger};
 use rocket::{Build, Rocket};
 use rocket::fairing::AdHoc;
 use core_lib::constants::ENV_LOGGING_SERVICE_ID;
 
-use db::ProcessStoreConfigurator;
+use db::config::process_store::ProcessStoreConfigurator;
 use model::constants::SIGNING_KEY;
 
 pub mod db;
@@ -41,7 +40,6 @@ fn rocket() -> Rocket<Build> {
         .attach(ProcessStoreConfigurator)
         .attach(add_signing_key())
         .attach(add_service_config(ENV_LOGGING_SERVICE_ID.to_string()))
-        .attach(ApiClientConfigurator::new(ApiClientEnum::Document))
-        .attach(ApiClientConfigurator::new(ApiClientEnum::Keyring))
         .attach(ports::logging_api::mount_api())
+        .attach(ports::doc_type_api::mount_api())
 }

@@ -1,29 +1,27 @@
-use mongodb::bson;
+use mongodb::{bson, Client};
 use mongodb::bson::doc;
 use mongodb::options::{AggregateOptions, UpdateOptions};
 use rocket::futures::StreamExt;
-use core_lib::constants::{
-    MAX_NUM_RESPONSE_ENTRIES,
-    MONGO_COLL_DOCUMENT_BUCKET,
-    MONGO_ID,
-    MONGO_PID,
-    MONGO_COUNTER,
-    MONGO_DOC_ARRAY,
-    MONGO_DT_ID,
-    MONGO_FROM_TS,
-    MONGO_TO_TS,
-    MONGO_TC,
-    MONGO_TS,
-};
+use core_lib::constants::{MAX_NUM_RESPONSE_ENTRIES, MONGO_COLL_DOCUMENT_BUCKET, MONGO_ID, MONGO_PID, MONGO_COUNTER, MONGO_DOC_ARRAY, MONGO_DT_ID, MONGO_FROM_TS, MONGO_TO_TS, MONGO_TC, MONGO_TS, DOCUMENT_DB};
+use core_lib::db::DataStoreApi;
 use core_lib::model::document::EncryptedDocument;
 use core_lib::errors::*;
 use core_lib::model::SortingOrder;
-use crate::db::docstore::bucket::{DocumentBucketSize, DocumentBucketUpdate, restore_from_bucket};
+use crate::db::doc_store::bucket::{DocumentBucketSize, DocumentBucketUpdate, restore_from_bucket};
 
 #[derive(Clone)]
 pub struct DataStore {
-    client: mongodb::Client,
+    pub(crate) client: mongodb::Client,
     database: mongodb::Database,
+}
+
+impl DataStoreApi for DataStore {
+    fn new(client: Client) -> DataStore{
+        DataStore {
+            client: client.clone(),
+            database: client.database(DOCUMENT_DB)
+        }
+    }
 }
 
 impl DataStore {

@@ -1,15 +1,26 @@
 use std::process::exit;
 use core_lib::errors::*;
 use mongodb::bson::doc;
+use mongodb::Client;
 use rocket::futures::TryStreamExt;
-use core_lib::constants::{MONGO_COLL_DOC_TYPES, MONGO_COLL_MASTER_KEY, MONGO_ID, MONGO_PID};
+use core_lib::constants::{KEYRING_DB, MONGO_COLL_DOC_TYPES, MONGO_COLL_MASTER_KEY, MONGO_ID, MONGO_PID};
+use core_lib::db::DataStoreApi;
 use crate::model::crypto::MasterKey;
 use crate::model::doc_type::DocumentType;
 
 #[derive(Clone, Debug)]
 pub struct KeyStore {
-    client: mongodb::Client,
+    pub(crate) client: mongodb::Client,
     database: mongodb::Database
+}
+
+impl DataStoreApi for KeyStore {
+    fn new(client: Client) -> KeyStore{
+        KeyStore {
+            client: client.clone(),
+            database: client.database(KEYRING_DB)
+        }
+    }
 }
 
 impl KeyStore {

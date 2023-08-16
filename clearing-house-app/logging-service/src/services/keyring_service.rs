@@ -3,7 +3,7 @@ use core_lib::api::crypto::ChClaims;
 use core_lib::model::crypto::{KeyCtList, KeyMap, KeyMapListItem};
 use crate::crypto;
 use crate::crypto::restore_key_map;
-use crate::db::keystore::KeyStore;
+use crate::db::key_store::KeyStore;
 
 pub struct KeyringService {
     db: KeyStore,

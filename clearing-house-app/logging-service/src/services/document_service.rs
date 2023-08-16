@@ -7,7 +7,7 @@ use core_lib::model::document::Document;
 use core_lib::model::{parse_date, sanitize_dates, SortingOrder, validate_dates};
 use core_lib::model::crypto::{KeyCt, KeyCtList};
 use crate::services::keyring_service::KeyringService;
-use crate::db::docstore::DataStore;
+use crate::db::doc_store::DataStore;
 
 pub struct DocumentService {
     db: DataStore,
