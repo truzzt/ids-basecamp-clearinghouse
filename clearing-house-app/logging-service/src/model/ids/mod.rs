@@ -6,7 +6,7 @@ use crate::model::ids::message::IdsMessage;
 pub mod message;
 pub mod request;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct InfoModelComplexId {
     //IDS name
     #[serde(rename = "@id", alias="id", skip_serializing_if = "Option::is_none")]
@@ -36,7 +36,7 @@ impl From<String> for InfoModelComplexId {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum InfoModelId {
     SimpleId(String),
@@ -67,7 +67,7 @@ impl From<String> for InfoModelId {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum InfoModelDateTime {
     ComplexTime(InfoModelTimeStamp),
@@ -93,7 +93,7 @@ impl fmt::Display for InfoModelDateTime {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct InfoModelTimeStamp {
     //IDS name
     #[serde(rename = "@type", alias="type", skip_serializing_if = "Option::is_none")]
@@ -123,7 +123,7 @@ impl Display for InfoModelTimeStamp {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub enum MessageType {
     #[serde(rename = "ids:Message")]
     Message,
@@ -147,7 +147,7 @@ pub enum MessageType {
     Other,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SecurityToken {
     //IDS name
     #[serde(rename = "@type")]
@@ -175,7 +175,7 @@ impl SecurityToken {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct IdsQueryResult{
     pub date_from: String,
     pub date_to: String,

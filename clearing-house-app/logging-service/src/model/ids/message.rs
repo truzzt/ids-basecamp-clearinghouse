@@ -20,7 +20,7 @@ pub const RESULT_MESSAGE: &'static str = "ResultMessage";
 pub const REJECTION_MESSAGE: &'static str = "RejectionMessage";
 pub const MESSAGE_PROC_NOTIFICATION_MESSAGE: &'static str = "MessageProcessedNotificationMessage";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct IdsMessage {
     //IDS name
     #[serde(rename = "@context")]

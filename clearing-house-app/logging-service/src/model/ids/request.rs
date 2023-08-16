@@ -1,6 +1,6 @@
 use crate::model::ids::message::IdsMessage;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ClearingHouseMessage {
     pub header: IdsMessage,
     pub payload: Option<String>,

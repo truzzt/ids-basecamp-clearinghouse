@@ -20,12 +20,20 @@ use crate::model::{ids::{
 use crate::db::ProcessStore;
 use crate::services::document_service::DocumentService;
 
+#[derive(Clone)]
 pub struct LoggingService {
     db: ProcessStore,
     doc_api: DocumentService,
 }
 
 impl LoggingService {
+    pub fn new(db: ProcessStore, doc_api: DocumentService) -> LoggingService {
+        LoggingService {
+            db,
+            doc_api,
+        }
+    }
+
     pub async fn log(
         &self,
         ch_claims: ChClaims,

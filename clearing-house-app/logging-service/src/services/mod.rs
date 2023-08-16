@@ -5,5 +5,5 @@
 //! Controllers to handle the requests and responses.
 //! 
 pub(crate) mod keyring_service;
-mod document_service;
+pub(crate) mod document_service;
 pub(crate) mod logging_service;
