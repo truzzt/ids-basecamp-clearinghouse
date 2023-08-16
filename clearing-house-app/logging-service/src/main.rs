@@ -13,7 +13,6 @@ use core_lib::constants::ENV_LOGGING_SERVICE_ID;
 use db::ProcessStoreConfigurator;
 use model::constants::SIGNING_KEY;
 
-pub mod logging_api;
 pub mod db;
 pub mod model;
 mod services;
@@ -44,5 +43,5 @@ fn rocket() -> Rocket<Build> {
         .attach(add_service_config(ENV_LOGGING_SERVICE_ID.to_string()))
         .attach(ApiClientConfigurator::new(ApiClientEnum::Document))
         .attach(ApiClientConfigurator::new(ApiClientEnum::Keyring))
-        .attach(logging_api::mount_api())
+        .attach(ports::logging_api::mount_api())
 }
