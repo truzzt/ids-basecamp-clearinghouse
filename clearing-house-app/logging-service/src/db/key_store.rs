@@ -27,19 +27,19 @@ impl KeyStore {
 
     /// Only one master key may exist in the database.
     pub async fn store_master_key(&self, key: MasterKey) -> anyhow::Result<bool>{
-        debug!("Storing new master key...");
+        tracing::debug!("Storing new master key...");
         let coll = self.database.collection::<MasterKey>(MONGO_COLL_MASTER_KEY);
-        debug!("... but first check if there's already one.");
+        tracing::debug!("... but first check if there's already one.");
         let result= coll.find(None, None).await
             .expect("Error retrieving the master keys")
             .try_collect().await.unwrap_or_else(|_| vec![]);
 
         if result.len() > 1{
-            error!("Master Key table corrupted!");
+            tracing::error!("Master Key table corrupted!");
             exit(1);
         }
         if result.len() == 1{
-            error!("Master key already exists!");
+            tracing::error!("Master key already exists!");
             Ok(false)
         }
         else{
@@ -50,7 +50,7 @@ impl KeyStore {
                     Ok(true)
                 },
                 Err(e) => {
-                    error!("master key could not be stored: {:?}", &e);
+                    tracing::error!("master key could not be stored: {:?}", &e);
                     panic!("master key could not be stored")
                 }
             }
@@ -65,14 +65,14 @@ impl KeyStore {
             .try_collect().await.unwrap_or_else(|_| vec![]);
 
         if result.len() > 1{
-            error!("Master Key table corrupted!");
+            tracing::error!("Master Key table corrupted!");
             exit(1);
         }
         if result.len() == 1{
             Ok(result[0].clone())
         }
         else {
-            error!("Master Key missing!");
+            tracing::error!("Master Key missing!");
             exit(1);
         }
     }
@@ -82,11 +82,11 @@ impl KeyStore {
         let coll = self.database.collection::<DocumentType>(MONGO_COLL_DOC_TYPES);
         match coll.insert_one(doc_type.clone(), None).await {
             Ok(_r) => {
-                debug!("added new document type: {}", &_r.inserted_id);
+                tracing::debug!("added new document type: {}", &_r.inserted_id);
                 Ok(())
             },
             Err(e) => {
-                error!("failed to log document type {}", &doc_type.id);
+                tracing::error!("failed to log document type {}", &doc_type.id);
                 Err(Error::from(e))
             }
         }
@@ -111,7 +111,7 @@ impl KeyStore {
         match result {
             Some(_r) => Ok(true),
             None => {
-                debug!("document type with id {} and pid {:?} does not exist!", &dt_id, &pid);
+                tracing::debug!("document type with id {} and pid {:?} does not exist!", &dt_id, &pid);
                 Ok(false)
             }
         }
@@ -126,11 +126,11 @@ impl KeyStore {
 
     pub async fn get_document_type(&self, dt_id: &String) -> Result<Option<DocumentType>> {
         let coll = self.database.collection::<DocumentType>(MONGO_COLL_DOC_TYPES);
-        debug!("get_document_type for dt_id: '{}'", dt_id);
+        tracing::debug!("get_document_type for dt_id: '{}'", dt_id);
         match coll.find_one(Some(doc! { MONGO_ID: dt_id}), None).await{
             Ok(result) => Ok(result),
             Err(e) => {
-                error!("error while getting document type with id {}!", dt_id);
+                tracing::error!("error while getting document type with id {}!", dt_id);
                 Err(Error::from(e))
             }
         }
@@ -141,15 +141,15 @@ impl KeyStore {
         match coll.replace_one(doc! { MONGO_ID: id}, doc_type, None).await{
             Ok(r) => {
                 if r.matched_count != 1 || r.modified_count != 1{
-                    warn!("while replacing doc type {} matched '{}' dts and modified '{}'", id, r.matched_count, r.modified_count);
+                    tracing::warn!("while replacing doc type {} matched '{}' dts and modified '{}'", id, r.matched_count, r.modified_count);
                 }
                 else{
-                    debug!("while replacing doc type {} matched '{}' dts and modified '{}'", id, r.matched_count, r.modified_count);
+                    tracing::debug!("while replacing doc type {} matched '{}' dts and modified '{}'", id, r.matched_count, r.modified_count);
                 }
                 Ok(true)
             },
             Err(e) => {
-                error!("error while updating document type with id {}: {:#?}", id, e);
+                tracing::error!("error while updating document type with id {}: {:#?}", id, e);
                 Ok(false)
             }
         }

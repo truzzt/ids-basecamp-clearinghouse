@@ -1,11 +1,12 @@
 #![forbid(unsafe_code)]
 
 #[macro_use]
-extern crate rocket;
+extern crate tracing;
 
 use std::path::Path;
 use core_lib::util::{add_service_config};
 use rocket::fairing::AdHoc;
+use tracing::subscriber;
 use core_lib::constants::ENV_LOGGING_SERVICE_ID;
 use db::config::doc_store::DatastoreConfigurator;
 use db::config::keyring_store::KeyringDbConfigurator;
@@ -17,6 +18,7 @@ mod model;
 mod services;
 mod crypto;
 mod ports;
+mod config;
 
 pub fn add_signing_key() -> AdHoc {
     AdHoc::try_on_ignite("Adding Signing Key", |rocket| async {
@@ -24,35 +26,17 @@ pub fn add_signing_key() -> AdHoc {
         if Path::new(&private_key_path).exists() {
             Ok(rocket.manage(private_key_path))
         } else {
-            error!("Signing key not found! Aborting startup! Please configure signing_key!");
+            tracing::error!("Signing key not found! Aborting startup! Please configure signing_key!");
             return Err(rocket);
         }
     })
 }
 
-#[derive(Debug, serde::Deserialize)]
-struct CHConfig {
-    process_database_url: String,
-    keyring_database_url: String,
-    document_database_url: String,
-    clear_db: bool,
-}
-
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
     // Read configuration
-    let conf = config::Config::builder()
-        .add_source(config::File::with_name("config.toml"))
-        .add_source(config::Environment::with_prefix("CH_APP_"))
-        .build()
-        .expect("Failure to read configuration! Exiting...");
-
-    // setup logging
-    // TODO: Setup tracing_subscriber
-
-    let conf: CHConfig = conf.try_deserialize().expect("Failure to read configuration! Exiting...");
-    println!("Config: {:?}", conf);
-
+    let conf = config::read_config();
+    config::configure_logging(conf.log_level);
 
     let process_store =
         ProcessStoreConfigurator::init_process_store(String::from(conf.process_database_url), conf.clear_db)
