@@ -4,6 +4,7 @@ use core_lib::model::crypto::{KeyCtList, KeyMap, KeyMapListItem};
 use crate::crypto;
 use crate::crypto::restore_key_map;
 use crate::db::key_store::KeyStore;
+use crate::model::doc_type::DocumentType;
 
 pub struct KeyringService {
     db: KeyStore,
@@ -162,5 +163,77 @@ impl KeyringService {
 
     pub(crate) async fn decrypt_multiple_keys(&self, ch_claims: ChClaims, pid: Option<String>, cts: &KeyCtList) -> anyhow::Result<Vec<KeyMapListItem>> {
         self.decrypt_keys(ch_claims, pid, cts).await
+    }
+
+    pub(crate) async fn create_doc_type(&self, doc_type: DocumentType) -> anyhow::Result<DocumentType> {
+        debug!("adding doctype: {:?}", &doc_type);
+        match self.db.exists_document_type(&doc_type.pid, &doc_type.id).await{
+            Ok(true) => Err(anyhow!("doctype already exists!")), // BadRequest
+            Ok(false) => {
+                match self.db.add_document_type(doc_type.clone()).await{
+                    Ok(()) => Ok(doc_type),
+                    Err(e) => {
+                        error!("Error while adding doctype: {:?}", e);
+                        return Err(anyhow!("Error while adding document type!")) // InternalError
+                    }
+                }
+            },
+            Err(e) => {
+                error!("Error while adding document type: {:?}", e);
+                return Err(anyhow!("Error while checking database!")) // InternalError
+            }
+        }
+    }
+
+    pub(crate) async fn update_doc_type(&self, id: String, doc_type: DocumentType) -> anyhow::Result<bool> {
+        match self.db.exists_document_type(&doc_type.pid, &doc_type.id).await{
+            Ok(true) => Err(anyhow!("Doctype already exists!")), // BadRequest
+            Ok(false) => {
+                match self.db.update_document_type(doc_type, &id).await{
+                    Ok(id) => Ok(id),
+                    Err(e) => {
+                        error!("Error while adding doctype: {:?}", e);
+                        return Err(anyhow!("Error while storing document type!")) // InternalError
+                    }
+                }
+            },
+            Err(e) => {
+                error!("Error while adding document type: {:?}", e);
+                return Err(anyhow!("Error while checking database!")) // InternalError
+            }
+        }
+    }
+
+    pub(crate) async fn delete_doc_type(&self, id: String, pid: String) -> anyhow::Result<String>{
+        match self.db.delete_document_type(&id, &pid).await{
+            Ok(true) => Ok(String::from("Document type deleted!")), // NoContent
+            Ok(false) => Err(anyhow!("Document type does not exist!")), // NotFound
+            Err(e) => {
+                error!("Error while deleting doctype: {:?}", e);
+                Err(anyhow!("Error while deleting document type with id {}!", id)) // InternalError
+            }
+        }
+    }
+
+    pub(crate) async fn get_doc_type(&self, id: String, pid: String) -> anyhow::Result<Option<DocumentType>> {
+        match self.db.get_document_type(&id).await{
+            //TODO: would like to send "{}" instead of "null" when dt is not found
+            Ok(dt) => Ok(dt),
+            Err(e) => {
+                error!("Error while retrieving doctype: {:?}", e);
+                Err(anyhow!("Error while retrieving document type with id {} and pid {}!", id, pid)) // InternalError
+            }
+        }
+    }
+
+    pub(crate) async fn get_doc_types(&self) -> anyhow::Result<Vec<DocumentType>> {
+        match self.db.get_all_document_types().await {
+            //TODO: would like to send "{}" instead of "null" when dt is not found
+            Ok(dt) => Ok(dt),
+            Err(e) => {
+                error!("Error while retrieving default doctypes: {:?}", e);
+                Err(anyhow!("Error while retrieving all document types")) // InternalError
+            }
+        }
     }
 }
