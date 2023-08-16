@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 use anyhow::anyhow;
-use core_lib::api::crypto::{ChClaims, create_service_token};
+use core_lib::api::crypto::ChClaims;
 use core_lib::api::{DocumentReceipt, QueryResult};
 use core_lib::constants::{DEFAULT_DOC_TYPE, DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES, PAYLOAD_PART};
 use core_lib::model::document::Document;
