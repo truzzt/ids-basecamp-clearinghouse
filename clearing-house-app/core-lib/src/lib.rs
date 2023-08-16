@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 extern crate biscuit;
 extern crate chrono;
 extern crate fern;

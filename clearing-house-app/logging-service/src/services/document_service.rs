@@ -15,7 +15,7 @@ pub struct DocumentService {
 }
 
 impl DocumentService {
-    async fn create_enc_document(&self, ch_claims: ChClaims, doc: Document) -> anyhow::Result<DocumentReceipt> {
+    pub(crate) async fn create_enc_document(&self, ch_claims: ChClaims, doc: Document) -> anyhow::Result<DocumentReceipt> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         // data validation
         let payload: Vec<String> = doc.parts.iter()
@@ -102,15 +102,15 @@ impl DocumentService {
         }
     }
 
-    async fn get_enc_documents_for_pid(&self,
-                                       ch_claims: ChClaims,
-                                       doc_type: Option<String>,
-                                       page: Option<i32>, // TODO: Why i32? This should be and unsinged int
+    pub(crate) async fn get_enc_documents_for_pid(&self,
+                                                  ch_claims: ChClaims,
+                                                  doc_type: Option<String>,
+                                                  page: Option<i32>, // TODO: Why i32? This should be and unsinged int
         size: Option<i32>, // TODO: Why i32? This should be and unsinged int
         sort: Option<SortingOrder>,
-                                       date_from: Option<String>,
-                                       date_to: Option<String>,
-                                       pid: String) -> anyhow::Result<QueryResult> {
+                                                  date_from: Option<String>,
+                                                  date_to: Option<String>,
+                                                  pid: String) -> anyhow::Result<QueryResult> {
         debug!("Trying to retrieve documents for pid '{}'...", &pid);
         trace!("...user '{:?}'", &ch_claims.client_id);
         debug!("...page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
@@ -231,7 +231,7 @@ impl DocumentService {
         }
     }
 
-    async fn get_enc_document(&self, ch_claims: ChClaims, pid: String, id: String, hash: Option<String>) -> anyhow::Result<Document> {
+    pub(crate) async fn get_enc_document(&self, ch_claims: ChClaims, pid: String, id: String, hash: Option<String>) -> anyhow::Result<Document> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         trace!("trying to retrieve document with id '{}' for pid '{}'", &id, &pid);
         if hash.is_some(){

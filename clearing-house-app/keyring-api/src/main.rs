@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 #[macro_use] extern crate error_chain;
 #[macro_use] extern crate rocket;
 #[macro_use] extern crate serde_derive;

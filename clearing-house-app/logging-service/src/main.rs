@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 #[macro_use] extern crate rocket;
 #[macro_use] extern crate serde_derive;
 
@@ -16,6 +18,7 @@ pub mod db;
 pub mod model;
 mod services;
 mod crypto;
+mod ports;
 
 pub fn add_signing_key() -> AdHoc {
     AdHoc::try_on_ignite("Adding Signing Key", |rocket| async {
