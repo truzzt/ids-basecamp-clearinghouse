@@ -11,7 +11,7 @@ edition = "2021"
 aes = "0.6.0"
 aes-gcm-siv = "0.9.0"
 base64 = "0.9.3"
-biscuit = { git = "https://github.com/lawliet89/biscuit", branch = "master" }
+biscuit = "0.6.0"
 chrono = { version = "0.4", features = ["serde"] }
 core-lib = {path = "../core-lib" }
 error-chain = "0.12.4"
