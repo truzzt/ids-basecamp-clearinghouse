@@ -12,8 +12,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
   IMAGE_NAME_LS: ids-ch-logging-service
-  IMAGE_NAME_DA: ids-ch-document-api
-  IMAGE_NAME_KA: ids-ch-keyring-api
   IMAGE_BASE: ghcr.io/truzzt/ids-basecamp-clearinghouse
 
 
@@ -31,8 +29,6 @@ jobs:
     - name: Build build images
       run: |        
         docker build . --file docker/logging-service.Dockerfile --tag $IMAGE_NAME_LS
-        docker build . --file docker/document-api.Dockerfile --tag $IMAGE_NAME_DA
-        docker build . --file docker/keyring-api.Dockerfile --tag $IMAGE_NAME_KA
     
     - name: Log into registry
       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -40,13 +36,9 @@ jobs:
     - name: Push image
       run: |
         IMAGE_ID_LS=$IMAGE_BASE/$IMAGE_NAME_LS
-        IMAGE_ID_DA=$IMAGE_BASE/$IMAGE_NAME_DA
-        IMAGE_ID_KA=$IMAGE_BASE/$IMAGE_NAME_KA
 
         # Change all uppercase to lowercase
         IMAGE_ID_LS=$(echo $IMAGE_ID_LS | tr '[A-Z]' '[a-z]')
-        IMAGE_ID_DA=$(echo $IMAGE_ID_DA | tr '[A-Z]' '[a-z]')
-        IMAGE_ID_KA=$(echo $IMAGE_ID_KA | tr '[A-Z]' '[a-z]')
 
         # Strip git ref prefix from version
         VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
@@ -60,10 +52,3 @@ jobs:
         docker tag $IMAGE_NAME_LS $IMAGE_ID_LS:$VERSION
         docker push $IMAGE_ID_LS:$VERSION
 
-        docker tag $IMAGE_NAME_DA $IMAGE_ID_DA:$VERSION
-        docker push $IMAGE_ID_DA:$VERSION
-        
-        docker tag $IMAGE_NAME_KA $IMAGE_ID_KA:$VERSION
-        docker push $IMAGE_ID_KA:$VERSION
-      
-      
