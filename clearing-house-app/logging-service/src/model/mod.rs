@@ -1,85 +1,100 @@
 use biscuit::{Empty, CompactJson};
 use biscuit::jws::{Compact, Header};
 use biscuit::jwa::SignatureAlgorithm;
-use core_lib::api::crypto::get_fingerprint;
 
 pub mod constants;
 pub mod ids;
 pub(crate) mod crypto;
 pub(crate) mod doc_type;
+pub(crate) mod errors;
+pub(crate) mod document;
+pub(crate) mod util;
+pub(crate) mod process;
+pub(crate) mod claims;
 
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct TransactionCounter{
-    pub tc: i64
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, rocket::FromFormField)]
+pub enum SortingOrder {
+    #[field(value = "asc")]
+    #[serde(rename = "asc")]
+    Ascending,
+    #[field(value = "desc")]
+    #[serde(rename = "desc")]
+    Descending,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct OwnerList{
-    pub owners: Vec<String>
-}
 
-impl OwnerList{
-    pub fn new(owners: Vec<String>) -> OwnerList{
-        OwnerList{
-            owners,
-        }
+pub fn parse_date(date: Option<String>, to_date: bool) -> Option<chrono::NaiveDateTime> {
+    let time_format;
+    if to_date {
+        time_format = "23:59:59"
+    } else {
+        time_format = "00:00:00"
     }
-}
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Receipt {
-    pub data: Compact<DataTransaction, Empty>
-}
-
-#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-pub struct DataTransaction {
-    pub transaction_id: String,
-    pub timestamp: i64,
-    pub process_id: String,
-    pub document_id: String,
-    pub payload: String,
-    pub chain_hash: String,
-    pub client_id: String,
-    pub clearing_house_version: String,
-}
-
-impl CompactJson for DataTransaction{}
-
-impl DataTransaction{
-    pub fn sign(&self, key_path: &str) -> Receipt{
-        let jws = biscuit::jws::Compact::new_decoded(Header::from_registered_header(biscuit::jws::RegisteredHeader{
-            algorithm: SignatureAlgorithm::PS512,
-            media_type: None,
-            key_id: get_fingerprint(key_path),
-            ..Default::default()}), self.clone());
-
-        let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path).unwrap();
-        println!("decoded JWS:{:#?}", &jws);
-        Receipt{
-            data: jws.into_encoded(&keypair).unwrap()
-        }
-    }
-}
-
-// convenience method for testing
-impl From<Receipt> for DataTransaction{
-    fn from(r: Receipt) -> Self {
-        match r.data.unverified_payload(){
-            Ok(d) => d.clone(),
-            Err(e) => {
-                println!("Error occured: {:#?}", e);
-                DataTransaction{
-
-                    transaction_id: "error".to_string(),
-                    timestamp: 0,
-                    process_id: "error".to_string(),
-                    document_id: "error".to_string(),
-                    payload: "error".to_string(),
-                    chain_hash: "error".to_string(),
-                    client_id: "error".to_string(),
-                    clearing_house_version: "error".to_string(),
+    match date {
+        Some(d) => {
+            debug!("Parsing date: {}", &d);
+            match chrono::NaiveDateTime::parse_from_str(format!("{} {}", &d, &time_format).as_str(), "%Y-%m-%d %H:%M:%S") {
+                Ok(date) => {
+                    Some(date)
+                }
+                Err(e) => {
+                    error!("Error occurred: {:#?}", e);
+                    return None;
                 }
             }
         }
+        None => None
     }
+}
+
+pub fn sanitize_dates(date_from: Option<chrono::NaiveDateTime>, date_to: Option<chrono::NaiveDateTime>) -> (chrono::NaiveDateTime, chrono::NaiveDateTime) {
+    let default_to_date = chrono::Local::now().naive_local();
+    let default_from_date = default_to_date.date()
+        .and_hms_opt(0, 0, 0)
+        .expect("00:00:00 is a valid time") - chrono::Duration::weeks(2);
+
+    println!("date_to: {:#?}", date_to);
+    println!("date_from: {:#?}", date_from);
+
+    println!("Default date_to: {:#?}", default_to_date);
+    println!("Default date_from: {:#?}", default_from_date);
+
+    match (date_from, date_to) {
+        (Some(from), Some(to)) => (from, to), // validate already checked that date_from > date_to
+        (Some(from), None) => (from, default_to_date), // if to_date is missing, default to now
+        (None, Some(_to)) => todo!("Not defined yet; check"),
+        (None, None) => (default_from_date, default_to_date), // if both dates are none (case to_date is none and from_date is_some should be catched by validation); return dates for default duration (last 2 weeks)
+    }
+}
+
+pub fn validate_dates(date_from: Option<chrono::NaiveDateTime>, date_to: Option<chrono::NaiveDateTime>) -> bool {
+    let date_now = chrono::Local::now().naive_local();
+    debug!("... validating dates: now: {:#?} , from: {:#?} , to: {:#?}", &date_now, &date_from, &date_to);
+    // date_from before now
+    if date_from.is_some() && date_from.as_ref().unwrap().clone() > date_now {
+        debug!("oh no, date_from {:#?} is in the future! date_now is {:#?}", &date_from, &date_now);
+        return false;
+    }
+
+    // date_to only if there is also date_from
+    if date_from.is_none() && date_to.is_some() {
+        return false;
+    }
+
+    // date_to before or equals now
+    if date_to.is_some() && date_to.as_ref().unwrap().clone() >= date_now {
+        debug!("oh no, date_to {:#?} is in the future! date_now is {:#?}", &date_to, &date_now);
+        return false;
+    }
+
+    // date_from before date_to
+    if date_from.is_some() && date_to.is_some() {
+        if date_from.unwrap() > date_to.unwrap() {
+            debug!("oh no, date_from {:#?} is before date_to {:#?}", &date_from, &date_to);
+            return false;
+        }
+    }
+    return true;
 }

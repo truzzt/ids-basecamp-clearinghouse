@@ -28,3 +28,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 rand = "0.8.5"
 once_cell = "1.18.0"
+blake2-rfc = "0.2.18"
+base64 = "0.21.2"
+uuid = { version = "1.4.1", features = ["serde"] }
+error-chain = "0.12.4"
+num-bigint = "0.4.3"
+ring = "0.16.20"
+openssh-keys = "0.6.2"

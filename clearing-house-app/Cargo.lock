@@ -474,7 +474,7 @@ dependencies = [
  "log",
  "mongodb",
  "num-bigint",
- "openssh-keys",
+ "openssh-keys 0.5.0",
  "percent-encoding",
  "reqwest",
  "ring",
@@ -508,16 +508,6 @@ dependencies = [
  "generic-array",
  "rand_core",
  "typenum",
-]
-
-[[package]]
-name = "crypto-mac"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bff07008ec701e8028e2ceb8f83f0e4274ee62bd2dbdc4fefff2e9a91824081a"
-dependencies = [
- "generic-array",
- "subtle",
 ]
 
 [[package]]
@@ -663,28 +653,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "document-api"
-version = "0.10.0"
-dependencies = [
- "biscuit",
- "chrono",
- "core-lib",
- "error-chain",
- "fern",
- "futures",
- "hex",
- "log",
- "mongodb",
- "rocket",
- "rocket_cors",
- "serde",
- "serde_derive",
- "serde_json",
- "tokio",
- "tokio-test",
-]
-
-[[package]]
 name = "either"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -823,7 +791,6 @@ checksum = "23342abe12aba583913b2e62f22225ff9c950774065e4bfb61a19cd9770fec40"
 dependencies = [
  "futures-channel",
  "futures-core",
- "futures-executor",
  "futures-io",
  "futures-sink",
  "futures-task",
@@ -1001,31 +968,11 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hkdf"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51ab2f639c231793c5f6114bdb9bbe50a7dbbfcd7c7c6bd8475dec2d991e964f"
-dependencies = [
- "digest 0.9.0",
- "hmac 0.10.1",
-]
-
-[[package]]
-name = "hkdf"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "791a029f6b9fc27657f6f188ec6e5e43f6911f6f878e0dc5501396e09809d437"
 dependencies = [
- "hmac 0.12.1",
-]
-
-[[package]]
-name = "hmac"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1441c6b1e930e2817404b5046f1f989899143a12bf92de603b69f4e0aee1e15"
-dependencies = [
- "crypto-mac",
- "digest 0.9.0",
+ "hmac",
 ]
 
 [[package]]
@@ -1250,34 +1197,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keyring-api"
-version = "0.10.0"
-dependencies = [
- "aes 0.6.0",
- "aes-gcm-siv 0.9.0",
- "base64 0.9.3",
- "biscuit",
- "chrono",
- "core-lib",
- "error-chain",
- "fern",
- "generic-array",
- "hex",
- "hkdf 0.10.0",
- "log",
- "mongodb",
- "openssl",
- "rocket",
- "serde",
- "serde_derive",
- "serde_json",
- "sha2 0.9.9",
- "tokio",
- "tokio-test",
- "yaml-rust",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1324,23 +1243,30 @@ dependencies = [
  "aes 0.8.3",
  "aes-gcm-siv 0.11.1",
  "anyhow",
+ "base64 0.21.2",
  "biscuit",
+ "blake2-rfc",
  "chrono",
  "config",
  "core-lib",
+ "error-chain",
  "generic-array",
  "hex",
- "hkdf 0.12.3",
+ "hkdf",
  "mongodb",
+ "num-bigint",
  "once_cell",
+ "openssh-keys 0.6.2",
  "percent-encoding",
  "rand",
+ "ring",
  "rocket",
  "serde",
  "serde_json",
  "sha2 0.10.7",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]
@@ -1464,7 +1390,7 @@ dependencies = [
  "futures-io",
  "futures-util",
  "hex",
- "hmac 0.12.1",
+ "hmac",
  "lazy_static",
  "md-5 0.10.5",
  "pbkdf2",
@@ -1628,6 +1554,19 @@ dependencies = [
  "byteorder",
  "md-5 0.9.1",
  "sha2 0.9.9",
+ "thiserror",
+]
+
+[[package]]
+name = "openssh-keys"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c75a0ec2d1b302412fb503224289325fcc0e44600176864804c7211b055cfd58"
+dependencies = [
+ "base64 0.21.2",
+ "byteorder",
+ "md-5 0.10.5",
+ "sha2 0.10.7",
  "thiserror",
 ]
 
@@ -2056,23 +1995,6 @@ dependencies = [
  "rocket_http",
  "syn 2.0.29",
  "unicode-xid",
-]
-
-[[package]]
-name = "rocket_cors"
-version = "0.6.0-alpha2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b12771b47f52e34d5d0e0e444aeba382863e73263cb9e18847e7d5b74aa2cbd0"
-dependencies = [
- "http",
- "log",
- "regex",
- "rocket",
- "serde",
- "serde_derive",
- "unicase",
- "unicase_serde",
- "url",
 ]
 
 [[package]]
@@ -2693,19 +2615,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-test"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53474327ae5e166530d17f2d956afcb4f8a004de581b3cae10f12006bc8163e3"
-dependencies = [
- "async-stream",
- "bytes",
- "futures-core",
- "tokio",
- "tokio-stream",
-]
-
-[[package]]
 name = "tokio-util"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2916,25 +2825,6 @@ checksum = "9b9bc53168a4be7402ab86c3aad243a84dd7381d09be0eddc81280c1da95ca68"
 dependencies = [
  "serde",
  "version_check",
-]
-
-[[package]]
-name = "unicase"
-version = "2.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50f37be617794602aabbeee0be4f259dc1778fabe05e2d67ee8f79326d5cb4f6"
-dependencies = [
- "version_check",
-]
-
-[[package]]
-name = "unicase_serde"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ef53697679d874d69f3160af80bc28de12730a985d57bdf2b47456ccb8b11f1"
-dependencies = [
- "serde",
- "unicase",
 ]
 
 [[package]]
@@ -3289,15 +3179,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
 dependencies = [
  "tap",
-]
-
-[[package]]
-name = "yaml-rust"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
-dependencies = [
- "linked-hash-map",
 ]
 
 [[package]]

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use core_lib::constants::DEFAULT_DOC_TYPE;
-use core_lib::model::document::{Document, DocumentPart};
+use crate::model::constants::DEFAULT_DOC_TYPE;
+use crate::model::document::{Document, DocumentPart};
 use crate::model::ids::{InfoModelDateTime, InfoModelId, SecurityToken, MessageType};
 
 const MESSAGE_ID: &'static str = "message_id";

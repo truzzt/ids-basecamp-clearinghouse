@@ -2,12 +2,12 @@ use mongodb::{bson, Client};
 use mongodb::bson::doc;
 use mongodb::options::{AggregateOptions, UpdateOptions};
 use rocket::futures::StreamExt;
-use core_lib::constants::{MAX_NUM_RESPONSE_ENTRIES, MONGO_COLL_DOCUMENT_BUCKET, MONGO_ID, MONGO_PID, MONGO_COUNTER, MONGO_DOC_ARRAY, MONGO_DT_ID, MONGO_FROM_TS, MONGO_TO_TS, MONGO_TC, MONGO_TS, DOCUMENT_DB};
-use core_lib::db::DataStoreApi;
-use core_lib::model::document::EncryptedDocument;
-use core_lib::errors::*;
-use core_lib::model::SortingOrder;
+use crate::model::constants::{MAX_NUM_RESPONSE_ENTRIES, MONGO_COLL_DOCUMENT_BUCKET, MONGO_ID, MONGO_PID, MONGO_COUNTER, MONGO_DOC_ARRAY, MONGO_DT_ID, MONGO_FROM_TS, MONGO_TO_TS, MONGO_TC, MONGO_TS, DOCUMENT_DB};
+use crate::db::DataStoreApi;
+use crate::model::errors::*;
 use crate::db::doc_store::bucket::{DocumentBucketSize, DocumentBucketUpdate, restore_from_bucket};
+use crate::model::document::EncryptedDocument;
+use crate::model::SortingOrder;
 
 #[derive(Clone)]
 pub struct DataStore {
@@ -25,7 +25,7 @@ impl DataStoreApi for DataStore {
 }
 
 impl DataStore {
-    pub async fn add_document(&self, doc: EncryptedDocument) -> Result<bool> {
+    pub async fn add_document(&self, doc: EncryptedDocument) -> errors::Result<bool> {
         debug!("add_document to bucket");
         let coll = self.database.collection::<EncryptedDocument>(MONGO_COLL_DOCUMENT_BUCKET);
         let bucket_update = DocumentBucketUpdate::from(&doc);
@@ -54,14 +54,14 @@ impl DataStore {
             }
             Err(e) => {
                 error!("failed to store document: {:#?}", &e);
-                Err(Error::from(e))
+                Err(errors::Error::from(e))
             }
         }
     }
 
     /// checks if the document exists
     /// document ids are globally unique
-    pub async fn exists_document(&self, id: &String) -> Result<bool> {
+    pub async fn exists_document(&self, id: &String) -> errors::Result<bool> {
         debug!("Check if document with id '{}' exists...", id);
         let query = doc! {format!("{}.{}", MONGO_DOC_ARRAY, MONGO_ID): id.clone()};
 
@@ -79,7 +79,7 @@ impl DataStore {
     }
 
     /// gets the model from the db
-    pub async fn get_document(&self, id: &String, pid: &String) -> Result<Option<EncryptedDocument>> {
+    pub async fn get_document(&self, id: &String, pid: &String) -> errors::Result<Option<EncryptedDocument>> {
         debug!("Trying to get doc with id {}...", id);
         let coll = self.database.collection::<EncryptedDocument>(MONGO_COLL_DOCUMENT_BUCKET);
 
@@ -103,7 +103,7 @@ impl DataStore {
     }
 
     /// gets documents for a single process from the db
-    pub async fn get_document_with_previous_tc(&self, tc: i64) -> Result<Option<EncryptedDocument>> {
+    pub async fn get_document_with_previous_tc(&self, tc: i64) -> errors::Result<Option<EncryptedDocument>> {
         let previous_tc = tc - 1;
         debug!("Trying to get document for tc {} ...", previous_tc);
         if previous_tc < 0 {
@@ -134,7 +134,7 @@ impl DataStore {
     }
 
     /// gets a page of documents of a specific document type for a single process from the db defined by parameters page, size and sort
-    pub async fn get_documents_for_pid(&self, dt_id: &String, pid: &String, page: u64, size: u64, sort: &SortingOrder, date_from: &chrono::NaiveDateTime, date_to: &chrono::NaiveDateTime) -> Result<Vec<EncryptedDocument>> {
+    pub async fn get_documents_for_pid(&self, dt_id: &String, pid: &String, page: u64, size: u64, sort: &SortingOrder, date_from: &chrono::NaiveDateTime, date_to: &chrono::NaiveDateTime) -> errors::Result<Vec<EncryptedDocument>> {
         debug!("...trying to get page {} of size {} of documents for pid {} of dt {}...", pid, dt_id, page, size);
 
         match self.get_start_bucket_size(dt_id, pid, page, size, sort, date_from, date_to).await {
@@ -187,13 +187,13 @@ impl DataStore {
             }
             Err(e) => {
                 error!("Error while getting bucket offset!");
-                Err(Error::from(e))
+                Err(errors::Error::from(e))
             }
         }
     }
 
     /// offset is necessary for duration queries. There, start_entries of bucket depend on timestamps which usually creates an offset in the bucket
-    async fn get_start_bucket_size(&self, dt_id: &String, pid: &String, page: u64, size: u64, sort: &SortingOrder, date_from: &chrono::NaiveDateTime, date_to: &chrono::NaiveDateTime) -> Result<DocumentBucketSize> {
+    async fn get_start_bucket_size(&self, dt_id: &String, pid: &String, page: u64, size: u64, sort: &SortingOrder, date_from: &chrono::NaiveDateTime, date_to: &chrono::NaiveDateTime) -> errors::Result<DocumentBucketSize> {
         debug!("...trying to get the offset for page {} of size {} of documents for pid {} of dt {}...", pid, dt_id, page, size);
         let sort_order = match sort {
             SortingOrder::Ascending => {
@@ -264,7 +264,7 @@ impl DataStore {
 }
 
 mod bucket {
-    use core_lib::model::document::EncryptedDocument;
+    use super::{EncryptedDocument};
 
     #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
     pub struct DocumentBucket {

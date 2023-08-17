@@ -1,7 +1,7 @@
-use core_lib::{
-    api::crypto::ChClaims,
+use crate::model::{
+    claims::ChClaims,
     constants::{DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES, DEFAULT_PROCESS_ID},
-    model::{
+    {
         document::Document,
         process::Process,
         SortingOrder,
@@ -16,8 +16,8 @@ use crate::model::{ids::{
     message::IdsMessage,
     IdsQueryResult,
     request::ClearingHouseMessage,
-}, OwnerList, DataTransaction, Receipt};
-use crate::db::ProcessStore;
+}, process::{OwnerList, DataTransaction, Receipt}};
+use crate::db::process_store::ProcessStore;
 use crate::services::document_service::DocumentService;
 
 #[derive(Clone)]

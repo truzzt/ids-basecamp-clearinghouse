@@ -1,6 +1,6 @@
 use anyhow::anyhow;
-use core_lib::api::crypto::ChClaims;
-use core_lib::model::crypto::{KeyCtList, KeyMap, KeyMapListItem};
+use crate::model::claims::ChClaims;
+use crate::model::crypto::{KeyCtList, KeyMap, KeyMapListItem};
 use crate::crypto;
 use crate::crypto::restore_key_map;
 use crate::db::key_store::KeyStore;

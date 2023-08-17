@@ -1,11 +1,11 @@
 use std::convert::TryFrom;
 use anyhow::anyhow;
-use core_lib::api::crypto::ChClaims;
-use core_lib::api::{DocumentReceipt, QueryResult};
-use core_lib::constants::{DEFAULT_DOC_TYPE, DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES, PAYLOAD_PART};
-use core_lib::model::document::Document;
-use core_lib::model::{parse_date, sanitize_dates, SortingOrder, validate_dates};
-use core_lib::model::crypto::{KeyCt, KeyCtList};
+use crate::model::claims::ChClaims;
+use crate::services::{DocumentReceipt, QueryResult};
+use crate::model::constants::{DEFAULT_DOC_TYPE, DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES, PAYLOAD_PART};
+use crate::model::document::Document;
+use crate::model::{parse_date, sanitize_dates, SortingOrder, validate_dates};
+use crate::model::crypto::{KeyCt, KeyCtList};
 use crate::services::keyring_service::KeyringService;
 use crate::db::doc_store::DataStore;
 

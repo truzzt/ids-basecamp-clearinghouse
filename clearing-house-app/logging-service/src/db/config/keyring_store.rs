@@ -1,9 +1,9 @@
 use anyhow::anyhow;
 use rocket::fairing::Kind;
 use rocket::{Build, fairing, Rocket};
-use core_lib::constants::{CLEAR_DB, DATABASE_URL, FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT};
-use core_lib::db::init_database_client;
-use core_lib::util::read_file;
+use crate::model::constants::{CLEAR_DB, DATABASE_URL, FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT};
+use crate::db::init_database_client;
+use crate::util::read_file;
 use crate::db::key_store::KeyStore;
 use crate::model::crypto::MasterKey;
 use crate::model::doc_type::DocumentType;

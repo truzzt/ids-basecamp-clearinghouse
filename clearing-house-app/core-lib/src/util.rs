@@ -1,10 +1,9 @@
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use std::env;
-use std::fs::File;
-use std::io::prelude::*;
 use std::str::FromStr;
 
 use crate::constants::ENV_API_LOG_LEVEL;
+use crate::errors;
 use crate::errors::*;
 use figment::{Figment, providers::{Format, Yaml}};
 use rocket::fairing::AdHoc;
@@ -71,11 +70,8 @@ pub fn setup_logger() -> Result<()> {
 }
 
 pub fn read_file(file: &str) -> Result<String> {
-    let mut f = File::open(file)?;
-    let mut data = String::new();
-    f.read_to_string(&mut data)?;
-    drop(f);
-    Ok(data)
+    std::fs::read_to_string(file)
+        .map_err(|e| errors::Error::from(e))
 }
 
 pub fn url_encode(id: &str) -> String{

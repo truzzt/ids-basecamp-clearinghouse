@@ -4,13 +4,13 @@
 extern crate tracing;
 
 use std::path::Path;
-use core_lib::util::{add_service_config};
 use rocket::fairing::AdHoc;
-use core_lib::constants::ENV_LOGGING_SERVICE_ID;
+use crate::model::constants::ENV_LOGGING_SERVICE_ID;
 use db::config::doc_store::DatastoreConfigurator;
 use db::config::keyring_store::KeyringDbConfigurator;
 use db::config::process_store::ProcessStoreConfigurator;
 use model::constants::SIGNING_KEY;
+use crate::util::add_service_config;
 
 mod db;
 mod model;
@@ -18,6 +18,7 @@ mod services;
 mod crypto;
 mod ports;
 mod config;
+mod util;
 
 pub fn add_signing_key() -> AdHoc {
     AdHoc::try_on_ignite("Adding Signing Key", |rocket| async {

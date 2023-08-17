@@ -1,5 +1,5 @@
-use core_lib::api::ApiResponse;
-use core_lib::constants::{ROCKET_DOC_TYPE_API, DEFAULT_PROCESS_ID};
+use crate::ports::ApiResponse;
+use crate::model::constants::{ROCKET_DOC_TYPE_API, DEFAULT_PROCESS_ID};
 use rocket::fairing::AdHoc;
 use rocket::State;
 use rocket::serde::json::{json,Json};

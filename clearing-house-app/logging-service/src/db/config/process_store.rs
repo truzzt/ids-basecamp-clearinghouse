@@ -2,9 +2,9 @@ use anyhow::anyhow;
 use mongodb::options::{CreateCollectionOptions, WriteConcern};
 use rocket::{Build, Rocket};
 use rocket::fairing::Kind;
-use core_lib::constants::{CLEAR_DB, DATABASE_URL, MONGO_COLL_TRANSACTIONS, PROCESS_DB, PROCESS_DB_CLIENT};
-use core_lib::db::init_database_client;
-use crate::db::ProcessStore;
+use crate::model::constants::{CLEAR_DB, DATABASE_URL, MONGO_COLL_TRANSACTIONS, PROCESS_DB, PROCESS_DB_CLIENT};
+use crate::db::init_database_client;
+use crate::db::process_store::ProcessStore;
 
 #[derive(Clone, Debug)]
 pub struct ProcessStoreConfigurator;

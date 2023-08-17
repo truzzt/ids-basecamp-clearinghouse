@@ -3,9 +3,9 @@ use mongodb::bson::doc;
 use mongodb::IndexModel;
 use mongodb::options::{CreateCollectionOptions, IndexOptions, WriteConcern};
 use rocket::{Build, fairing, Rocket};
-use core_lib::constants::{CLEAR_DB, DATABASE_URL, DOCUMENT_DB, DOCUMENT_DB_CLIENT, MONGO_COLL_DOCUMENT_BUCKET, MONGO_DOC_ARRAY, MONGO_PID, MONGO_TS, MONGO_TC};
-use core_lib::db::init_database_client;
-use core_lib::model::document::Document;
+use crate::model::constants::{CLEAR_DB, DATABASE_URL, DOCUMENT_DB, DOCUMENT_DB_CLIENT, MONGO_COLL_DOCUMENT_BUCKET, MONGO_DOC_ARRAY, MONGO_PID, MONGO_TS, MONGO_TC};
+use crate::db::init_database_client;
+use crate::model::document::Document;
 use crate::db::doc_store::DataStore;
 
 #[derive(Clone, Debug)]

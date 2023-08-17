@@ -42,6 +42,7 @@ impl ToString for LogLevel {
     }
 }
 
+/// Read configuration from `config.toml` and environment variables
 pub(crate) fn read_config() -> CHConfig {
     let conf = config::Config::builder()
         .add_source(config::File::with_name("config.toml"))
@@ -49,12 +50,11 @@ pub(crate) fn read_config() -> CHConfig {
         .build()
         .expect("Failure to read configuration! Exiting...");
 
-    let conf: CHConfig = conf.try_deserialize().expect("Failure to read configuration! Exiting...");
-    tracing::trace!(config = ?conf, "Config read");
-
-    conf
+    conf.try_deserialize::<CHConfig>()
+        .expect("Failure to parse configuration! Exiting...")
 }
 
+/// Configure logging based on environment variable `RUST_LOG`
 pub(crate) fn configure_logging(log_level: Option<LogLevel>) {
     if std::env::var("RUST_LOG").is_err() {
         if let Some(level) = log_level {
