@@ -10,7 +10,7 @@ use crate::model::new_uuid;
 use crate::model::crypto::{KeyEntry, KeyMap};
 use chrono::Local;
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct DocumentPart {
     pub name: String,
     pub content: Option<String>,
@@ -76,7 +76,7 @@ impl DocumentPart{
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct Document {
     #[serde(default = "new_uuid")]
     pub id: String,
@@ -90,7 +90,7 @@ pub struct Document {
 /// Documents should have a globally unique id, setting the id manually is discouraged.
 impl Document{
     pub fn create_uuid() -> String{
-        Uuid::new_v4().to_hyphenated().to_string()
+        Uuid::new_v4().hyphenated().to_string()
     }
 
     // each part is encrypted using the part specific key from the key map
@@ -172,7 +172,7 @@ impl Document{
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct EncryptedDocument {
     pub id: String,
     pub pid: String,

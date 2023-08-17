@@ -249,6 +249,22 @@ checksum = "383d29d513d8764dcdc42ea295d979eb99c3c9f00607b3692cf68a431f7dca72"
 [[package]]
 name = "biscuit"
 version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28865439fc81744500265d96c920985ceb6b612ef8564d43f1cc78e7a6c89e26"
+dependencies = [
+ "chrono",
+ "data-encoding",
+ "num-bigint",
+ "num-traits",
+ "once_cell",
+ "ring",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "biscuit"
+version = "0.6.0"
 source = "git+https://github.com/lawliet89/biscuit?branch=master#16d5c91c0576ec40ec655b7f107b4df19fe4186f"
 dependencies = [
  "chrono",
@@ -331,7 +347,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "time 0.3.23",
- "uuid 1.4.1",
+ "uuid",
 ]
 
 [[package]]
@@ -459,7 +475,7 @@ dependencies = [
  "aes 0.6.0",
  "aes-gcm-siv 0.9.0",
  "base64 0.9.3",
- "biscuit",
+ "biscuit 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "blake2-rfc",
  "chrono",
  "error-chain",
@@ -476,9 +492,8 @@ dependencies = [
  "ring",
  "rocket",
  "serde",
- "serde_derive",
  "serde_json",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
@@ -657,7 +672,7 @@ dependencies = [
 name = "document-api"
 version = "0.10.0"
 dependencies = [
- "biscuit",
+ "biscuit 0.6.0 (git+https://github.com/lawliet89/biscuit?branch=master)",
  "chrono",
  "core-lib",
  "error-chain",
@@ -1247,7 +1262,7 @@ dependencies = [
  "aes 0.6.0",
  "aes-gcm-siv 0.9.0",
  "base64 0.9.3",
- "biscuit",
+ "biscuit 0.6.0 (git+https://github.com/lawliet89/biscuit?branch=master)",
  "chrono",
  "core-lib",
  "error-chain",
@@ -1315,7 +1330,7 @@ dependencies = [
  "aes 0.8.3",
  "aes-gcm-siv 0.11.1",
  "anyhow",
- "biscuit",
+ "biscuit 0.6.0 (git+https://github.com/lawliet89/biscuit?branch=master)",
  "chrono",
  "config",
  "core-lib",
@@ -1484,7 +1499,7 @@ dependencies = [
  "trust-dns-proto",
  "trust-dns-resolver",
  "typed-builder",
- "uuid 1.4.1",
+ "uuid",
  "webpki-roots",
 ]
 
@@ -2999,16 +3014,6 @@ dependencies = [
  "form_urlencoded",
  "idna 0.4.0",
  "percent-encoding",
-]
-
-[[package]]
-name = "uuid"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-dependencies = [
- "getrandom",
- "serde",
 ]
 
 [[package]]

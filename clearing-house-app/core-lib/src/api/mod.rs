@@ -32,7 +32,7 @@ pub enum ApiResponse {
     InternalError(String),
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct DocumentReceipt{
     pub timestamp: i64,
     pub pid: String,
@@ -51,7 +51,7 @@ impl DocumentReceipt{
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct QueryResult{
     pub date_from: i64,
     pub date_to: i64,

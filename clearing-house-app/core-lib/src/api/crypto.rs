@@ -10,12 +10,11 @@ use num_bigint::BigUint;
 use ring::signature::KeyPair;
 use rocket::http::Status;
 use rocket::request::{Request, FromRequest, Outcome};
-use serde::{Deserialize,Serialize};
 use crate::errors::*;
 use crate::constants::{ENV_SHARED_SECRET, SERVICE_HEADER};
 use crate::util::ServiceConfig;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ChClaims{
     pub client_id: String,
 }
@@ -109,7 +108,7 @@ pub fn create_service_token(issuer: &str, audience: &str, client_id: &str) -> St
     create_token(issuer, audience, &private_claims)
 }
 
-pub fn create_token<T: Display + Clone + Serialize + for<'de> Deserialize<'de>> (issuer: &str, audience: &str, private_claims: &T) -> String{
+pub fn create_token<T: Display + Clone + serde::Serialize + for<'de> serde::Deserialize<'de>> (issuer: &str, audience: &str, private_claims: &T) -> String{
     let signing_secret = match env::var(ENV_SHARED_SECRET){
         Ok(secret) => {
             Secret::Bytes(secret.to_string().into_bytes())
@@ -143,7 +142,7 @@ pub fn create_token<T: Display + Clone + Serialize + for<'de> Deserialize<'de>> 
     jwt.into_encoded(&signing_secret).unwrap().unwrap_encoded().to_string()
 }
 
-pub fn decode_token<T: Clone + Serialize + for<'de> Deserialize<'de>>(token: &str, audience: &str) -> Result<T>{
+pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'de>>(token: &str, audience: &str) -> Result<T>{
     let signing_secret = match env::var(ENV_SHARED_SECRET){
         Ok(secret) => {
             Secret::Bytes(secret.to_string().into_bytes())

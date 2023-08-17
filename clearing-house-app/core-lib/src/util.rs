@@ -9,7 +9,7 @@ use crate::errors::*;
 use figment::{Figment, providers::{Format, Yaml}};
 use rocket::fairing::AdHoc;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ServiceConfig{
     pub service_id: String
 }

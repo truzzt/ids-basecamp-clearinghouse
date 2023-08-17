@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct KeyEntry {
     pub id: String,
     pub key: Vec<u8>,
@@ -17,7 +17,7 @@ impl KeyEntry{
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct KeyMap {
     pub enc: bool,
     pub keys: HashMap<String, KeyEntry>,
@@ -32,9 +32,9 @@ impl KeyMap{
             keys_enc
         }
     }
- }
+}
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct KeyCt{
     pub id: String,
     pub ct: String
@@ -49,7 +49,7 @@ impl KeyCt{
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct KeyCtList {
     pub dt: String,
     pub cts: Vec<KeyCt>
@@ -64,7 +64,7 @@ impl KeyCtList{
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct KeyMapListItem {
     pub id: String,
     pub map: KeyMap

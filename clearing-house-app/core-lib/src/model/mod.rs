@@ -7,10 +7,10 @@ mod tests;
 
 pub fn new_uuid() -> String {
     use uuid::Uuid;
-    Uuid::new_v4().to_hyphenated().to_string()
+    Uuid::new_v4().hyphenated().to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromFormField)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, FromFormField)]
 pub enum SortingOrder {
     #[field(value = "asc")]
     #[serde(rename = "asc")]

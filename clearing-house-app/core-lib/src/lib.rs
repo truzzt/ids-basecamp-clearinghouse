@@ -5,7 +5,6 @@ extern crate chrono;
 extern crate fern;
 extern crate mongodb;
 #[macro_use] extern crate rocket;
-#[macro_use] extern crate serde_derive;
 
 #[macro_use] extern crate error_chain;
 pub mod errors {

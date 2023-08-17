@@ -1,4 +1,4 @@
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct Process {
     pub id: String,
     pub owners: Vec<String>,
