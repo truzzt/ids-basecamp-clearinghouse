@@ -57,17 +57,16 @@ impl DocumentService {
                 };
 
                 debug!("start encryption");
-                let mut enc_doc;
-                match doc.encrypt(keys) {
+                let mut enc_doc = match doc.encrypt(keys) {
                     Ok(ct) => {
                         debug!("got ct");
-                        enc_doc = ct
+                        Ok(ct)
                     }
                     Err(e) => {
                         error!("Error while encrypting: {:?}", e);
-                        return Err(anyhow!("Error while encrypting!")); // InternalError
+                        Err(anyhow!("Error while encrypting!")) // InternalError
                     }
-                };
+                }?;
 
                 // chain the document to previous documents
                 debug!("add the chain hash...");

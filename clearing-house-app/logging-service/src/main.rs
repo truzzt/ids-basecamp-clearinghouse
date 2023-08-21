@@ -35,7 +35,7 @@ pub fn add_signing_key() -> AdHoc {
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
     // Read configuration
-    let conf = config::read_config();
+    let conf = config::read_config(None);
     config::configure_logging(conf.log_level);
 
     let process_store =

@@ -10,11 +10,11 @@ edition = "2021"
 [dependencies]
 biscuit = "0.6.0"
 core-lib = { path = "../core-lib" }
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4.26", features = ["serde", "clock", "std"], default-features = false }
 mongodb ="2"
 percent-encoding = "2.1.0"
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
-serde = { version = "1", features = ["derive"] }
+serde = { version = "= 1.0.171", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
 hex = "0.4.3"
@@ -35,3 +35,9 @@ error-chain = "0.12.4"
 num-bigint = "0.4.3"
 ring = "0.16.20"
 openssh-keys = "0.6.2"
+
+[dev-dependencies]
+# Controlling execution of unit test cases, which could interfere with each other
+serial_test = "2.0.0"
+# Tempfile creation for testing
+tempfile = "3.8.0"
