@@ -14,6 +14,8 @@ chrono = { version = "0.4.26", features = ["serde", "clock", "std"], default-fea
 mongodb ="2"
 percent-encoding = "2.1.0"
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
+# Restricted version to 1.0.171, because of a change in derive macro for serde. It introduced precompiled binary files
+# for code generation, which is by many developers not considered a secure codeing practice.
 serde = { version = "= 1.0.171", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"

@@ -1,3 +1,4 @@
+/// Represents the configuration for the application
 #[derive(Debug, serde::Deserialize)]
 pub(crate) struct CHConfig {
     pub(crate) process_database_url: String,
@@ -8,6 +9,7 @@ pub(crate) struct CHConfig {
     pub(crate) log_level: Option<LogLevel>,
 }
 
+/// Contains the log level for the application
 #[derive(Debug, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub(crate) enum LogLevel {
@@ -50,20 +52,16 @@ pub(crate) fn read_config(config_file_override: Option<&std::path::Path>) -> CHC
 
     // Override config file override path
     conf_builder = if let Some(config_file) = config_file_override {
-        conf_builder
-            .add_source(config::File::from(config_file))
+        conf_builder.add_source(config::File::from(config_file))
     } else {
-        conf_builder
-            .add_source(config::File::with_name("config.toml"))
+        conf_builder.add_source(config::File::with_name("config.toml"))
     };
 
     // Add environment variables and finish
-    conf_builder = conf_builder
-        .add_source(
-            config::Environment::with_prefix("CH_APP")
-                .prefix_separator("_")
-        );
+    conf_builder =
+        conf_builder.add_source(config::Environment::with_prefix("CH_APP").prefix_separator("_"));
 
+    // Finalize and deserialize
     conf_builder
         .build()
         .expect("Failure to read configuration! Exiting...")
@@ -88,6 +86,8 @@ pub(crate) fn configure_logging(log_level: Option<LogLevel>) {
 #[cfg(test)]
 mod test {
     use serial_test::serial;
+
+    /// Test reading config from environment variables
     #[test]
     #[serial]
     fn test_read_config_from_env() {
@@ -112,18 +112,15 @@ mod test {
         std::env::remove_var("CH_APP_LOG_LEVEL");
     }
 
+    /// Test reading config from toml file
     #[test]
     #[serial]
     fn test_read_config_from_toml() {
         // Create tempfile
-        let file = tempfile::Builder::new()
-            .suffix(".toml")
-            .tempfile()
-            .unwrap();
+        let file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
 
         // Write config to file
-        let toml =
-            r#"process_database_url = "mongodb://localhost:27019"
+        let toml = r#"process_database_url = "mongodb://localhost:27019"
 keyring_database_url = "mongodb://localhost:27020"
 document_database_url = "mongodb://localhost:27017"
 clear_db = true

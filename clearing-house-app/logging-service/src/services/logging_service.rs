@@ -1,23 +1,18 @@
 use crate::model::{
     claims::ChClaims,
-    constants::{DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES, DEFAULT_PROCESS_ID},
-    {
-        document::Document,
-        process::Process,
-        SortingOrder,
-    },
+    constants::{DEFAULT_NUM_RESPONSE_ENTRIES, DEFAULT_PROCESS_ID, MAX_NUM_RESPONSE_ENTRIES},
+    {document::Document, process::Process, SortingOrder},
 };
+use anyhow::anyhow;
 use rocket::form::validate::Contains;
 use rocket::State;
 use std::convert::TryFrom;
-use anyhow::anyhow;
 
-use crate::model::{ids::{
-    message::IdsMessage,
-    IdsQueryResult,
-    request::ClearingHouseMessage,
-}, process::{OwnerList, DataTransaction, Receipt}};
 use crate::db::process_store::ProcessStore;
+use crate::model::{
+    ids::{message::IdsMessage, request::ClearingHouseMessage, IdsQueryResult},
+    process::{DataTransaction, OwnerList, Receipt},
+};
 use crate::services::document_service::DocumentService;
 
 #[derive(Clone)]
@@ -28,10 +23,7 @@ pub struct LoggingService {
 
 impl LoggingService {
     pub fn new(db: ProcessStore, doc_api: DocumentService) -> LoggingService {
-        LoggingService {
-            db,
-            doc_api,
-        }
+        LoggingService { db, doc_api }
     }
 
     pub async fn log(
@@ -50,7 +42,9 @@ impl LoggingService {
         m.pid = Some(pid.clone());
 
         // validate that there is a payload
-        if m.payload.is_none() || (m.payload.is_some() && m.payload.as_ref().unwrap().trim().is_empty()) {
+        if m.payload.is_none()
+            || (m.payload.is_some() && m.payload.as_ref().unwrap().trim().is_empty())
+        {
             error!("Trying to log an empty payload!");
             return Err(anyhow!("No payload received for logging!")); // BadRequest
         }
@@ -70,11 +64,12 @@ impl LoggingService {
                     Ok(None) => {
                         info!("Requested pid '{}' does not exist. Creating...", &pid);
                         // create a new process
-                        let new_process = Process::new(pid.clone(), vec!(user.clone()));
+                        let new_process = Process::new(pid.clone(), vec![user.clone()]);
 
                         if self.db.store_process(new_process).await.is_err() {
                             error!("Error while creating process '{}'", &pid);
-                            return Err(anyhow!("Error while creating process")); // InternalError
+                            return Err(anyhow!("Error while creating process"));
+                            // InternalError
                         }
                     }
                     Err(_) => {
@@ -92,13 +87,17 @@ impl LoggingService {
                         return Err(anyhow!("User not authorized!")); // Forbidden
                     }
                     Err(_) => {
-                        error!("Error while checking authorization of user '{}' for '{}'", &user, &pid);
+                        error!(
+                            "Error while checking authorization of user '{}' for '{}'",
+                            &user, &pid
+                        );
                         return Err(anyhow!("Error during authorization"));
                     }
                 }
 
                 debug!("logging message for pid {}", &pid);
-                self.log_message(user, key_path.inner().as_str(), m.clone()).await
+                self.log_message(user, key_path.inner().as_str(), m.clone())
+                    .await
             }
         }
     }
@@ -117,7 +116,7 @@ impl LoggingService {
         let user = &ch_claims.client_id;
 
         // validate payload
-        let mut owners = vec!(user.clone());
+        let mut owners = vec![user.clone()];
         let payload = m.payload.clone().unwrap_or(String::new());
         if !payload.is_empty() {
             trace!("OwnerList: '{:#?}'", &payload);
@@ -161,9 +160,7 @@ impl LoggingService {
                         let new_process = Process::new(pid.clone(), owners);
 
                         match self.db.store_process(new_process).await {
-                            Ok(_) => {
-                                Ok(pid.clone())
-                            }
+                            Ok(_) => Ok(pid.clone()),
                             Err(e) => {
                                 error!("Error while creating process '{}': {}", &pid, e);
                                 Err(anyhow!("Error while creating process")) // InternalError
@@ -190,7 +187,11 @@ impl LoggingService {
                 debug!("Storing document...");
                 doc.tc = tid;
                 // TODO: ChClaims usage check
-                match self.doc_api.create_enc_document(ChClaims::new(&user), doc.clone()).await {
+                match self
+                    .doc_api
+                    .create_enc_document(ChClaims::new(&user), doc.clone())
+                    .await
+                {
                     Ok(doc_receipt) => {
                         debug!("Increase transaction counter");
                         match self.db.increment_transaction_counter().await {
@@ -211,7 +212,8 @@ impl LoggingService {
                             }
                             _ => {
                                 error!("Error while incrementing transaction id!");
-                                Err(anyhow!("Internal error while preparing transaction data")) // InternalError
+                                Err(anyhow!("Internal error while preparing transaction data"))
+                                // InternalError
                             }
                         }
                     }
@@ -254,7 +256,10 @@ impl LoggingService {
             Ok(true) => info!("User authorized."),
             Ok(false) => return Err(anyhow!("Process does not exist!")), // NotFound
             Err(_e) => {
-                error!("Error while checking process '{}' for user '{}'", &pid, &user);
+                error!(
+                    "Error while checking process '{}' for user '{}'",
+                    &pid, &user
+                );
                 return Err(anyhow!("Cannot authorize user!")); // InternalError
             }
         };
@@ -269,7 +274,10 @@ impl LoggingService {
                 return Err(anyhow!("User not authorized!")); // Forbidden
             }
             Err(_) => {
-                error!("Error while checking authorization of user '{}' for '{}'", &user, &pid);
+                error!(
+                    "Error while checking authorization of user '{}' for '{}'",
+                    &user, &pid
+                );
                 return Err(anyhow!("Cannot authorize user!")); // InternalError
             }
         }
@@ -284,7 +292,7 @@ impl LoggingService {
                     1
                 }
             }
-            None => 1
+            None => 1,
         };
 
         let sanitized_size = match size {
@@ -302,29 +310,49 @@ impl LoggingService {
                     }
                 }
             }
-            None => i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap()
+            None => i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap(),
         };
 
         let sanitized_sort = sort.unwrap_or(SortingOrder::Descending);
 
-        match self.doc_api.get_enc_documents_for_pid(ChClaims::new(&user), None, Some(sanitized_page), Some(sanitized_size), Some(sanitized_sort), date_from, date_to, pid.clone()).await {
+        match self
+            .doc_api
+            .get_enc_documents_for_pid(
+                ChClaims::new(&user),
+                None,
+                Some(sanitized_page),
+                Some(sanitized_size),
+                Some(sanitized_sort),
+                date_from,
+                date_to,
+                pid.clone(),
+            )
+            .await
+        {
             Ok(r) => {
-                let messages: Vec<IdsMessage> = r.documents.iter().map(|d| IdsMessage::from(d.clone())).collect();
-                let result = IdsQueryResult::new(r.date_from, r.date_to, r.page, r.size, r.order, messages);
+                let messages: Vec<IdsMessage> = r
+                    .documents
+                    .iter()
+                    .map(|d| IdsMessage::from(d.clone()))
+                    .collect();
+                let result =
+                    IdsQueryResult::new(r.date_from, r.date_to, r.page, r.size, r.order, messages);
                 Ok(result)
             }
             Err(e) => {
                 error!("Error while retrieving message: {:?}", e);
-                Err(anyhow!("Error while retrieving messages for pid {}!", &pid)) // InternalError
+                Err(anyhow!("Error while retrieving messages for pid {}!", &pid))
+                // InternalError
             }
         }
     }
 
-    pub(crate) async fn query_id(&self,
-                                 ch_claims: ChClaims,
-                                 pid: String,
-                                 id: String,
-                                 message: ClearingHouseMessage,
+    pub(crate) async fn query_id(
+        &self,
+        ch_claims: ChClaims,
+        pid: String,
+        id: String,
+        message: ClearingHouseMessage,
     ) -> anyhow::Result<IdsMessage> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         let user = &ch_claims.client_id;
@@ -334,7 +362,10 @@ impl LoggingService {
             Ok(true) => info!("User authorized."),
             Ok(false) => return Err(anyhow!("Process does not exist!")), // NotFound
             Err(_e) => {
-                error!("Error while checking process '{}' for user '{}'", &pid, &user);
+                error!(
+                    "Error while checking process '{}' for user '{}'",
+                    &pid, &user
+                );
                 return Err(anyhow!("Cannot authorize user!")); // InternalError
             }
         };
@@ -349,12 +380,19 @@ impl LoggingService {
                 return Err(anyhow!("User not authorized!")); // Forbidden
             }
             Err(_) => {
-                error!("Error while checking authorization of user '{}' for '{}'", &user, &pid);
+                error!(
+                    "Error while checking authorization of user '{}' for '{}'",
+                    &user, &pid
+                );
                 return Err(anyhow!("Cannot authorize user!")); // InternalError
             }
         }
 
-        match self.doc_api.get_enc_document(ChClaims::new(&user), pid.clone(), id.clone(), None).await {
+        match self
+            .doc_api
+            .get_enc_document(ChClaims::new(&user), pid.clone(), id.clone(), None)
+            .await
+        {
             Ok(doc) => {
                 // transform document to IDS message
                 let queried_message = IdsMessage::from(doc);

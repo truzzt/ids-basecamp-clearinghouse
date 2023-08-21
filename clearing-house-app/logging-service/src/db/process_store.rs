@@ -1,12 +1,14 @@
-use crate::model::constants::{MONGO_ID, MONGO_COLL_PROCESSES, PROCESS_DB, MONGO_COLL_TRANSACTIONS, MONGO_TC};
 use crate::db::DataStoreApi;
+use crate::model::constants::{
+    MONGO_COLL_PROCESSES, MONGO_COLL_TRANSACTIONS, MONGO_ID, MONGO_TC, PROCESS_DB,
+};
 use crate::model::errors::*;
 use crate::model::process::Process;
+use crate::model::process::TransactionCounter;
 use mongodb::bson::doc;
+use mongodb::options::{FindOneAndUpdateOptions, UpdateModifications};
 use mongodb::{Client, Database};
 use rocket::futures::TryStreamExt;
-use mongodb::options::{UpdateModifications, FindOneAndUpdateOptions};
-use crate::model::process::TransactionCounter;
 
 #[derive(Clone)]
 pub struct ProcessStore {
@@ -26,30 +28,38 @@ impl DataStoreApi for ProcessStore {
 impl ProcessStore {
     pub async fn get_transaction_counter(&self) -> errors::Result<Option<i64>> {
         debug!("Getting transaction counter...");
-        let coll = self.database.collection::<TransactionCounter>(MONGO_COLL_TRANSACTIONS);
+        let coll = self
+            .database
+            .collection::<TransactionCounter>(MONGO_COLL_TRANSACTIONS);
         match coll.find_one(None, None).await? {
             Some(t) => Ok(Some(t.tc)),
-            None => Ok(Some(0))
+            None => Ok(Some(0)),
         }
     }
 
     pub async fn increment_transaction_counter(&self) -> errors::Result<Option<i64>> {
         debug!("Getting transaction counter...");
-        let coll = self.database.collection::<TransactionCounter>(MONGO_COLL_TRANSACTIONS);
+        let coll = self
+            .database
+            .collection::<TransactionCounter>(MONGO_COLL_TRANSACTIONS);
         let mods = UpdateModifications::Document(doc! {"$inc": {MONGO_TC: 1 }});
         let mut opts = FindOneAndUpdateOptions::default();
         opts.upsert = Some(true);
         match coll.find_one_and_update(doc! {}, mods, opts).await? {
             Some(t) => Ok(Some(t.tc)),
-            None => Ok(Some(0))
+            None => Ok(Some(0)),
         }
     }
 
     pub async fn get_processes(&self) -> errors::Result<Vec<Process>> {
         debug!("Trying to get all processes...");
         let coll = self.database.collection::<Process>(MONGO_COLL_PROCESSES);
-        let result = coll.find(None, None).await?
-            .try_collect().await.unwrap_or_else(|_| vec![]);
+        let result = coll
+            .find(None, None)
+            .await?
+            .try_collect()
+            .await
+            .unwrap_or_else(|_| vec![]);
         Ok(result)
     }
 
@@ -87,9 +97,7 @@ impl ProcessStore {
         debug!("Trying to get process with id {}...", pid);
         let coll = self.database.collection::<Process>(MONGO_COLL_PROCESSES);
         match coll.find_one(Some(doc! { MONGO_ID: pid }), None).await {
-            Ok(process) => {
-                Ok(process)
-            }
+            Ok(process) => Ok(process),
             Err(e) => {
                 error!("Error while getting process: {:#?}!", &e);
                 Err(errors::Error::from(e))
@@ -98,7 +106,10 @@ impl ProcessStore {
     }
 
     pub async fn is_authorized(&self, user: &String, pid: &String) -> errors::Result<bool> {
-        debug!("checking if user '{}' is authorized to access '{}'", user, pid);
+        debug!(
+            "checking if user '{}' is authorized to access '{}'",
+            user, pid
+        );
         return match self.get_process(&pid).await {
             Ok(Some(process)) => {
                 let authorized = process.owners.iter().any(|o| {
@@ -111,9 +122,7 @@ impl ProcessStore {
                 trace!("didn't find process");
                 Ok(false)
             }
-            _ => {
-                Err(format!("User '{}' could not be authorized", &user).into())
-            }
+            _ => Err(format!("User '{}' could not be authorized", &user).into()),
         };
     }
 

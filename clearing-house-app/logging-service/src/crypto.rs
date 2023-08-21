@@ -1,15 +1,15 @@
-use aes_gcm_siv::{Aes256GcmSiv, KeyInit};
-use aes_gcm_siv::aead::Aead;
+use crate::model::crypto::MasterKey;
 use crate::model::crypto::{KeyEntry, KeyMap};
+use crate::model::doc_type::DocumentType;
+use aes_gcm_siv::aead::Aead;
+use aes_gcm_siv::{Aes256GcmSiv, KeyInit};
+use anyhow::anyhow;
 use generic_array::GenericArray;
 use hkdf::Hkdf;
+use rand::{RngCore, SeedableRng};
 use sha2::Sha256;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use anyhow::anyhow;
-use crate::model::doc_type::DocumentType;
-use crate::model::crypto::MasterKey;
-use rand::{RngCore, SeedableRng};
 
 const EXP_KEY_SIZE: usize = 32;
 const EXP_NONCE_SIZE: usize = 12;
@@ -25,9 +25,8 @@ fn initialize_kdf() -> (String, Hkdf<Sha256>) {
 /// Generates a random seed with 256 bytes.
 pub fn generate_random_seed() -> Vec<u8> {
     // Init crypto RNG once lazy
-    static RNG: once_cell::sync::Lazy<Mutex<rand::rngs::StdRng>> = once_cell::sync::Lazy::new(
-        || Mutex::new(rand::rngs::StdRng::from_entropy())
-    );
+    static RNG: once_cell::sync::Lazy<Mutex<rand::rngs::StdRng>> =
+        once_cell::sync::Lazy::new(|| Mutex::new(rand::rngs::StdRng::from_entropy()));
     // Create a buffer to fill with random bytes
     let mut buf = [0u8; 256];
 
@@ -45,17 +44,23 @@ fn derive_key_map(kdf: Hkdf<Sha256>, dt: DocumentType, enc: bool) -> HashMap<Str
     let mut key_map = HashMap::new();
     let mut okm = [0u8; EXP_BUFF_SIZE];
     let mut i = 0;
-    dt.parts.iter()
-        .for_each(|p| {
-            if kdf.expand(p.name.clone().as_bytes(), &mut okm).is_ok() {
-                let map_key = match enc {
-                    true => p.name.clone(),
-                    false => i.to_string()
-                };
-                key_map.insert(map_key, KeyEntry::new(i.to_string(), okm[..EXP_KEY_SIZE].to_vec(), okm[EXP_KEY_SIZE..].to_vec()));
-            }
-            i = i + 1;
-        });
+    dt.parts.iter().for_each(|p| {
+        if kdf.expand(p.name.clone().as_bytes(), &mut okm).is_ok() {
+            let map_key = match enc {
+                true => p.name.clone(),
+                false => i.to_string(),
+            };
+            key_map.insert(
+                map_key,
+                KeyEntry::new(
+                    i.to_string(),
+                    okm[..EXP_KEY_SIZE].to_vec(),
+                    okm[EXP_KEY_SIZE..].to_vec(),
+                ),
+            );
+        }
+        i = i + 1;
+    });
     key_map
 }
 
@@ -67,7 +72,10 @@ pub fn generate_key_map(mkey: MasterKey, dt: DocumentType) -> anyhow::Result<Key
     debug!("encrypting the key seed");
     let kdf = restore_kdf(&mkey.key)?;
     let mut okm = [0u8; EXP_BUFF_SIZE];
-    if kdf.expand(hex::decode(mkey.salt)?.as_slice(), &mut okm).is_err() {
+    if kdf
+        .expand(hex::decode(mkey.salt)?.as_slice(), &mut okm)
+        .is_err()
+    {
         return Err(anyhow!("Error while generating key"));
     }
     match encrypt_secret(&okm[..EXP_KEY_SIZE], &okm[EXP_KEY_SIZE..], secret) {
@@ -79,11 +87,18 @@ pub fn generate_key_map(mkey: MasterKey, dt: DocumentType) -> anyhow::Result<Key
     }
 }
 
-pub fn restore_key_map(mkey: MasterKey, dt: DocumentType, keys_ct: Vec<u8>) -> anyhow::Result<KeyMap> {
+pub fn restore_key_map(
+    mkey: MasterKey,
+    dt: DocumentType,
+    keys_ct: Vec<u8>,
+) -> anyhow::Result<KeyMap> {
     debug!("decrypting the key seed");
     let kdf = restore_kdf(&mkey.key)?;
     let mut okm = [0u8; EXP_BUFF_SIZE];
-    if kdf.expand(hex::decode(mkey.salt)?.as_slice(), &mut okm).is_err() {
+    if kdf
+        .expand(hex::decode(mkey.salt)?.as_slice(), &mut okm)
+        .is_err()
+    {
         return Err(anyhow!("Error while generating key"));
     }
 
@@ -129,12 +144,20 @@ fn restore_kdf(secret: &String) -> anyhow::Result<Hkdf<Sha256>> {
 pub fn encrypt_secret(key: &[u8], nonce: &[u8], secret: String) -> anyhow::Result<Vec<u8>> {
     // check key size
     if key.len() != EXP_KEY_SIZE {
-        error!("Given key has size {} but expected {} bytes", key.len(), EXP_KEY_SIZE);
+        error!(
+            "Given key has size {} but expected {} bytes",
+            key.len(),
+            EXP_KEY_SIZE
+        );
         Err(anyhow!("Incorrect key size"))
     }
     // check nonce size
     else if nonce.len() != EXP_NONCE_SIZE {
-        error!("Given nonce has size {} but expected {} bytes", nonce.len(), EXP_NONCE_SIZE);
+        error!(
+            "Given nonce has size {} but expected {} bytes",
+            nonce.len(),
+            EXP_NONCE_SIZE
+        );
         Err(anyhow!("Incorrect nonce size"))
     } else {
         let key = GenericArray::from_slice(key);
@@ -142,10 +165,8 @@ pub fn encrypt_secret(key: &[u8], nonce: &[u8], secret: String) -> anyhow::Resul
         let cipher = Aes256GcmSiv::new(key);
 
         match cipher.encrypt(nonce, secret.as_bytes()) {
-            Ok(ct) => {
-                Ok(ct)
-            }
-            Err(e) => Err(anyhow!("Error while encrypting {}", e))
+            Ok(ct) => Ok(ct),
+            Err(e) => Err(anyhow!("Error while encrypting {}", e)),
         }
     }
 }
@@ -167,9 +188,7 @@ pub fn decrypt_secret(key: &[u8], nonce: &[u8], ct: &[u8]) -> anyhow::Result<Str
             let pt = String::from_utf8(pt)?;
             Ok(pt)
         }
-        Err(e) => {
-            Err(anyhow!("Error while decrypting: {}", e))
-        }
+        Err(e) => Err(anyhow!("Error while decrypting: {}", e)),
     }
 }
 

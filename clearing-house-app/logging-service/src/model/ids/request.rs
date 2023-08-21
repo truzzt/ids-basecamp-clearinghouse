@@ -9,11 +9,15 @@ pub struct ClearingHouseMessage {
 }
 
 impl ClearingHouseMessage {
-    pub fn new(header: IdsMessage, payload: Option<String>, payload_type: Option<String>) -> ClearingHouseMessage{
-        ClearingHouseMessage{
+    pub fn new(
+        header: IdsMessage,
+        payload: Option<String>,
+        payload_type: Option<String>,
+    ) -> ClearingHouseMessage {
+        ClearingHouseMessage {
             header,
             payload,
-            payload_type
+            payload_type,
         }
     }
 }

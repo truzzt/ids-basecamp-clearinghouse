@@ -1,14 +1,14 @@
+use crate::model::constants::SPLIT_CT;
+use crate::model::crypto::{KeyEntry, KeyMap};
+use crate::model::errors::*;
+use crate::model::util::new_uuid;
+use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::{Aes256GcmSiv, KeyInit};
-use aes_gcm_siv::aead::{Aead};
 use blake2_rfc::blake2b::Blake2b;
+use chrono::Local;
 use generic_array::GenericArray;
 use std::collections::HashMap;
 use uuid::Uuid;
-use crate::model::errors::*;
-use crate::model::constants::{SPLIT_CT};
-use crate::model::util::new_uuid;
-use crate::model::crypto::{KeyEntry, KeyMap};
-use chrono::Local;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct DocumentPart {
@@ -18,10 +18,7 @@ pub struct DocumentPart {
 
 impl DocumentPart {
     pub fn new(name: String, content: Option<String>) -> DocumentPart {
-        DocumentPart {
-            name,
-            content,
-        }
+        DocumentPart { name, content }
     }
 
     pub fn encrypt(&self, key: &[u8], nonce: &[u8]) -> errors::Result<Vec<u8>> {
@@ -29,12 +26,20 @@ impl DocumentPart {
         const EXP_NONCE_SIZE: usize = 12;
         // check key size
         if key.len() != EXP_KEY_SIZE {
-            error!("Given key has size {} but expected {} bytes", key.len(), EXP_KEY_SIZE);
+            error!(
+                "Given key has size {} but expected {} bytes",
+                key.len(),
+                EXP_KEY_SIZE
+            );
             error_chain::bail!("Incorrect key size")
         }
         // check nonce size
         else if nonce.len() != EXP_NONCE_SIZE {
-            error!("Given nonce has size {} but expected {} bytes", nonce.len(), EXP_NONCE_SIZE);
+            error!(
+                "Given nonce has size {} but expected {} bytes",
+                nonce.len(),
+                EXP_NONCE_SIZE
+            );
             error_chain::bail!("Incorrect nonce size")
         } else {
             let key = GenericArray::from_slice(key);
@@ -46,7 +51,7 @@ impl DocumentPart {
                     let pt = format_pt_for_storage(&self.name, pt);
                     match cipher.encrypt(nonce, pt.as_bytes()) {
                         Ok(ct) => Ok(ct),
-                        Err(e) => error_chain::bail!("Error while encrypting {}", e)
+                        Err(e) => error_chain::bail!("Error while encrypting {}", e),
                     }
                 }
                 None => {
@@ -96,7 +101,7 @@ impl Document {
     // the hash is set to "0". Chaining is not done here.
     pub fn encrypt(&self, key_map: KeyMap) -> errors::Result<EncryptedDocument> {
         debug!("encrypting document of doc_type {}", self.dt_id);
-        let mut cts = vec!();
+        let mut cts = vec![];
 
         let keys = key_map.keys;
         let key_ct;
@@ -133,7 +138,15 @@ impl Document {
         }
         cts.sort();
 
-        Ok(EncryptedDocument::new(self.id.clone(), self.pid.clone(), self.dt_id.clone(), self.ts, self.tc, key_ct, cts))
+        Ok(EncryptedDocument::new(
+            self.id.clone(),
+            self.pid.clone(),
+            self.dt_id.clone(),
+            self.ts,
+            self.tc,
+            key_ct,
+            cts,
+        ))
     }
 
     pub fn get_formatted_tc(&self) -> String {
@@ -159,7 +172,14 @@ impl Document {
         }
     }
 
-    fn restore(id: String, pid: String, dt_id: String, ts: i64, tc: i64, parts: Vec<DocumentPart>) -> Document {
+    fn restore(
+        id: String,
+        pid: String,
+        dt_id: String,
+        ts: i64,
+        tc: i64,
+        parts: Vec<DocumentPart>,
+    ) -> Document {
         Document {
             id,
             dt_id,
@@ -187,7 +207,7 @@ impl EncryptedDocument {
     /// Note: KeyMap keys need to be KeyEntry.ids in this case
     // Decryption is done without checking the hashes. Do this before calling this method
     pub fn decrypt(&self, keys: HashMap<String, KeyEntry>) -> errors::Result<Document> {
-        let mut pts = vec!();
+        let mut pts = vec![];
         for ct in self.cts.iter() {
             let ct_parts = ct.split(SPLIT_CT).collect::<Vec<&str>>();
             if ct_parts.len() != 2 {
@@ -214,7 +234,14 @@ impl EncryptedDocument {
             }
         }
 
-        Ok(Document::restore(self.id.clone(), self.pid.clone(), self.dt_id.clone(), self.ts, self.tc, pts))
+        Ok(Document::restore(
+            self.id.clone(),
+            self.pid.clone(),
+            self.dt_id.clone(),
+            self.ts,
+            self.tc,
+            pts,
+        ))
     }
 
     pub fn get_formatted_tc(&self) -> String {
@@ -242,7 +269,15 @@ impl EncryptedDocument {
         res
     }
 
-    pub fn new(id: String, pid: String, dt_id: String, ts: i64, tc: i64, keys_ct: String, cts: Vec<String>) -> EncryptedDocument {
+    pub fn new(
+        id: String,
+        pid: String,
+        dt_id: String,
+        ts: i64,
+        tc: i64,
+        keys_ct: String,
+        cts: Vec<String>,
+    ) -> EncryptedDocument {
         EncryptedDocument {
             id,
             pid,
@@ -263,7 +298,11 @@ pub fn restore_pt(pt: &str) -> errors::Result<(String, String, String)> {
     if vec.len() != 3 {
         error_chain::bail!("Could not restore plaintext");
     }
-    Ok((String::from(vec[0]), String::from(vec[1]), String::from(vec[2])))
+    Ok((
+        String::from(vec[0]),
+        String::from(vec[1]),
+        String::from(vec[2]),
+    ))
 }
 
 /// companion to format_pt_for_storage_no_dt

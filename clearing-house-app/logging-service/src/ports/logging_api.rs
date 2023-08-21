@@ -1,16 +1,17 @@
 use crate::{
-    ports::{
-        ApiResponse,
-    },
-    model::claims::{ChClaims, get_jwks},
+    model::claims::{get_jwks, ChClaims},
     model::SortingOrder,
+    ports::ApiResponse,
 };
-use rocket::serde::json::{json, Json};
 use rocket::fairing::AdHoc;
+use rocket::serde::json::{json, Json};
 use rocket::State;
 
+use crate::model::constants::{
+    ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API, ROCKET_PK_API, ROCKET_PROCESS_API,
+    ROCKET_QUERY_API,
+};
 use crate::model::ids::request::ClearingHouseMessage;
-use crate::model::constants::{ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API, ROCKET_QUERY_API, ROCKET_PROCESS_API, ROCKET_PK_API};
 use crate::services::logging_service::LoggingService;
 
 #[rocket::post("/<pid>", format = "json", data = "<message>")]
@@ -21,7 +22,11 @@ async fn log(
     message: Json<ClearingHouseMessage>,
     pid: String,
 ) -> ApiResponse {
-    match logging_api.inner().log(ch_claims, key_path, message.into_inner(), pid).await {
+    match logging_api
+        .inner()
+        .log(ch_claims, key_path, message.into_inner(), pid)
+        .await
+    {
         Ok(id) => ApiResponse::SuccessCreate(json!(id)),
         Err(e) => {
             error!("Error while logging: {:?}", e);
@@ -37,7 +42,11 @@ async fn create_process(
     message: Json<ClearingHouseMessage>,
     pid: String,
 ) -> ApiResponse {
-    match logging_api.inner().create_process(ch_claims, message.into_inner(), pid).await {
+    match logging_api
+        .inner()
+        .create_process(ch_claims, message.into_inner(), pid)
+        .await
+    {
         Ok(id) => ApiResponse::SuccessCreate(json!(id)),
         Err(e) => {
             error!("Error while creating process: {:?}", e);
@@ -56,7 +65,11 @@ async fn unauth_id(_pid: Option<String>, _id: Option<String>) -> ApiResponse {
     ApiResponse::Unauthorized(String::from("Token not valid!"))
 }
 
-#[rocket::post("/<pid>?<page>&<size>&<sort>&<date_to>&<date_from>", format = "json", data = "<message>")]
+#[rocket::post(
+    "/<pid>?<page>&<size>&<sort>&<date_to>&<date_from>",
+    format = "json",
+    data = "<message>"
+)]
 async fn query_pid(
     ch_claims: ChClaims,
     logging_api: &State<LoggingService>,
@@ -68,7 +81,20 @@ async fn query_pid(
     pid: String,
     message: Json<ClearingHouseMessage>,
 ) -> ApiResponse {
-    match logging_api.inner().query_pid(ch_claims, page, size, sort, date_to, date_from, pid, message.into_inner()).await {
+    match logging_api
+        .inner()
+        .query_pid(
+            ch_claims,
+            page,
+            size,
+            sort,
+            date_to,
+            date_from,
+            pid,
+            message.into_inner(),
+        )
+        .await
+    {
         Ok(result) => ApiResponse::SuccessOk(json!(result)),
         Err(e) => {
             error!("Error while querying: {:?}", e);
@@ -85,7 +111,11 @@ async fn query_id(
     id: String,
     message: Json<ClearingHouseMessage>,
 ) -> ApiResponse {
-    match logging_api.inner().query_id(ch_claims, pid, id, message.into_inner()).await {
+    match logging_api
+        .inner()
+        .query_id(ch_claims, pid, id, message.into_inner())
+        .await
+    {
         Ok(result) => ApiResponse::SuccessOk(json!(result)),
         Err(e) => {
             error!("Error while querying: {:?}", e);
@@ -98,17 +128,28 @@ async fn query_id(
 async fn get_public_sign_key(key_path: &State<String>) -> ApiResponse {
     match get_jwks(key_path.as_str()) {
         Some(jwks) => ApiResponse::SuccessOk(json!(jwks)),
-        None => ApiResponse::InternalError(String::from("Error reading signing key"))
+        None => ApiResponse::InternalError(String::from("Error reading signing key")),
     }
 }
 
 pub fn mount_api() -> AdHoc {
     AdHoc::on_ignite("Mounting Clearing House API", |rocket| async {
         rocket
-            .mount(format!("{}{}", ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API).as_str(), rocket::routes![log, unauth])
-            .mount(format!("{}", ROCKET_PROCESS_API).as_str(), rocket::routes![create_process, unauth])
-            .mount(format!("{}{}", ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_QUERY_API).as_str(),
-                   rocket::routes![query_id, query_pid, unauth, unauth_id])
-            .mount(format!("{}", ROCKET_PK_API).as_str(), rocket::routes![get_public_sign_key])
+            .mount(
+                format!("{}{}", ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API).as_str(),
+                rocket::routes![log, unauth],
+            )
+            .mount(
+                format!("{}", ROCKET_PROCESS_API).as_str(),
+                rocket::routes![create_process, unauth],
+            )
+            .mount(
+                format!("{}{}", ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_QUERY_API).as_str(),
+                rocket::routes![query_id, query_pid, unauth, unauth_id],
+            )
+            .mount(
+                format!("{}", ROCKET_PK_API).as_str(),
+                rocket::routes![get_public_sign_key],
+            )
     })
 }

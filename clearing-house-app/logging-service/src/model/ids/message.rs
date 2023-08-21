@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use crate::model::constants::DEFAULT_DOC_TYPE;
 use crate::model::document::{Document, DocumentPart};
-use crate::model::ids::{InfoModelDateTime, InfoModelId, SecurityToken, MessageType};
+use crate::model::ids::{InfoModelDateTime, InfoModelId, MessageType, SecurityToken};
+use std::collections::HashMap;
 
 const MESSAGE_ID: &'static str = "message_id";
 const MODEL_VERSION: &'static str = "model_version";
@@ -39,47 +39,75 @@ pub struct IdsMessage {
     // process id
     pub pid: Option<String>,
     //IDS name
-    #[serde(rename = "ids:modelVersion", alias="modelVersion")]
+    #[serde(rename = "ids:modelVersion", alias = "modelVersion")]
     // Version of the Information Model against which the Message should be interpreted
     pub model_version: String,
     //IDS name
-    #[serde(rename = "ids:correlationMessage", alias="correlationMessage", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "ids:correlationMessage",
+        alias = "correlationMessage",
+        skip_serializing_if = "Option::is_none"
+    )]
     //  Correlated message, e.g. a response to a previous request
     pub correlation_message: Option<String>,
     //IDS name
-    #[serde(rename = "ids:issued", alias="issued")]
+    #[serde(rename = "ids:issued", alias = "issued")]
     // Date of issuing the Message
     pub issued: InfoModelDateTime,
     //IDS name
-    #[serde(rename = "ids:issuerConnector", alias="issuerConnector")]
+    #[serde(rename = "ids:issuerConnector", alias = "issuerConnector")]
     // The Connector which is the origin of the message
     pub issuer_connector: InfoModelId,
     //IDS name
-    #[serde(rename = "ids:senderAgent", alias="senderAgent")]
+    #[serde(rename = "ids:senderAgent", alias = "senderAgent")]
     // The Agent which initiated the Message
     pub sender_agent: String,
     //IDS name
-    #[serde(rename = "ids:recipientConnector", alias="recipientConnector", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "ids:recipientConnector",
+        alias = "recipientConnector",
+        skip_serializing_if = "Option::is_none"
+    )]
     // The Connector which is the recipient of the message
     pub recipient_connector: Option<Vec<InfoModelId>>,
     //IDS name
-    #[serde(rename = "ids:recipientAgent", alias="recipientAgent", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "ids:recipientAgent",
+        alias = "recipientAgent",
+        skip_serializing_if = "Option::is_none"
+    )]
     // The Agent for which the Message is intended
     pub recipient_agent: Option<Vec<InfoModelId>>,
     //IDS name
-    #[serde(rename = "ids:transferContract", alias="transferContract", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "ids:transferContract",
+        alias = "transferContract",
+        skip_serializing_if = "Option::is_none"
+    )]
     // The contract which is (or will be) the legal basis of the data transfer
     pub transfer_contract: Option<String>,
     //IDS name
-    #[serde(rename = "ids:contentVersion", alias="contentVersion", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "ids:contentVersion",
+        alias = "contentVersion",
+        skip_serializing_if = "Option::is_none"
+    )]
     // The contract which is (or will be) the legal basis of the data transfer
     pub content_version: Option<String>,
     //IDS name
-    #[serde(rename = "ids:securityToken", alias="securityToken", skip_serializing)]
+    #[serde(
+        rename = "ids:securityToken",
+        alias = "securityToken",
+        skip_serializing
+    )]
     // Authorization
     pub security_token: Option<SecurityToken>,
     //IDS name
-    #[serde(rename = "ids:authorizationToken", alias="authorizationToken", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "ids:authorizationToken",
+        alias = "authorizationToken",
+        skip_serializing_if = "Option::is_none"
+    )]
     // Authorization
     pub authorization_token: Option<String>,
     //IDS name
@@ -91,7 +119,6 @@ pub struct IdsMessage {
     // Authorization
     pub payload_type: Option<String>,
 }
-
 
 macro_rules! hashmap {
     ($( $key: expr => $val: expr ),*) => {{
@@ -105,10 +132,9 @@ impl Default for IdsMessage {
     fn default() -> Self {
         IdsMessage {
             context: Some(hashmap![
-                "ids".to_string() => "https://w3id.org/idsa/core/".to_string(),
-                "idsc".to_string() => "https://w3id.org/idsa/code/".to_string()
-                ]
-            ),
+            "ids".to_string() => "https://w3id.org/idsa/core/".to_string(),
+            "idsc".to_string() => "https://w3id.org/idsa/code/".to_string()
+            ]),
             type_message: MessageType::Message,
             id: Some(autogen("MessageProcessedNotification")),
             pid: None,
@@ -169,11 +195,11 @@ impl IdsMessage {
             authorization_token: msg.authorization_token.clone(),
             payload: msg.payload.clone(),
             content_version: msg.content_version.clone(),
-            payload_type: msg.payload.clone()
+            payload_type: msg.payload.clone(),
         }
     }
 
-    pub fn restore() -> IdsMessage{
+    pub fn restore() -> IdsMessage {
         IdsMessage {
             type_message: MessageType::LogMessage,
             //TODO recipient_agent CH
@@ -204,7 +230,6 @@ impl IdsMessage {
 /// - payload
 /// - payload_type
 impl From<Document> for IdsMessage {
-
     fn from(doc: Document) -> Self {
         let mut m = IdsMessage::restore();
         // pid
@@ -234,9 +259,12 @@ impl From<Document> for IdsMessage {
             match serde_json::from_str(v.as_ref().unwrap()) {
                 Ok(date_time) => {
                     m.issued = date_time;
-                },
+                }
                 Err(e) => {
-                    error!("Error while converting DateTimeStamp (field 'issued') from database: {}", e);
+                    error!(
+                        "Error while converting DateTimeStamp (field 'issued') from database: {}",
+                        e
+                    );
                 }
             }
         }
@@ -274,10 +302,10 @@ impl From<Document> for IdsMessage {
 }
 
 /// Conversion from IdsMessage to Document
-/// 
+///
 /// most important part to store:
 /// payload and payload type
-/// 
+///
 /// meta data that we also need to store
 /// - message_id
 /// - pid
@@ -302,10 +330,7 @@ impl From<IdsMessage> for Document {
             None => autogen("Message"),
         };
 
-        doc_parts.push(DocumentPart::new(
-            MESSAGE_ID.to_string(),
-            Some(id),
-        ));
+        doc_parts.push(DocumentPart::new(MESSAGE_ID.to_string(), Some(id)));
 
         // model_version
         doc_parts.push(DocumentPart::new(
@@ -322,7 +347,7 @@ impl From<IdsMessage> for Document {
         // issued
         doc_parts.push(DocumentPart::new(
             ISSUED.to_string(),
-            serde_json::to_string(&m.issued).ok()
+            serde_json::to_string(&m.issued).ok(),
         ));
 
         // issuer_connector
@@ -334,7 +359,7 @@ impl From<IdsMessage> for Document {
         // sender_agent
         doc_parts.push(DocumentPart::new(
             SENDER_AGENT.to_string(),
-            Some(m.sender_agent.to_string())
+            Some(m.sender_agent.to_string()),
         ));
 
         // transfer_contract
@@ -356,15 +381,12 @@ impl From<IdsMessage> for Document {
         //TODO
 
         // payload
-        doc_parts.push(DocumentPart::new(
-            PAYLOAD.to_string(),
-            m.payload.clone()
-        ));
+        doc_parts.push(DocumentPart::new(PAYLOAD.to_string(), m.payload.clone()));
 
         // payload_type
         doc_parts.push(DocumentPart::new(
             PAYLOAD_TYPE.to_string(),
-            m.payload_type.clone()
+            m.payload_type.clone(),
         ));
 
         // pid
@@ -373,5 +395,11 @@ impl From<IdsMessage> for Document {
 }
 
 fn autogen(message: &str) -> String {
-    ["https://w3id.org/idsa/autogen/", message, "/", &Document::create_uuid()].concat()
+    [
+        "https://w3id.org/idsa/autogen/",
+        message,
+        "/",
+        &Document::create_uuid(),
+    ]
+    .concat()
 }

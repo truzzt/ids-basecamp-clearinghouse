@@ -1,7 +1,7 @@
 pub mod errors {
     use error_chain::error_chain;
     // Create the Error, ErrorKind, ResultExt, and Result types
-    error_chain!{
+    error_chain! {
         foreign_links {
             Conversion(std::num::TryFromIntError);
             Figment(rocket::figment::Error);
