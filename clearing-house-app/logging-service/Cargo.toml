@@ -9,9 +9,8 @@ edition = "2021"
 
 [dependencies]
 biscuit = "0.6.0"
-core-lib = { path = "../core-lib" }
 chrono = { version = "0.4.26", features = ["serde", "clock", "std"], default-features = false }
-mongodb ="2"
+mongodb = { version = ">= 2.6.1" , features = ["openssl-tls"]}
 percent-encoding = "2.1.0"
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
 # Restricted version to 1.0.171, because of a change in derive macro for serde. It introduced precompiled binary files

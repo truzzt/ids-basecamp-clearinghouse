@@ -1,8 +1,8 @@
 use crate::crypto::generate_random_seed;
-use core_lib::model::new_uuid;
 use hkdf::Hkdf;
 use sha2::Sha256;
 use std::collections::HashMap;
+use crate::model::util::new_uuid;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct MasterKey {
