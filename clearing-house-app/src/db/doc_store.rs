@@ -199,8 +199,8 @@ impl DataStore {
     /// gets the model from the db
     pub async fn get_document(
         &self,
-        id: &String,
-        pid: &String,
+        id: &str,
+        pid: &str,
     ) -> errors::Result<Option<EncryptedDocument>> {
         debug!("Trying to get doc with id {}...", id);
         let coll = self
@@ -209,13 +209,13 @@ impl DataStore {
 
         let pipeline = vec![
             doc! {"$match":{
-                MONGO_PID: pid.clone(),
-                format!("{}.{}", MONGO_DOC_ARRAY, MONGO_ID): id.clone()
+                MONGO_PID: pid.to_owned(),
+                format!("{}.{}", MONGO_DOC_ARRAY, MONGO_ID): id.to_owned(),
             }},
             doc! {"$unwind": format!("${}", MONGO_DOC_ARRAY)},
             doc! {"$addFields": {format!("{}.{}", MONGO_DOC_ARRAY, MONGO_PID): format!("${}", MONGO_PID), format!("{}.{}", MONGO_DOC_ARRAY, MONGO_DT_ID): format!("${}", MONGO_DT_ID)}},
             doc! {"$replaceRoot": { "newRoot": format!("${}", MONGO_DOC_ARRAY)}},
-            doc! {"$match":{ MONGO_ID: id.clone()}},
+            doc! {"$match":{ MONGO_ID: id.to_owned()}},
         ];
 
         let mut results = coll.aggregate(pipeline, None).await?;

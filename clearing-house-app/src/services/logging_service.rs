@@ -174,7 +174,7 @@ impl LoggingService {
 
     async fn log_message(
         &self,
-        user: &String,
+        user: &str,
         key_path: &str,
         message: IdsMessage,
     ) -> anyhow::Result<Receipt> {
@@ -204,7 +204,7 @@ impl LoggingService {
                                     document_id: doc_receipt.doc_id,
                                     payload,
                                     chain_hash: doc_receipt.chain_hash,
-                                    client_id: user.clone(),
+                                    client_id: user.to_owned(),
                                     clearing_house_version: env!("CARGO_PKG_VERSION").to_string(),
                                 };
                                 debug!("...done. Signing receipt...");

@@ -8,6 +8,7 @@ use blake2_rfc::blake2b::Blake2b;
 use chrono::Local;
 use generic_array::GenericArray;
 use std::collections::HashMap;
+use base64::Engine;
 use uuid::Uuid;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
@@ -263,7 +264,7 @@ impl EncryptedDocument {
             hasher.update(ct.as_bytes());
         }
 
-        let res = base64::encode(hasher.finalize());
+        let res = base64::engine::general_purpose::STANDARD.encode(hasher.finalize());
         debug!("hashed cts: '{}'", &res);
         res
     }
@@ -321,4 +322,27 @@ fn format_pt_for_storage(field_name: &str, pt: &str) -> String {
 
 fn format_tc(tc: i64) -> String {
     format!("{:08}", tc)
+}
+
+
+#[cfg(test)]
+mod test {
+    /// Purpose of this test case: The `base64::encode` function has been deprecated in favor of
+    /// `base64::engine::Engine::encode`. This test case ensures that the new function works as
+    /// expected.
+    #[test]
+    fn hash() {
+        let doc = super::EncryptedDocument::new(
+            String::from("id"),
+            String::from("pid"),
+            String::from("dt_id"),
+            42,
+            12,
+            String::from("keys_ct"),
+            vec![String::from("ct1"), String::from("ct2")],
+        );
+
+        let hash = doc.hash();
+        assert_eq!("X/BsEutzaPbi555duyusiD9z5aUCwE7oNIMteMtdYLEAqJ7FJ0Ln13J3t1Qw8MMJhLCb9rRE8bRbqHtV4mYqRA==", hash);
+    }
 }

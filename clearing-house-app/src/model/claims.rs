@@ -79,8 +79,10 @@ pub fn get_jwks(key_path: &str) -> Option<biscuit::jwk::JWKSet<biscuit::Empty>> 
             ..Default::default()
         };
 
-        let mut common = biscuit::jwk::CommonParameters::default();
-        common.key_id = get_fingerprint(key_path);
+        let common = biscuit::jwk::CommonParameters {
+            key_id: get_fingerprint(key_path),
+            ..Default::default()
+        };
 
         let jwk = biscuit::jwk::JWK::<biscuit::Empty> {
             common,
@@ -111,9 +113,10 @@ pub fn get_fingerprint(key_path: &str) -> Option<String> {
             .to_vec();
 
         let pk = openssh_keys::PublicKey::from_rsa(pk_e, pk_modulus);
-        return Some(pk.fingerprint());
+        Some(pk.fingerprint())
+    } else {
+        None
     }
-    None
 }
 
 pub fn create_service_token(issuer: &str, audience: &str, client_id: &str) -> String {
