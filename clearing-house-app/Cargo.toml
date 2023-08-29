@@ -1,5 +1,5 @@
 [package]
-name = "logging-service"
+name = "clearing-house-app"
 version = "0.10.0"
 authors = [
     "Mark Gall <mark.gall@aisec.fraunhofer.de>",
