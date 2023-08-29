@@ -301,13 +301,11 @@ impl LoggingService {
                 if s > converted_max {
                     warn!("...invalid size requested. Falling back to default.");
                     converted_max
+                } else if s > 0 {
+                    s
                 } else {
-                    if s > 0 {
-                        s
-                    } else {
-                        warn!("...invalid size requested. Falling back to default.");
-                        i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap()
-                    }
+                    warn!("...invalid size requested. Falling back to default.");
+                    i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap()
                 }
             }
             None => i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap(),

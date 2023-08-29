@@ -232,10 +232,10 @@ impl DataStore {
                 let mut docs = vec![];
                 while let Some(result) = results.next().await {
                     let doc: DocumentBucketUpdate = bson::from_document(result?)?;
-                    docs.push(restore_from_bucket(pid, dt_id, doc));
+                    docs.push(restore_from_bucket(pid.clone(), dt_id.clone(), doc));
                 }
 
-                return Ok(docs);
+                Ok(docs)
             }
             Err(e) => {
                 error!("Error while getting bucket offset!");
@@ -319,7 +319,7 @@ impl DataStore {
     ) -> u64 {
         let docs_to_skip =
             (page - 1) * size + offset + MAX_NUM_RESPONSE_ENTRIES - bucket_size.capacity as u64;
-        return (docs_to_skip / MAX_NUM_RESPONSE_ENTRIES) + 1;
+        (docs_to_skip / MAX_NUM_RESPONSE_ENTRIES) + 1
     }
 
     fn get_start_entry(
@@ -338,7 +338,7 @@ impl DataStore {
                 start_entry = start_entry - (start_bucket - 2) * MAX_NUM_RESPONSE_ENTRIES
             }
         }
-        return start_entry;
+        start_entry
     }
 }
 
@@ -385,14 +385,14 @@ mod bucket {
     }
 
     pub fn restore_from_bucket(
-        pid: &String,
-        dt_id: &String,
+        pid: String,
+        dt_id: String,
         bucket_update: DocumentBucketUpdate,
     ) -> EncryptedDocument {
         EncryptedDocument {
             id: bucket_update.id.clone(),
-            dt_id: dt_id.clone(),
-            pid: pid.clone(),
+            dt_id: dt_id,
+            pid: pid,
             ts: bucket_update.ts,
             tc: bucket_update.tc,
             hash: bucket_update.hash.clone(),

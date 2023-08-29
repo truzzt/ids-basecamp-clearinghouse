@@ -1,14 +1,6 @@
 use crate::model::constants::{ENV_SHARED_SECRET, SERVICE_HEADER};
 use crate::model::errors::*;
 use crate::util::ServiceConfig;
-use biscuit::jwk::{AlgorithmParameters, CommonParameters, JWKSet};
-use biscuit::Presence::Required;
-use biscuit::Validation::Validate;
-use biscuit::{
-    jwa::SignatureAlgorithm, ClaimPresenceOptions, ClaimsSet, Empty, RegisteredClaims,
-    SingleOrMultiple, Timestamp, ValidationOptions, JWT,
-};
-use biscuit::{jws, jws::Secret};
 use chrono::{Duration, Utc};
 use num_bigint::BigUint;
 use ring::signature::KeyPair;
@@ -64,7 +56,7 @@ impl<'r> FromRequest<'r> for ChClaims {
     }
 }
 
-pub fn get_jwks(key_path: &str) -> Option<JWKSet<Empty>> {
+pub fn get_jwks(key_path: &str) -> Option<biscuit::jwk::JWKSet<biscuit::Empty>> {
     let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path).unwrap();
 
     if let biscuit::jws::Secret::RsaKeyPair(a) = keypair {
@@ -87,16 +79,16 @@ pub fn get_jwks(key_path: &str) -> Option<JWKSet<Empty>> {
             ..Default::default()
         };
 
-        let mut common = CommonParameters::default();
+        let mut common = biscuit::jwk::CommonParameters::default();
         common.key_id = get_fingerprint(key_path);
 
-        let jwk = biscuit::jwk::JWK::<Empty> {
+        let jwk = biscuit::jwk::JWK::<biscuit::Empty> {
             common,
-            algorithm: AlgorithmParameters::RSA(params),
-            additional: Empty::default(),
+            algorithm: biscuit::jwk::AlgorithmParameters::RSA(params),
+            additional: biscuit::Empty::default(),
         };
 
-        let jwks = biscuit::jwk::JWKSet::<Empty> { keys: vec![jwk] };
+        let jwks = biscuit::jwk::JWKSet::<biscuit::Empty> { keys: vec![jwk] };
         return Some(jwks);
     }
     None
@@ -135,7 +127,7 @@ pub fn create_token<T: Display + Clone + serde::Serialize + for<'de> serde::Dese
     private_claims: &T,
 ) -> String {
     let signing_secret = match env::var(ENV_SHARED_SECRET) {
-        Ok(secret) => Secret::Bytes(secret.to_string().into_bytes()),
+        Ok(secret) => biscuit::jws::Secret::Bytes(secret.to_string().into_bytes()),
         Err(_) => {
             panic!(
                 "Shared Secret not configured. Please configure environment variable {}",
@@ -145,24 +137,24 @@ pub fn create_token<T: Display + Clone + serde::Serialize + for<'de> serde::Dese
     };
     let expiration_date = Utc::now() + Duration::minutes(5);
 
-    let claims = ClaimsSet::<T> {
-        registered: RegisteredClaims {
+    let claims = biscuit::ClaimsSet::<T> {
+        registered: biscuit::RegisteredClaims {
             issuer: Some(issuer.to_string()),
-            issued_at: Some(Timestamp::from(Utc::now())),
-            audience: Some(SingleOrMultiple::Single(audience.to_string())),
-            expiry: Some(Timestamp::from(expiration_date)),
+            issued_at: Some(biscuit::Timestamp::from(Utc::now())),
+            audience: Some(biscuit::SingleOrMultiple::Single(audience.to_string())),
+            expiry: Some(biscuit::Timestamp::from(expiration_date)),
             ..Default::default()
         },
         private: private_claims.clone(),
     };
 
     // Construct the JWT
-    let jwt = jws::Compact::new_decoded(
-        From::from(jws::RegisteredHeader {
-            algorithm: SignatureAlgorithm::HS256,
+    let jwt = biscuit::jws::Compact::new_decoded(
+        From::from(biscuit::jws::RegisteredHeader {
+            algorithm: biscuit::jwa::SignatureAlgorithm::HS256,
             ..Default::default()
         }),
-        claims.clone(),
+        claims,
     );
 
     jwt.into_encoded(&signing_secret)
@@ -175,8 +167,11 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
     token: &str,
     audience: &str,
 ) -> errors::Result<T> {
+    use biscuit::Presence::Required;
+    use biscuit::Validation::Validate;
+
     let signing_secret = match env::var(ENV_SHARED_SECRET) {
-        Ok(secret) => Secret::Bytes(secret.to_string().into_bytes()),
+        Ok(secret) => biscuit::jws::Secret::Bytes(secret.to_string().into_bytes()),
         Err(e) => {
             error!(
                 "Shared Secret not configured. Please configure environment variable {}",
@@ -185,18 +180,22 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
             return Err(errors::Error::from(e));
         }
     };
-    let jwt: jws::Compact<ClaimsSet<T>, Empty> = JWT::<_, Empty>::new_encoded(token);
-    let decoded_jwt = jwt.decode(&signing_secret, SignatureAlgorithm::HS256)?;
-    let mut val_options = ValidationOptions::default();
-    let mut claim_presence_options = ClaimPresenceOptions::default();
-    claim_presence_options.expiry = Required;
-    claim_presence_options.issuer = Required;
-    claim_presence_options.audience = Required;
-    claim_presence_options.issued_at = Required;
-    val_options.claim_presence_options = claim_presence_options;
-    val_options.issued_at = Validate(Duration::minutes(5));
-    // Issuer is not validated. Wouldn't make much of a difference if we did
-    val_options.audience = Validate(audience.to_string());
-    assert!(decoded_jwt.validate(val_options).is_ok());
+    let jwt: biscuit::jws::Compact<biscuit::ClaimsSet<T>, biscuit::Empty> = biscuit::JWT::<_, biscuit::Empty>::new_encoded(token);
+    let decoded_jwt = jwt.decode(&signing_secret, biscuit::jwa::SignatureAlgorithm::HS256)?;
+    let claim_presence_options = biscuit::ClaimPresenceOptions {
+        issuer: Required,
+        audience: Required,
+        issued_at: Required,
+        expiry: Required,
+        ..Default::default()
+    };
+    let val_options = biscuit::ValidationOptions {
+        claim_presence_options,
+        issued_at: Validate(Duration::minutes(5)),
+        // Issuer is not validated. Wouldn't make much of a difference if we did
+        audience: Validate(audience.to_string()),
+        ..Default::default()
+    };
+    assert!(decoded_jwt.validate(val_options).is_ok()); // TODO: Handle error
     Ok(decoded_jwt.payload().unwrap().private.clone())
 }

@@ -68,10 +68,12 @@ impl DataTransaction {
 }
 
 // convenience method for testing
+#[cfg(test)]
 impl From<Receipt> for DataTransaction {
+    // TODO: It would be better to implement the TryFrom trait instead of this error DataTransaction
     fn from(r: Receipt) -> Self {
         match r.data.unverified_payload() {
-            Ok(d) => d.clone(),
+            Ok(d) => d,
             Err(e) => {
                 println!("Error occured: {:#?}", e);
                 DataTransaction {

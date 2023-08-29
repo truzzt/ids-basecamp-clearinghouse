@@ -6,7 +6,6 @@ use crate::model::crypto::MasterKey;
 use crate::model::doc_type::DocumentType;
 use crate::model::errors::*;
 use mongodb::bson::doc;
-use mongodb::Client;
 use rocket::futures::TryStreamExt;
 use std::process::exit;
 
@@ -17,7 +16,7 @@ pub struct KeyStore {
 }
 
 impl DataStoreApi for KeyStore {
-    fn new(client: Client) -> KeyStore {
+    fn new(client: mongodb::Client) -> KeyStore {
         KeyStore {
             client: client.clone(),
             database: client.database(KEYRING_DB),
@@ -144,7 +143,7 @@ impl KeyStore {
             .await?
             .try_collect()
             .await
-            .unwrap_or_else(|_| vec![]);
+            .unwrap_or_default();
         Ok(result)
     }
 

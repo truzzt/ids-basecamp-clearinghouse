@@ -34,12 +34,12 @@ impl DocumentService {
         let payload: Vec<String> = doc
             .parts
             .iter()
-            .filter(|p| String::from(PAYLOAD_PART) == p.name)
+            .filter(|p| *PAYLOAD_PART == p.name)
             .map(|p| p.content.as_ref().unwrap().clone())
             .collect();
         if payload.len() > 1 {
-            return Err(anyhow!("Document contains two payloads!")); // BadRequest
-        } else if payload.len() == 0 {
+            return Err(anyhow!("Document contains two or more payloads!")); // BadRequest
+        } else if payload.is_empty() {
             return Err(anyhow!("Document contains no payload!")); // BadRequest
         }
 
@@ -323,31 +323,31 @@ impl DocumentService {
                                     Ok(d) => Ok(d),
                                     Err(e) => {
                                         warn!("Got empty document from decryption! {:?}", e);
-                                        return Err(anyhow!("Document {} not found!", &id));
+                                        Err(anyhow!("Document {} not found!", &id))
                                         // NotFound
                                     }
                                 }
                             }
                             Err(e) => {
                                 error!("Error while retrieving keys from keyring: {:?}", e);
-                                return Err(anyhow!("Error while retrieving keys"));
+                                Err(anyhow!("Error while retrieving keys"))
                                 // InternalError
                             }
                         }
                     }
                     Err(e) => {
                         error!("Error while decoding ciphertext: {:?}", e);
-                        return Err(anyhow!("Key Ciphertext corrupted")); // InternalError
+                        Err(anyhow!("Key Ciphertext corrupted")) // InternalError
                     }
                 }
             }
             Ok(None) => {
                 debug!("Nothing found in db!");
-                return Err(anyhow!("Document {} not found!", &id)); // NotFound
+                Err(anyhow!("Document {} not found!", &id)) // NotFound
             }
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
-                return Err(anyhow!("Error while retrieving document {}", &id)); // InternalError
+                Err(anyhow!("Error while retrieving document {}", &id)) // InternalError
             }
         }
     }

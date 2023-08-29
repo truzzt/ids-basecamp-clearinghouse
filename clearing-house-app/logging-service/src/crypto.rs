@@ -42,9 +42,9 @@ pub fn generate_random_seed() -> Vec<u8> {
 
 fn derive_key_map(kdf: Hkdf<Sha256>, dt: DocumentType, enc: bool) -> HashMap<String, KeyEntry> {
     let mut key_map = HashMap::new();
-    let mut okm = [0u8; EXP_BUFF_SIZE];
     let mut i = 0;
     dt.parts.iter().for_each(|p| {
+        let mut okm = [0u8; EXP_BUFF_SIZE];
         if kdf.expand(p.name.clone().as_bytes(), &mut okm).is_ok() {
             let map_key = match enc {
                 true => p.name.clone(),
@@ -59,7 +59,7 @@ fn derive_key_map(kdf: Hkdf<Sha256>, dt: DocumentType, enc: bool) -> HashMap<Str
                 ),
             );
         }
-        i = i + 1;
+        i += 1;
     });
     key_map
 }
@@ -124,13 +124,11 @@ pub fn restore_keys(secret: &String, dt: DocumentType) -> anyhow::Result<KeyMap>
 
 fn restore_kdf(secret: &String) -> anyhow::Result<Hkdf<Sha256>> {
     debug!("restoring kdf from secret");
-    let prk = match hex::decode(secret) {
-        Ok(key) => key,
-        Err(e) => {
+    let prk = hex::decode(secret)
+        .map_err(|e| {
             error!("Error while decoding master key: {}", e);
-            return Err(anyhow!("Error while encrypting key seed!"));
-        }
-    };
+            anyhow!("Error while encrypting key seed!")
+        })?;
 
     match Hkdf::<Sha256>::from_prk(prk.as_slice()) {
         Ok(kdf) => Ok(kdf),

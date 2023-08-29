@@ -3,22 +3,22 @@ use crate::model::document::{Document, DocumentPart};
 use crate::model::ids::{InfoModelDateTime, InfoModelId, MessageType, SecurityToken};
 use std::collections::HashMap;
 
-const MESSAGE_ID: &'static str = "message_id";
-const MODEL_VERSION: &'static str = "model_version";
-const CORRELATION_MESSAGE: &'static str = "correlation_message";
-const TRANSFER_CONTRACT: &'static str = "transfer_contract";
-const ISSUED: &'static str = "issued";
-const ISSUER_CONNECTOR: &'static str = "issuer_connector";
-const CONTENT_VERSION: &'static str = "content_version";
+const MESSAGE_ID: &str = "message_id";
+const MODEL_VERSION: &str = "model_version";
+const CORRELATION_MESSAGE: &str = "correlation_message";
+const TRANSFER_CONTRACT: &str = "transfer_contract";
+const ISSUED: &str = "issued";
+const ISSUER_CONNECTOR: &str = "issuer_connector";
+const CONTENT_VERSION: &str = "content_version";
 /// const RECIPIENT_CONNECTOR: &'static str = "recipient_connector"; // all messages should contain the CH connector, so we skip this information
-const SENDER_AGENT: &'static str = "sender_agent";
+const SENDER_AGENT: &str = "sender_agent";
 ///const RECIPIENT_AGENT: &'static str = "recipient_agent";  // all messages should contain the CH agent, so we skip this information
-const PAYLOAD: &'static str = "payload";
-const PAYLOAD_TYPE: &'static str = "payload_type";
+const PAYLOAD: &str = "payload";
+const PAYLOAD_TYPE: &str = "payload_type";
 
-pub const RESULT_MESSAGE: &'static str = "ResultMessage";
-pub const REJECTION_MESSAGE: &'static str = "RejectionMessage";
-pub const MESSAGE_PROC_NOTIFICATION_MESSAGE: &'static str = "MessageProcessedNotificationMessage";
+pub const RESULT_MESSAGE: &str = "ResultMessage";
+pub const REJECTION_MESSAGE: &str = "RejectionMessage";
+pub const MESSAGE_PROC_NOTIFICATION_MESSAGE: &str = "MessageProcessedNotificationMessage";
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct IdsMessage {
@@ -44,9 +44,9 @@ pub struct IdsMessage {
     pub model_version: String,
     //IDS name
     #[serde(
-        rename = "ids:correlationMessage",
-        alias = "correlationMessage",
-        skip_serializing_if = "Option::is_none"
+    rename = "ids:correlationMessage",
+    alias = "correlationMessage",
+    skip_serializing_if = "Option::is_none"
     )]
     //  Correlated message, e.g. a response to a previous request
     pub correlation_message: Option<String>,
@@ -64,49 +64,49 @@ pub struct IdsMessage {
     pub sender_agent: String,
     //IDS name
     #[serde(
-        rename = "ids:recipientConnector",
-        alias = "recipientConnector",
-        skip_serializing_if = "Option::is_none"
+    rename = "ids:recipientConnector",
+    alias = "recipientConnector",
+    skip_serializing_if = "Option::is_none"
     )]
     // The Connector which is the recipient of the message
     pub recipient_connector: Option<Vec<InfoModelId>>,
     //IDS name
     #[serde(
-        rename = "ids:recipientAgent",
-        alias = "recipientAgent",
-        skip_serializing_if = "Option::is_none"
+    rename = "ids:recipientAgent",
+    alias = "recipientAgent",
+    skip_serializing_if = "Option::is_none"
     )]
     // The Agent for which the Message is intended
     pub recipient_agent: Option<Vec<InfoModelId>>,
     //IDS name
     #[serde(
-        rename = "ids:transferContract",
-        alias = "transferContract",
-        skip_serializing_if = "Option::is_none"
+    rename = "ids:transferContract",
+    alias = "transferContract",
+    skip_serializing_if = "Option::is_none"
     )]
     // The contract which is (or will be) the legal basis of the data transfer
     pub transfer_contract: Option<String>,
     //IDS name
     #[serde(
-        rename = "ids:contentVersion",
-        alias = "contentVersion",
-        skip_serializing_if = "Option::is_none"
+    rename = "ids:contentVersion",
+    alias = "contentVersion",
+    skip_serializing_if = "Option::is_none"
     )]
     // The contract which is (or will be) the legal basis of the data transfer
     pub content_version: Option<String>,
     //IDS name
     #[serde(
-        rename = "ids:securityToken",
-        alias = "securityToken",
-        skip_serializing
+    rename = "ids:securityToken",
+    alias = "securityToken",
+    skip_serializing
     )]
     // Authorization
     pub security_token: Option<SecurityToken>,
     //IDS name
     #[serde(
-        rename = "ids:authorizationToken",
-        alias = "authorizationToken",
-        skip_serializing_if = "Option::is_none"
+    rename = "ids:authorizationToken",
+    alias = "authorizationToken",
+    skip_serializing_if = "Option::is_none"
     )]
     // Authorization
     pub authorization_token: Option<String>,
@@ -120,21 +120,13 @@ pub struct IdsMessage {
     pub payload_type: Option<String>,
 }
 
-macro_rules! hashmap {
-    ($( $key: expr => $val: expr ),*) => {{
-         let mut map = ::std::collections::HashMap::new();
-         $( map.insert($key, $val); )*
-         map
-    }}
-}
-
 impl Default for IdsMessage {
     fn default() -> Self {
         IdsMessage {
-            context: Some(hashmap![
-            "ids".to_string() => "https://w3id.org/idsa/core/".to_string(),
-            "idsc".to_string() => "https://w3id.org/idsa/code/".to_string()
-            ]),
+            context: Some(std::collections::HashMap::from([
+                ("ids".to_string(), "https://w3id.org/idsa/core/".to_string()),
+                ("idsc".to_string(), "https://w3id.org/idsa/code/".to_string())
+            ])),
             type_message: MessageType::Message,
             id: Some(autogen("MessageProcessedNotification")),
             pid: None,
@@ -160,21 +152,21 @@ impl IdsMessage {
         let mut message = IdsMessage::clone(msg);
         message.id = Some(autogen(MESSAGE_PROC_NOTIFICATION_MESSAGE));
         message.type_message = MessageType::MessageProcessedNotification;
-        return message;
+        message
     }
 
     pub fn return_result(msg: IdsMessage) -> IdsMessage {
         let mut message = IdsMessage::clone(msg);
         message.id = Some(autogen(RESULT_MESSAGE));
         message.type_message = MessageType::ResultMessage;
-        return message;
+        message
     }
 
     pub fn error(msg: IdsMessage) -> IdsMessage {
         let mut message = IdsMessage::clone(msg);
         message.id = Some(autogen(REJECTION_MESSAGE));
         message.type_message = MessageType::RejectionMessage;
-        return message;
+        message
     }
 
     fn clone(msg: IdsMessage) -> IdsMessage {
@@ -395,11 +387,5 @@ impl From<IdsMessage> for Document {
 }
 
 fn autogen(message: &str) -> String {
-    [
-        "https://w3id.org/idsa/autogen/",
-        message,
-        "/",
-        &Document::create_uuid(),
-    ]
-    .concat()
+    format!("https://w3id.org/idsa/autogen/{}/{}", message, Document::create_uuid())
 }

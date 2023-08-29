@@ -104,15 +104,14 @@ impl Document {
         let mut cts = vec![];
 
         let keys = key_map.keys;
-        let key_ct;
-        match key_map.keys_enc {
+        let key_ct= match key_map.keys_enc {
             Some(ct) => {
-                key_ct = hex::encode(ct);
+                hex::encode(ct)
             }
             None => {
                 error_chain::bail!("Missing key ct");
             }
-        }
+        };
 
         for part in self.parts.iter() {
             if part.content.is_none() {

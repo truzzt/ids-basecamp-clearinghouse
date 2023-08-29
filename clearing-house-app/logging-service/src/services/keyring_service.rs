@@ -86,7 +86,7 @@ impl KeyringService {
                                 Ok(key) => Some((key_ct.id.clone(), key)),
                                 Err(e) => {
                                     error!("Error while decoding key ciphertext: {}", e);
-                                    dec_error_count = dec_error_count + 1;
+                                    dec_error_count += 1;
                                     None
                                 }
                             })
@@ -95,7 +95,7 @@ impl KeyringService {
                                     Ok(key_map) => Some(KeyMapListItem::new(id, key_map)),
                                     Err(e) => {
                                         error!("Error while generating key map: {}", e);
-                                        map_error_count = map_error_count + 1;
+                                        map_error_count += 1;
                                         None
                                     }
                                 }
@@ -106,24 +106,24 @@ impl KeyringService {
 
                         // Currently, we don't tolerate errors while decrypting keys
                         if error_count > 0 {
-                            return Err(anyhow!("Error while decrypting keys")); // InternalError
+                            Err(anyhow!("Error while decrypting keys")) // InternalError
                         } else {
-                            return Ok(key_maps);
+                            Ok(key_maps)
                         }
                     }
                     Ok(None) => {
                         warn!("document type {} not found", &key_cts.dt);
-                        return Err(anyhow!("Document type not found!")); // BadRequest
+                        Err(anyhow!("Document type not found!")) // BadRequest
                     }
                     Err(e) => {
                         warn!("Error while retrieving document type: {}", e);
-                        return Err(anyhow!("Document type not found!")); // NotFound
+                        Err(anyhow!("Document type not found!")) // NotFound
                     }
                 }
             }
             Err(e) => {
                 error!("Error while retrieving master key: {}", e);
-                return Err(anyhow!("Error while decrypting keys")); // InternalError
+                Err(anyhow!("Error while decrypting keys")) // InternalError
             }
         }
     }
@@ -145,39 +145,35 @@ impl KeyringService {
                 match self.db.get_document_type(&dt_id).await {
                     Ok(Some(dt)) => {
                         // validate keys_ct input
-                        let keys_ct = match hex::decode(keys_ct) {
-                            Ok(key) => key,
-                            Err(e) => {
+                        let keys_ct = hex::decode(keys_ct)
+                            .map_err(|e| {
                                 error!("Error while decoding key ciphertext: {}", e);
-                                return Err(anyhow!("Error while decrypting keys"));
-                                // InternalError
-                            }
-                        };
+                                anyhow!("Error while decrypting keys") // InternalError
+                            })?;
 
                         match restore_key_map(key, dt, keys_ct) {
                             Ok(key_map) => {
-                                return Ok(key_map);
+                                Ok(key_map)
                             }
                             Err(e) => {
                                 error!("Error while generating key map: {}", e);
-                                return Err(anyhow!("Error while restoring keys"));
-                                // InternalError
+                                Err(anyhow!("Error while restoring keys")) // InternalError
                             }
                         }
                     }
                     Ok(None) => {
                         warn!("document type {} not found", &dt_id);
-                        return Err(anyhow!("Document type not found!")); // BadRequest
+                        Err(anyhow!("Document type not found!")) // BadRequest
                     }
                     Err(e) => {
                         warn!("Error while retrieving document type: {}", e);
-                        return Err(anyhow!("Document type not found!")); // NotFound
+                        Err(anyhow!("Document type not found!")) // NotFound
                     }
                 }
             }
             Err(e) => {
                 error!("Error while retrieving master key: {}", e);
-                return Err(anyhow!("Error while decrypting keys")); // InternalError
+                Err(anyhow!("Error while decrypting keys")) // InternalError
             }
         }
     }

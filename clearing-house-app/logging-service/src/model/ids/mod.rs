@@ -1,7 +1,4 @@
 use crate::model::ids::message::IdsMessage;
-use chrono::prelude::*;
-use std::fmt;
-use std::fmt::{Display, Formatter, Result};
 
 pub mod message;
 pub mod request;
@@ -14,8 +11,8 @@ pub struct InfoModelComplexId {
     pub id: Option<String>,
 }
 
-impl Display for InfoModelComplexId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+impl std::fmt::Display for InfoModelComplexId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.id {
             Some(id) => write!(f, "{}", serde_json::to_string(id).unwrap()),
             None => write!(f, ""),
@@ -50,8 +47,8 @@ impl InfoModelId {
     }
 }
 
-impl fmt::Display for InfoModelId {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for InfoModelId {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             InfoModelId::SimpleId(id) => fmt.write_str(&id)?,
             InfoModelId::ComplexId(id) => fmt.write_str(&id.to_string())?,
@@ -69,20 +66,20 @@ impl From<String> for InfoModelId {
 #[serde(untagged)]
 pub enum InfoModelDateTime {
     ComplexTime(InfoModelTimeStamp),
-    Time(DateTime<Local>),
+    Time(chrono::DateTime<chrono::Local>),
 }
 
 impl InfoModelDateTime {
     pub fn new() -> InfoModelDateTime {
-        InfoModelDateTime::Time(Local::now())
+        InfoModelDateTime::Time(chrono::Local::now())
     }
     pub fn complex() -> InfoModelDateTime {
         InfoModelDateTime::ComplexTime(InfoModelTimeStamp::default())
     }
 }
 
-impl fmt::Display for InfoModelDateTime {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for InfoModelDateTime {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             InfoModelDateTime::Time(value) => fmt.write_str(&value.to_string())?,
             InfoModelDateTime::ComplexTime(value) => fmt.write_str(&value.to_string())?,
@@ -102,19 +99,19 @@ pub struct InfoModelTimeStamp {
     pub format: Option<String>,
     //IDS name
     #[serde(rename = "@value", alias = "value")]
-    pub value: DateTime<Local>,
+    pub value: chrono::DateTime<chrono::Local>,
 }
 
 impl Default for InfoModelTimeStamp {
     fn default() -> Self {
         InfoModelTimeStamp {
             format: Some("http://www.w3.org/2001/XMLSchema#dateTimeStamp".to_string()),
-            value: Local::now(),
+            value: chrono::Local::now(),
         }
     }
 }
-impl Display for InfoModelTimeStamp {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+impl std::fmt::Display for InfoModelTimeStamp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match serde_json::to_string(&self) {
             Ok(result) => write!(f, "{}", result),
             Err(e) => {
@@ -196,11 +193,11 @@ impl IdsQueryResult {
         order: String,
         documents: Vec<IdsMessage>,
     ) -> IdsQueryResult {
-        let date_from = NaiveDateTime::from_timestamp_opt(date_from, 0)
+        let date_from = chrono::NaiveDateTime::from_timestamp_opt(date_from, 0)
             .expect("Invalid date_from seconds")
             .format("%Y-%m-%d %H:%M:%S")
             .to_string();
-        let date_to = NaiveDateTime::from_timestamp_opt(date_to, 0)
+        let date_to = chrono::NaiveDateTime::from_timestamp_opt(date_to, 0)
             .expect("Invalid date_to seconds")
             .format("%Y-%m-%d %H:%M:%S")
             .to_string();
