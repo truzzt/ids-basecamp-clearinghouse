@@ -1,13 +1,13 @@
 use super::DataStoreApi;
-use crate::model::constants::{
-    KEYRING_DB, MONGO_COLL_DOC_TYPES, MONGO_COLL_MASTER_KEY, MONGO_ID, MONGO_PID,
-};
+use crate::model::constants::{FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT, MONGO_COLL_DOC_TYPES, MONGO_COLL_MASTER_KEY, MONGO_ID, MONGO_PID};
 use crate::model::crypto::MasterKey;
 use crate::model::doc_type::DocumentType;
 use crate::model::errors::*;
 use mongodb::bson::doc;
 use rocket::futures::TryStreamExt;
 use std::process::exit;
+use anyhow::anyhow;
+use crate::db::init_database_client;
 
 #[derive(Clone, Debug)]
 pub struct KeyStore {
@@ -25,6 +25,86 @@ impl DataStoreApi for KeyStore {
 }
 
 impl KeyStore {
+    pub async fn init_keystore(db_url: String, clear_db: bool) -> anyhow::Result<Self> {
+        debug!("Using database url: '{:#?}'", &db_url);
+
+        match init_database_client::<KeyStore>(
+            db_url.as_str(),
+            Some(KEYRING_DB_CLIENT.to_string()),
+        )
+            .await
+        {
+            Ok(keystore) => {
+                debug!("Check if database is empty...");
+                match keystore
+                    .client
+                    .database(KEYRING_DB)
+                    .list_collection_names(None)
+                    .await
+                {
+                    Ok(colls) => {
+                        debug!("... found collections: {:#?}", &colls);
+                        if !colls.is_empty() && clear_db {
+                            debug!("Database not empty and clear_db == true. Dropping database...");
+                            match keystore.client.database(KEYRING_DB).drop(None).await {
+                                Ok(_) => {
+                                    debug!("... done.");
+                                }
+                                Err(_) => {
+                                    debug!("... failed.");
+                                    return Err(anyhow!("Failed to drop database"));
+                                }
+                            };
+                        }
+                        if colls.is_empty() || clear_db {
+                            debug!("Database empty. Need to initialize...");
+                            debug!("Adding initial document type...");
+                            match serde_json::from_str::<DocumentType>(
+                                &crate::util::read_file(FILE_DEFAULT_DOC_TYPE).unwrap_or(String::new()),
+                            ) {
+                                Ok(dt) => match keystore.add_document_type(dt).await {
+                                    Ok(_) => {
+                                        debug!("... done.");
+                                    }
+                                    Err(e) => {
+                                        error!(
+                                            "Error while adding initial document type: {:#?}",
+                                            e
+                                        );
+                                        return Err(anyhow!(
+                                            "Error while adding initial document type"
+                                        ));
+                                    }
+                                },
+                                _ => {
+                                    error!("Error while loading initial document type");
+                                    return Err(anyhow!(
+                                        "Error while loading initial document type"
+                                    ));
+                                }
+                            };
+                            debug!("Creating master key...");
+                            // create master key
+                            match keystore.store_master_key(MasterKey::new_random()).await {
+                                Ok(true) => {
+                                    debug!("... done.");
+                                }
+                                _ => {
+                                    error!("... failed to create master key");
+                                    return Err(anyhow!("Failed to create master key"));
+                                }
+                            };
+                        }
+                        debug!("... database initialized.");
+                        Ok(keystore)
+                    }
+                    Err(_) => Err(anyhow!("Failed to list collections")),
+                }
+            }
+            Err(_) => Err(anyhow!("Failed to initialize database client")),
+        }
+    }
+
     /// Only one master key may exist in the database.
     pub async fn store_master_key(&self, key: MasterKey) -> anyhow::Result<bool> {
         tracing::debug!("Storing new master key...");

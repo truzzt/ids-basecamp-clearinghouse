@@ -1,12 +1,11 @@
-use crate::db::DataStoreApi;
-use crate::model::constants::{
-    MONGO_COLL_PROCESSES, MONGO_COLL_TRANSACTIONS, MONGO_ID, MONGO_TC, PROCESS_DB,
-};
+use anyhow::anyhow;
+use crate::db::{DataStoreApi, init_database_client};
+use crate::model::constants::{MONGO_COLL_PROCESSES, MONGO_COLL_TRANSACTIONS, MONGO_ID, MONGO_TC, PROCESS_DB, PROCESS_DB_CLIENT};
 use crate::model::errors::*;
 use crate::model::process::Process;
 use crate::model::process::TransactionCounter;
 use mongodb::bson::doc;
-use mongodb::options::{FindOneAndUpdateOptions, UpdateModifications};
+use mongodb::options::{CreateCollectionOptions, FindOneAndUpdateOptions, UpdateModifications, WriteConcern};
 use mongodb::{Client, Database};
 use rocket::futures::TryStreamExt;
 
@@ -26,6 +25,71 @@ impl DataStoreApi for ProcessStore {
 }
 
 impl ProcessStore {
+    pub async fn init_process_store(db_url: String, clear_db: bool) -> anyhow::Result<Self> {
+        debug!("...using database url: '{:#?}'", &db_url);
+
+        match init_database_client::<ProcessStore>(
+            db_url.as_str(),
+            Some(PROCESS_DB_CLIENT.to_string()),
+        )
+            .await
+        {
+            Ok(process_store) => {
+                debug!("...check if database is empty...");
+                match process_store
+                    .client
+                    .database(PROCESS_DB)
+                    .list_collection_names(None)
+                    .await
+                {
+                    Ok(colls) => {
+                        debug!("... found collections: {:#?}", &colls);
+                        if !colls.is_empty() && clear_db {
+                            debug!(
+                                "...database not empty and clear_db == true. Dropping database..."
+                            );
+                            match process_store.client.database(PROCESS_DB).drop(None).await {
+                                Ok(_) => {
+                                    debug!("... done.");
+                                }
+                                Err(_) => {
+                                    debug!("... failed.");
+                                    return Err(anyhow!("Failed to drop database"));
+                                }
+                            };
+                        }
+                        if colls.is_empty() || clear_db {
+                            debug!("..database empty. Need to initialize...");
+                            let mut write_concern = WriteConcern::default();
+                            write_concern.journal = Some(true);
+                            let mut options = CreateCollectionOptions::default();
+                            options.write_concern = Some(write_concern);
+                            debug!("...create collection {} ...", MONGO_COLL_TRANSACTIONS);
+                            match process_store
+                                .client
+                                .database(PROCESS_DB)
+                                .create_collection(MONGO_COLL_TRANSACTIONS, options)
+                                .await
+                            {
+                                Ok(_) => {
+                                    debug!("... done.");
+                                }
+                                Err(_) => {
+                                    debug!("... failed.");
+                                    return Err(anyhow!("Failed to create collection"));
+                                }
+                            };
+                        }
+                        debug!("... database initialized.");
+                        Ok(process_store)
+                    }
+                    Err(_) => Err(anyhow!("Failed to list collections")),
+                }
+            }
+            Err(_) => Err(anyhow!("Failed to initialize database client")),
+        }
+    }
+
     pub async fn get_transaction_counter(&self) -> errors::Result<Option<i64>> {
         debug!("Getting transaction counter...");
         let coll = self

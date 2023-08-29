@@ -1,16 +1,13 @@
+use anyhow::anyhow;
 use crate::db::doc_store::bucket::{restore_from_bucket, DocumentBucketSize, DocumentBucketUpdate};
-use crate::db::DataStoreApi;
-use crate::model::constants::{
-    DOCUMENT_DB, MAX_NUM_RESPONSE_ENTRIES, MONGO_COLL_DOCUMENT_BUCKET, MONGO_COUNTER,
-    MONGO_DOC_ARRAY, MONGO_DT_ID, MONGO_FROM_TS, MONGO_ID, MONGO_PID, MONGO_TC, MONGO_TO_TS,
-    MONGO_TS,
-};
-use crate::model::document::EncryptedDocument;
+use crate::db::{DataStoreApi, init_database_client};
+use crate::model::constants::{DOCUMENT_DB, DOCUMENT_DB_CLIENT, MAX_NUM_RESPONSE_ENTRIES, MONGO_COLL_DOCUMENT_BUCKET, MONGO_COUNTER, MONGO_DOC_ARRAY, MONGO_DT_ID, MONGO_FROM_TS, MONGO_ID, MONGO_PID, MONGO_TC, MONGO_TO_TS, MONGO_TS};
+use crate::model::document::{Document, EncryptedDocument};
 use crate::model::errors::*;
 use crate::model::SortingOrder;
 use mongodb::bson::doc;
-use mongodb::options::{AggregateOptions, UpdateOptions};
-use mongodb::{bson, Client};
+use mongodb::options::{AggregateOptions, CreateCollectionOptions, IndexOptions, UpdateOptions, WriteConcern};
+use mongodb::{bson, Client, IndexModel};
 use rocket::futures::StreamExt;
 
 #[derive(Clone)]
@@ -29,6 +26,119 @@ impl DataStoreApi for DataStore {
 }
 
 impl DataStore {
+    pub async fn init_datastore(db_url: String, clear_db: bool) -> anyhow::Result<Self> {
+        debug!("Using mongodb url: '{:#?}'", &db_url);
+        match init_database_client::<DataStore>(
+            db_url.as_str(),
+            Some(DOCUMENT_DB_CLIENT.to_string()),
+        )
+            .await
+        {
+            Ok(datastore) => {
+                debug!("Check if database is empty...");
+                match datastore
+                    .client
+                    .database(DOCUMENT_DB)
+                    .list_collection_names(None)
+                    .await
+                {
+                    Ok(colls) => {
+                        debug!("... found collections: {:#?}", &colls);
+                        let number_of_colls =
+                            match colls.contains(&MONGO_COLL_DOCUMENT_BUCKET.to_string()) {
+                                true => colls.len(),
+                                false => 0,
+                            };
+
+                        if number_of_colls > 0 && clear_db {
+                            debug!("Database not empty and clear_db == true. Dropping database...");
+                            match datastore.client.database(DOCUMENT_DB).drop(None).await {
+                                Ok(_) => {
+                                    debug!("... done.");
+                                }
+                                Err(_) => {
+                                    debug!("... failed.");
+                                    return Err(anyhow!("Failed to drop database"));
+                                }
+                            };
+                        }
+                        if number_of_colls == 0 || clear_db {
+                            debug!("Database empty. Need to initialize...");
+                            let mut write_concern = WriteConcern::default();
+                            write_concern.journal = Some(true);
+                            let mut options = CreateCollectionOptions::default();
+                            options.write_concern = Some(write_concern);
+                            debug!("Create collection {} ...", MONGO_COLL_DOCUMENT_BUCKET);
+                            match datastore
+                                .client
+                                .database(DOCUMENT_DB)
+                                .create_collection(MONGO_COLL_DOCUMENT_BUCKET, options)
+                                .await
+                            {
+                                Ok(_) => {
+                                    debug!("... done.");
+                                }
+                                Err(_) => {
+                                    debug!("... failed.");
+                                    return Err(anyhow!("Failed to create collection"));
+                                }
+                            };
+
+                            // This purpose of this index is to ensure that the transaction counter is unique
+                            let mut index_options = IndexOptions::default();
+                            index_options.unique = Some(true);
+                            let mut index_model = IndexModel::default();
+                            index_model.keys = doc! {format!("{}.{}",MONGO_DOC_ARRAY, MONGO_TC): 1};
+                            index_model.options = Some(index_options);
+
+                            debug!("Create unique index for {} ...", MONGO_COLL_DOCUMENT_BUCKET);
+                            match datastore
+                                .client
+                                .database(DOCUMENT_DB)
+                                .collection::<Document>(MONGO_COLL_DOCUMENT_BUCKET)
+                                .create_index(index_model, None)
+                                .await
+                            {
+                                Ok(result) => {
+                                    debug!("... index {} created", result.index_name);
+                                }
+                                Err(_) => {
+                                    debug!("... failed.");
+                                    return Err(anyhow!("Failed to create index"));
+                                }
+                            }
+
+                            // This creates a compound index over pid and the timestamp to enable paging using buckets
+                            let mut compound_index_model = IndexModel::default();
+                            compound_index_model.keys = doc! {MONGO_PID: 1, MONGO_TS: 1};
+
+                            debug!("Create unique index for {} ...", MONGO_COLL_DOCUMENT_BUCKET);
+                            match datastore
+                                .client
+                                .database(DOCUMENT_DB)
+                                .collection::<Document>(MONGO_COLL_DOCUMENT_BUCKET)
+                                .create_index(compound_index_model, None)
+                                .await
+                            {
+                                Ok(result) => {
+                                    debug!("... index {} created", result.index_name);
+                                }
+                                Err(_) => {
+                                    debug!("... failed.");
+                                    return Err(anyhow!("Failed to create compound index"));
+                                }
+                            }
+                        }
+                        debug!("... database initialized.");
+                        Ok(datastore)
+                    }
+                    Err(_) => Err(anyhow!("Failed to list collections")),
+                }
+            }
+            Err(_) => Err(anyhow!("Failed to initialize database client")),
+        }
+    }
+
     pub async fn add_document(&self, doc: EncryptedDocument) -> errors::Result<bool> {
         debug!("add_document to bucket");
         let coll = self

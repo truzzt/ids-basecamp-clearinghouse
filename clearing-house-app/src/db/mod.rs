@@ -1,4 +1,3 @@
-pub(crate) mod config;
 pub(crate) mod doc_store;
 pub(crate) mod key_store;
 pub(crate) mod process_store;

@@ -4,9 +4,9 @@
 extern crate tracing;
 
 use crate::model::constants::ENV_LOGGING_SERVICE_ID;
-use db::config::doc_store::DatastoreConfigurator;
-use db::config::keyring_store::KeyringDbConfigurator;
-use db::config::process_store::ProcessStoreConfigurator;
+use crate::db::doc_store::DataStore;
+use crate::db::key_store::KeyStore;
+use crate::db::process_store::ProcessStore;
 
 mod config;
 mod crypto;
@@ -23,15 +23,15 @@ async fn main() -> Result<(), rocket::Error> {
     config::configure_logging(conf.log_level);
 
     let process_store =
-        ProcessStoreConfigurator::init_process_store(conf.process_database_url, conf.clear_db)
+        ProcessStore::init_process_store(conf.process_database_url, conf.clear_db)
             .await
             .expect("Failure to initialize process store! Exiting...");
     let keyring_store =
-        KeyringDbConfigurator::init_keystore(conf.keyring_database_url, conf.clear_db)
+        KeyStore::init_keystore(conf.keyring_database_url, conf.clear_db)
             .await
             .expect("Failure to initialize keyring store! Exiting...");
     let doc_store =
-        DatastoreConfigurator::init_datastore(conf.document_database_url, conf.clear_db)
+        DataStore::init_datastore(conf.document_database_url, conf.clear_db)
             .await
             .expect("Failure to initialize document store! Exiting...");
 
