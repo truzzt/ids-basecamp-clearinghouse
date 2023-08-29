@@ -1,74 +1,54 @@
-name: Rust
+# name: Rust
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches: [ master ]
+# on:
+#   push:
+#     branches:
+#       - master
+#       - development
+#   pull_request:
+#     branches:
+#       - master
 
-env:
-  CARGO_TERM_COLOR: always
-  IMAGE_NAME_LS: ids-ch-logging-service
-  IMAGE_NAME_DA: ids-ch-document-api
-  IMAGE_NAME_KA: ids-ch-keyring-api
+# env:
+#   CARGO_TERM_COLOR: always
+#   IMAGE_NAME_LS: ids-ch-logging-service
+#   IMAGE_BASE: ghcr.io/truzzt/ids-basecamp-clearinghouse
 
 
-jobs:
-  build:
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install minimal stable
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-    # TODO: do not use caching for actual release builds, aka ones that start with v*
-    - uses: Swatinem/rust-cache@v2        
-    - name: Build clearing-house-api
-      run: |
-        cd clearing-house-app
-        eval "$(ssh-agent -s)"
-        ssh-add - <<< "${{ secrets.IDS_CLEARING_HOUSE_CORE_TOKEN }}"
-        cargo build --release
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - uses: actions/checkout@v3
+#     # TODO: do not use caching for actual release builds, aka ones that start with v*
+#     - uses: Swatinem/rust-cache@v2        
+#     - name: Build clearing-house-api
+#       working-directory: ./clearing-house-app
+#       run: cargo build --release
 
-    - name: Build build images
-      run: |        
-        docker build . --file docker/logging-service.Dockerfile --tag $IMAGE_NAME_LS
-        docker build . --file docker/document-api.Dockerfile --tag $IMAGE_NAME_DA
-        docker build . --file docker/keyring-api.Dockerfile --tag $IMAGE_NAME_KA
+#     - name: Build build images
+#       run: |        
+#         docker build . --file docker/logging-service.Dockerfile --tag $IMAGE_NAME_LS
     
-    - name: Log into registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+#     - name: Log into registry
+#       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-    - name: Push image
-      run: |
-        IMAGE_ID_LS=ghcr.io/Fraunhofer-AISEC/$IMAGE_NAME_LS
-        IMAGE_ID_DA=ghcr.io/Fraunhofer-AISEC/$IMAGE_NAME_DA
-        IMAGE_ID_KA=ghcr.io/Fraunhofer-AISEC/$IMAGE_NAME_KA
+#     - name: Push image
+#       run: |
+#         IMAGE_ID_LS=$IMAGE_BASE/$IMAGE_NAME_LS
 
-        # Change all uppercase to lowercase
-        IMAGE_ID_LS=$(echo $IMAGE_ID_LS | tr '[A-Z]' '[a-z]')
-        IMAGE_ID_DA=$(echo $IMAGE_ID_DA | tr '[A-Z]' '[a-z]')
-        IMAGE_ID_KA=$(echo $IMAGE_ID_KA | tr '[A-Z]' '[a-z]')
+#         # Change all uppercase to lowercase
+#         IMAGE_ID_LS=$(echo $IMAGE_ID_LS | tr '[A-Z]' '[a-z]')
 
-        # Strip git ref prefix from version
-        VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+#         # Strip git ref prefix from version
+#         VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
 
-        # Strip "v" prefix from tag name
-        [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+#         # Strip "v" prefix from tag name
+#         [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
 
-        # Use Docker `latest` tag convention
-        [ "$VERSION" == "master" ] && VERSION=latest
+#         # Use Docker `latest` tag convention
+#         [ "$VERSION" == "master" ] && VERSION=latest
 
-        docker tag $IMAGE_NAME_LS $IMAGE_ID_LS:$VERSION
-        docker push $IMAGE_ID_LS:$VERSION
+#         docker tag $IMAGE_NAME_LS $IMAGE_ID_LS:$VERSION
+#         docker push $IMAGE_ID_LS:$VERSION
 
-        docker tag $IMAGE_NAME_DA $IMAGE_ID_DA:$VERSION
-        docker push $IMAGE_ID_DA:$VERSION
-        
-        docker tag $IMAGE_NAME_KA $IMAGE_ID_KA:$VERSION
-        docker push $IMAGE_ID_KA:$VERSION
-      
-      

@@ -1,0 +1,5 @@
+log_level = "DEBUG" # TRACE, DEBUG, INFO, WARN, ERROR
+document_database_url= "mongodb://localhost:27017"
+process_database_url= "mongodb://localhost:27017"
+keyring_database_url= "mongodb://localhost:27017"
+clear_db = true

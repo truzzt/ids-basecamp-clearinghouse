@@ -1,0 +1,21 @@
+{
+  "name": "ids-basecamp-clearinghouse",
+  "version": "1.0.0",
+  "description": "The IDS Clearing House Service is a prototype implementation of the [Clearing House](https://github.com/International-Data-Spaces-Association/IDS-RAM_4_0/blob/main/documentation/3_Layers_of_the_Reference_Architecture_Model/3_5_System_Layer/3_5_5_Clearing_House.md) component of the [Industrial Data Space](https://internationaldataspaces.org/).",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "repository": "https://github.com/truzzt/ids-basecamp-clearinghouse",
+  "author": "",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "semantic-release": "^21.0.7"
+  }
+}

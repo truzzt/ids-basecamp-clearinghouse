@@ -1,8 +1,44 @@
-[workspace]
-
-members = [
-    "core-lib",
-    "document-api",
-    "keyring-api",
-    "logging-service"
+[package]
+name = "clearing-house-app"
+version = "0.10.0"
+authors = [
+    "Mark Gall <mark.gall@aisec.fraunhofer.de>",
+    "Georg Bramm <georg.bramm@aisec.fraunhofer.de>",
 ]
+edition = "2021"
+
+[dependencies]
+biscuit = "0.6.0"
+chrono = { version = "0.4.26", features = ["serde", "clock", "std"], default-features = false }
+mongodb = { version = ">= 2.6.1" , features = ["openssl-tls"]}
+percent-encoding = "2.1.0"
+rocket = { version = "0.5.0-rc.1", features = ["json"] }
+# Restricted version to 1.0.171, because of a change in derive macro for serde. It introduced precompiled binary files
+# for code generation, which is by many developers not considered a secure codeing practice.
+serde = { version = "= 1.0.171", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+hex = "0.4.3"
+aes = "0.8.3"
+aes-gcm-siv = "0.11.1"
+hkdf = "0.12.3"
+sha2 = "0.10.7"
+generic-array = "0.14.7"
+config = { version = "0.13.3", default-features = false, features = ["toml"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+rand = "0.8.5"
+once_cell = "1.18.0"
+blake2-rfc = "0.2.18"
+base64 = "0.21.2"
+uuid = { version = "1.4.1", features = ["serde"] }
+error-chain = "0.12.4"
+num-bigint = "0.4.3"
+ring = "0.16.20"
+openssh-keys = "0.6.2"
+
+[dev-dependencies]
+# Controlling execution of unit test cases, which could interfere with each other
+serial_test = "2.0.0"
+# Tempfile creation for testing
+tempfile = "3.8.0"
