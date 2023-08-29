@@ -47,7 +47,7 @@ impl KeyringDbConfigurator {
         debug!("Using database url: '{:#?}'", &db_url);
 
         match init_database_client::<KeyStore>(
-            &db_url.as_str(),
+            db_url.as_str(),
             Some(KEYRING_DB_CLIENT.to_string()),
         )
         .await
@@ -62,7 +62,7 @@ impl KeyringDbConfigurator {
                 {
                     Ok(colls) => {
                         debug!("... found collections: {:#?}", &colls);
-                        if colls.len() > 0 && clear_db {
+                        if !colls.is_empty() && clear_db {
                             debug!("Database not empty and clear_db == true. Dropping database...");
                             match keystore.client.database(KEYRING_DB).drop(None).await {
                                 Ok(_) => {
@@ -74,7 +74,7 @@ impl KeyringDbConfigurator {
                                 }
                             };
                         }
-                        if colls.len() == 0 || clear_db {
+                        if colls.is_empty() || clear_db {
                             debug!("Database empty. Need to initialize...");
                             debug!("Adding initial document type...");
                             match serde_json::from_str::<DocumentType>(

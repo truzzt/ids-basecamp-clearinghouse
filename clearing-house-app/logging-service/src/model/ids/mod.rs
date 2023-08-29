@@ -50,7 +50,7 @@ impl InfoModelId {
 impl std::fmt::Display for InfoModelId {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            InfoModelId::SimpleId(id) => fmt.write_str(&id)?,
+            InfoModelId::SimpleId(id) => fmt.write_str(id)?,
             InfoModelId::ComplexId(id) => fmt.write_str(&id.to_string())?,
         }
         Ok(())

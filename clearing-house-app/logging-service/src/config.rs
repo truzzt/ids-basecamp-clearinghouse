@@ -20,9 +20,9 @@ pub(crate) enum LogLevel {
     Error,
 }
 
-impl Into<tracing::Level> for LogLevel {
-    fn into(self) -> tracing::Level {
-        match self {
+impl From<LogLevel> for tracing::Level {
+    fn from(val: LogLevel) -> Self {
+        match val {
             LogLevel::Trace => tracing::Level::TRACE,
             LogLevel::Debug => tracing::Level::DEBUG,
             LogLevel::Info => tracing::Level::INFO,
@@ -101,7 +101,7 @@ mod test {
         assert_eq!(conf.process_database_url, "mongodb://localhost:27117");
         assert_eq!(conf.keyring_database_url, "mongodb://localhost:27118");
         assert_eq!(conf.document_database_url, "mongodb://localhost:27119");
-        assert_eq!(conf.clear_db, true);
+        assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Info));
 
         // Cleanup
@@ -137,7 +137,7 @@ log_level = "ERROR"
         assert_eq!(conf.process_database_url, "mongodb://localhost:27019");
         assert_eq!(conf.keyring_database_url, "mongodb://localhost:27020");
         assert_eq!(conf.document_database_url, "mongodb://localhost:27017");
-        assert_eq!(conf.clear_db, true);
+        assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Error));
     }
 }

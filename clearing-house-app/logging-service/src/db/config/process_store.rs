@@ -52,7 +52,7 @@ impl ProcessStoreConfigurator {
         debug!("...using database url: '{:#?}'", &db_url);
 
         match init_database_client::<ProcessStore>(
-            &db_url.as_str(),
+            db_url.as_str(),
             Some(PROCESS_DB_CLIENT.to_string()),
         )
         .await
@@ -67,7 +67,7 @@ impl ProcessStoreConfigurator {
                 {
                     Ok(colls) => {
                         debug!("... found collections: {:#?}", &colls);
-                        if colls.len() > 0 && clear_db {
+                        if !colls.is_empty() && clear_db {
                             debug!(
                                 "...database not empty and clear_db == true. Dropping database..."
                             );
@@ -81,7 +81,7 @@ impl ProcessStoreConfigurator {
                                 }
                             };
                         }
-                        if colls.len() == 0 || clear_db {
+                        if colls.is_empty() || clear_db {
                             debug!("..database empty. Need to initialize...");
                             let mut write_concern = WriteConcern::default();
                             write_concern.journal = Some(true);

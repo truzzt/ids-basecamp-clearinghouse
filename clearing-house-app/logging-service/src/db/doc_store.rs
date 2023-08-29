@@ -115,7 +115,7 @@ impl DataStore {
             return Ok(Some(doc));
         }
 
-        return Ok(None);
+        Ok(None)
     }
 
     /// gets documents for a single process from the db
@@ -145,14 +145,14 @@ impl DataStore {
 
             let mut results = coll.aggregate(pipeline, None).await?;
 
-            return if let Some(result) = results.next().await {
+            if let Some(result) = results.next().await {
                 debug!("Found {:#?}", &result);
                 let doc: EncryptedDocument = bson::from_document(result?)?;
                 Ok(Some(doc))
             } else {
                 warn!("Document with tc {} not found!", previous_tc);
                 Ok(None)
-            };
+            }
         }
     }
 
@@ -239,7 +239,7 @@ impl DataStore {
             }
             Err(e) => {
                 error!("Error while getting bucket offset!");
-                Err(errors::Error::from(e))
+                Err(e)
             }
         }
     }
@@ -308,7 +308,7 @@ impl DataStore {
     }
 
     fn get_offset(bucket_size: &DocumentBucketSize) -> u64 {
-        return (bucket_size.capacity - bucket_size.size) as u64 % MAX_NUM_RESPONSE_ENTRIES;
+        (bucket_size.capacity - bucket_size.size) as u64 % MAX_NUM_RESPONSE_ENTRIES
     }
 
     fn get_start_bucket(
@@ -335,7 +335,7 @@ impl DataStore {
         if start_bucket > 1 {
             start_entry = docs_to_skip - bucket_size.capacity as u64;
             if start_entry > 2 {
-                start_entry = start_entry - (start_bucket - 2) * MAX_NUM_RESPONSE_ENTRIES
+                start_entry -= (start_bucket - 2) * MAX_NUM_RESPONSE_ENTRIES
             }
         }
         start_entry
@@ -391,8 +391,8 @@ mod bucket {
     ) -> EncryptedDocument {
         EncryptedDocument {
             id: bucket_update.id.clone(),
-            dt_id: dt_id,
-            pid: pid,
+            dt_id,
+            pid,
             ts: bucket_update.ts,
             tc: bucket_update.tc,
             hash: bucket_update.hash.clone(),

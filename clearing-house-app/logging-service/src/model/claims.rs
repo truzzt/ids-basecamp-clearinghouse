@@ -39,7 +39,7 @@ impl<'r> FromRequest<'r> for ChClaims {
     type Error = ChClaimsError;
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        match request.headers().get_one(&SERVICE_HEADER) {
+        match request.headers().get_one(SERVICE_HEADER) {
             None => Outcome::Failure((Status::BadRequest, ChClaimsError::Missing)),
             Some(token) => {
                 debug!("...received service header: {:?}", token);

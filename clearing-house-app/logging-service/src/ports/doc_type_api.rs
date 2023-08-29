@@ -16,7 +16,7 @@ async fn create_doc_type(
         Ok(dt) => ApiResponse::SuccessCreate(json!(dt)),
         Err(e) => {
             error!("Error while adding doctype: {:?}", e);
-            return ApiResponse::InternalError(e.to_string());
+            ApiResponse::InternalError(e.to_string())
         }
     }
 }
@@ -35,7 +35,7 @@ async fn update_doc_type(
         Ok(id) => ApiResponse::SuccessOk(json!(id)),
         Err(e) => {
             error!("Error while adding doctype: {:?}", e);
-            return ApiResponse::InternalError(e.to_string());
+            ApiResponse::InternalError(e.to_string())
         }
     }
 }
@@ -51,7 +51,7 @@ async fn delete_doc_type(key_api: &State<KeyringService>, id: String, pid: Strin
         Ok(id) => ApiResponse::SuccessOk(json!(id)),
         Err(e) => {
             error!("Error while deleting doctype: {:?}", e);
-            return ApiResponse::InternalError(e.to_string());
+            ApiResponse::InternalError(e.to_string())
         }
     }
 }
@@ -70,7 +70,7 @@ async fn get_doc_type(key_api: &State<KeyringService>, id: String, pid: String) 
         },
         Err(e) => {
             error!("Error while retrieving doctype: {:?}", e);
-            return ApiResponse::InternalError(e.to_string());
+            ApiResponse::InternalError(e.to_string())
         }
     }
 }
@@ -81,7 +81,7 @@ async fn get_doc_types(key_api: &State<KeyringService>) -> ApiResponse {
         Ok(dt) => ApiResponse::SuccessOk(json!(dt)),
         Err(e) => {
             error!("Error while retrieving doctypes: {:?}", e);
-            return ApiResponse::InternalError(e.to_string());
+            ApiResponse::InternalError(e.to_string())
         }
     }
 }

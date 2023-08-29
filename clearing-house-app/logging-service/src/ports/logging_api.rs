@@ -140,7 +140,7 @@ pub fn mount_api() -> AdHoc {
                 rocket::routes![log, unauth],
             )
             .mount(
-                format!("{}", ROCKET_PROCESS_API).as_str(),
+                ROCKET_PROCESS_API.to_string().as_str(),
                 rocket::routes![create_process, unauth],
             )
             .mount(
@@ -148,7 +148,7 @@ pub fn mount_api() -> AdHoc {
                 rocket::routes![query_id, query_pid, unauth, unauth_id],
             )
             .mount(
-                format!("{}", ROCKET_PK_API).as_str(),
+                ROCKET_PK_API.to_string().as_str(),
                 rocket::routes![get_public_sign_key],
             )
     })

@@ -263,7 +263,7 @@ impl EncryptedDocument {
             hasher.update(ct.as_bytes());
         }
 
-        let res = base64::encode(&hasher.finalize());
+        let res = base64::encode(hasher.finalize());
         debug!("hashed cts: '{}'", &res);
         res
     }

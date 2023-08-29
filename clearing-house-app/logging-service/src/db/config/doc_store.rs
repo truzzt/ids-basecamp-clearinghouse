@@ -47,7 +47,7 @@ impl DatastoreConfigurator {
     pub async fn init_datastore(db_url: String, clear_db: bool) -> anyhow::Result<DataStore> {
         debug!("Using mongodb url: '{:#?}'", &db_url);
         match init_database_client::<DataStore>(
-            &db_url.as_str(),
+            db_url.as_str(),
             Some(DOCUMENT_DB_CLIENT.to_string()),
         )
         .await

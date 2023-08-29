@@ -110,7 +110,7 @@ impl ProcessStore {
             "checking if user '{}' is authorized to access '{}'",
             user, pid
         );
-        match self.get_process(&pid).await {
+        match self.get_process(pid).await {
             Ok(Some(process)) => {
                 let authorized = process.owners.iter().any(|o| {
                     trace!("found owner {}", o);

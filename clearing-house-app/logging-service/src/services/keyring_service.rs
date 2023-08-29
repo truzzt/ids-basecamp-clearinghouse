@@ -33,29 +33,27 @@ impl KeyringService {
                         match crypto::generate_key_map(key, dt) {
                             Ok(key_map) => {
                                 trace!("response: {:?}", &key_map);
-                                return Ok(key_map);
+                                Ok(key_map)
                             }
                             Err(e) => {
                                 error!("Error while generating key map: {}", e);
-                                return Err(anyhow!("Error while generating keys"));
-                                // InternalError
+                                Err(anyhow!("Error while generating keys")) // InternalError
                             }
                         }
                     }
                     Ok(None) => {
                         warn!("document type {} not found", &dt_id);
-                        return Err(anyhow!("Document type not found!")); // BadRequest
+                        Err(anyhow!("Document type not found!")) // BadRequest
                     }
                     Err(e) => {
                         warn!("Error while retrieving document type: {}", e);
-                        return Err(anyhow!("Error while retrieving document type"));
-                        // InternalError
+                        Err(anyhow!("Error while retrieving document type")) // InternalError
                     }
                 }
             }
             Err(e) => {
                 error!("Error while retrieving master key: {}", e);
-                return Err(anyhow!("Error while generating keys")); // InternalError
+                Err(anyhow!("Error while generating keys")) // InternalError
             }
         }
     }
@@ -203,14 +201,13 @@ impl KeyringService {
                     Ok(()) => Ok(doc_type),
                     Err(e) => {
                         error!("Error while adding doctype: {:?}", e);
-                        return Err(anyhow!("Error while adding document type!"));
-                        // InternalError
+                        Err(anyhow!("Error while adding document type!")) // InternalError
                     }
                 }
             }
             Err(e) => {
                 error!("Error while adding document type: {:?}", e);
-                return Err(anyhow!("Error while checking database!")); // InternalError
+                Err(anyhow!("Error while checking database!")) // InternalError
             }
         }
     }
@@ -231,14 +228,13 @@ impl KeyringService {
                     Ok(id) => Ok(id),
                     Err(e) => {
                         error!("Error while adding doctype: {:?}", e);
-                        return Err(anyhow!("Error while storing document type!"));
-                        // InternalError
+                        Err(anyhow!("Error while storing document type!")) // InternalError
                     }
                 }
             }
             Err(e) => {
                 error!("Error while adding document type: {:?}", e);
-                return Err(anyhow!("Error while checking database!")); // InternalError
+                Err(anyhow!("Error while checking database!")) // InternalError
             }
         }
     }

@@ -79,7 +79,7 @@ impl LoggingService {
                 }
 
                 // now check if user is authorized to write to pid
-                match self.db.is_authorized(&user, &pid).await {
+                match self.db.is_authorized(user, &pid).await {
                     Ok(true) => info!("User authorized."),
                     Ok(false) => {
                         warn!("User is not authorized to write to pid '{}'", &pid);
@@ -189,7 +189,7 @@ impl LoggingService {
                 // TODO: ChClaims usage check
                 match self
                     .doc_api
-                    .create_enc_document(ChClaims::new(&user), doc.clone())
+                    .create_enc_document(ChClaims::new(user), doc.clone())
                     .await
                 {
                     Ok(doc_receipt) => {
@@ -244,7 +244,7 @@ impl LoggingService {
         date_to: Option<String>,
         date_from: Option<String>,
         pid: String,
-        message: ClearingHouseMessage,
+        _message: ClearingHouseMessage,
     ) -> anyhow::Result<IdsQueryResult> {
         debug!("page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
 
@@ -265,7 +265,7 @@ impl LoggingService {
         };
 
         // now check if user is authorized to read infos in pid
-        match self.db.is_authorized(&user, &pid).await {
+        match self.db.is_authorized(user, &pid).await {
             Ok(true) => {
                 info!("User authorized.");
             }
@@ -316,7 +316,7 @@ impl LoggingService {
         match self
             .doc_api
             .get_enc_documents_for_pid(
-                ChClaims::new(&user),
+                ChClaims::new(user),
                 None,
                 Some(sanitized_page),
                 Some(sanitized_size),
@@ -350,7 +350,7 @@ impl LoggingService {
         ch_claims: ChClaims,
         pid: String,
         id: String,
-        message: ClearingHouseMessage,
+        _message: ClearingHouseMessage,
     ) -> anyhow::Result<IdsMessage> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         let user = &ch_claims.client_id;
@@ -369,7 +369,7 @@ impl LoggingService {
         };
 
         // now check if user is authorized to read infos in pid
-        match self.db.is_authorized(&user, &pid).await {
+        match self.db.is_authorized(user, &pid).await {
             Ok(true) => {
                 info!("User authorized.");
             }
@@ -388,7 +388,7 @@ impl LoggingService {
 
         match self
             .doc_api
-            .get_enc_document(ChClaims::new(&user), pid.clone(), id.clone(), None)
+            .get_enc_document(ChClaims::new(user), pid.clone(), id.clone(), None)
             .await
         {
             Ok(doc) => {
