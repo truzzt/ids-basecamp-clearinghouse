@@ -172,7 +172,7 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
 ) -> anyhow::Result<T> {
     use biscuit::Presence::Required;
     use biscuit::Validation::Validate;
-
+    info!("START Token validated!");
     let signing_secret = match env::var(ENV_SHARED_SECRET) {
         Ok(secret) => biscuit::jws::Secret::Bytes(secret.to_string().into_bytes()),
         Err(e) => {
@@ -183,8 +183,17 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
             return Err(e.into());
         }
     };
+    info!("2 Token validated!");
     let jwt: biscuit::jws::Compact<biscuit::ClaimsSet<T>, biscuit::Empty> = biscuit::JWT::<_, biscuit::Empty>::new_encoded(token);
-    let decoded_jwt = jwt.decode(&signing_secret, biscuit::jwa::SignatureAlgorithm::HS256).with_context(|| "Failed decoding JWT")?;
+    info!("3 Token validated!");
+    let decoded_jwt = match jwt.decode(&signing_secret, biscuit::jwa::SignatureAlgorithm::HS256) {
+        Ok(x) => Ok(x),
+        Err(e) => {
+            error!("Failed to decode token {}", e);
+            Err(e)
+        }
+    }?;
+    info!("4 Token validated!");
     let claim_presence_options = biscuit::ClaimPresenceOptions {
         issuer: Required,
         audience: Required,
@@ -192,13 +201,22 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
         expiry: Required,
         ..Default::default()
     };
+    info!("5 Token validated!");
     let val_options = biscuit::ValidationOptions {
         claim_presence_options,
-        issued_at: Validate(Duration::minutes(5)),
+        // issued_at: Validate(Duration::minutes(5)),
         // Issuer is not validated. Wouldn't make much of a difference if we did
         audience: Validate(audience.to_string()),
         ..Default::default()
     };
-    assert!(decoded_jwt.validate(val_options).is_ok()); // TODO: Handle error
-    Ok(decoded_jwt.payload().unwrap().private.clone())
+    info!("6 Token validated!");
+    match decoded_jwt.validate(val_options) {
+        Ok(o) => Ok(o),
+        Err(e) => {
+            error!("Failed validating JWT token {}", e);
+            Err(e)
+        }
+    }?;
+    info!("Token validated!");
+    Ok(decoded_jwt.payload().expect("If this fails we will see it!!").private.clone())
 }
