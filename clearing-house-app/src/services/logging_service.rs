@@ -68,8 +68,7 @@ impl LoggingService {
 
                         if self.db.store_process(new_process).await.is_err() {
                             error!("Error while creating process '{}'", &pid);
-                            return Err(anyhow!("Error while creating process"));
-                            // InternalError
+                            return Err(anyhow!("Error while creating process")); // InternalError
                         }
                     }
                     Err(_) => {

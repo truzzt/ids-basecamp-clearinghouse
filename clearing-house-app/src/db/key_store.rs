@@ -2,7 +2,6 @@ use super::DataStoreApi;
 use crate::model::constants::{FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT, MONGO_COLL_DOC_TYPES, MONGO_COLL_MASTER_KEY, MONGO_ID, MONGO_PID};
 use crate::model::crypto::MasterKey;
 use crate::model::doc_type::DocumentType;
-use crate::model::errors::*;
 use mongodb::bson::doc;
 use rocket::futures::TryStreamExt;
 use std::process::exit;
@@ -162,7 +161,7 @@ impl KeyStore {
     }
 
     // DOCTYPE
-    pub async fn add_document_type(&self, doc_type: DocumentType) -> errors::Result<()> {
+    pub async fn add_document_type(&self, doc_type: DocumentType) -> anyhow::Result<()> {
         let coll = self
             .database
             .collection::<DocumentType>(MONGO_COLL_DOC_TYPES);
@@ -173,13 +172,13 @@ impl KeyStore {
             }
             Err(e) => {
                 tracing::error!("failed to log document type {}", &doc_type.id);
-                Err(errors::Error::from(e))
+                Err(e.into())
             }
         }
     }
 
     //TODO: Do we need to check that no documents of this type exist before we remove it from the db?
-    pub async fn delete_document_type(&self, id: &String, pid: &String) -> errors::Result<bool> {
+    pub async fn delete_document_type(&self, id: &String, pid: &String) -> anyhow::Result<bool> {
         let coll = self
             .database
             .collection::<DocumentType>(MONGO_COLL_DOC_TYPES);
@@ -194,7 +193,7 @@ impl KeyStore {
     }
 
     /// checks if the model exits
-    pub async fn exists_document_type(&self, pid: &String, dt_id: &String) -> errors::Result<bool> {
+    pub async fn exists_document_type(&self, pid: &String, dt_id: &String) -> anyhow::Result<bool> {
         let coll = self
             .database
             .collection::<DocumentType>(MONGO_COLL_DOC_TYPES);
@@ -214,7 +213,7 @@ impl KeyStore {
         }
     }
 
-    pub async fn get_all_document_types(&self) -> errors::Result<Vec<DocumentType>> {
+    pub async fn get_all_document_types(&self) -> anyhow::Result<Vec<DocumentType>> {
         let coll = self
             .database
             .collection::<DocumentType>(MONGO_COLL_DOC_TYPES);
@@ -227,7 +226,7 @@ impl KeyStore {
         Ok(result)
     }
 
-    pub async fn get_document_type(&self, dt_id: &String) -> errors::Result<Option<DocumentType>> {
+    pub async fn get_document_type(&self, dt_id: &String) -> anyhow::Result<Option<DocumentType>> {
         let coll = self
             .database
             .collection::<DocumentType>(MONGO_COLL_DOC_TYPES);
@@ -236,7 +235,7 @@ impl KeyStore {
             Ok(result) => Ok(result),
             Err(e) => {
                 tracing::error!("error while getting document type with id {}!", dt_id);
-                Err(errors::Error::from(e))
+                Err(e.into())
             }
         }
     }
@@ -245,7 +244,7 @@ impl KeyStore {
         &self,
         doc_type: DocumentType,
         id: &String,
-    ) -> errors::Result<bool> {
+    ) -> anyhow::Result<bool> {
         let coll = self
             .database
             .collection::<DocumentType>(MONGO_COLL_DOC_TYPES);

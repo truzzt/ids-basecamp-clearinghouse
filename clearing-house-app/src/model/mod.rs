@@ -3,7 +3,6 @@ pub mod constants;
 pub(crate) mod crypto;
 pub(crate) mod doc_type;
 pub(crate) mod document;
-pub(crate) mod errors;
 pub mod ids;
 pub(crate) mod process;
 pub(crate) mod util;

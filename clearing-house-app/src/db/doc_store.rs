@@ -3,7 +3,6 @@ use crate::db::doc_store::bucket::{restore_from_bucket, DocumentBucketSize, Docu
 use crate::db::{DataStoreApi, init_database_client};
 use crate::model::constants::{DOCUMENT_DB, DOCUMENT_DB_CLIENT, MAX_NUM_RESPONSE_ENTRIES, MONGO_COLL_DOCUMENT_BUCKET, MONGO_COUNTER, MONGO_DOC_ARRAY, MONGO_DT_ID, MONGO_FROM_TS, MONGO_ID, MONGO_PID, MONGO_TC, MONGO_TO_TS, MONGO_TS};
 use crate::model::document::{Document, EncryptedDocument};
-use crate::model::errors::*;
 use crate::model::SortingOrder;
 use mongodb::bson::doc;
 use mongodb::options::{AggregateOptions, CreateCollectionOptions, IndexOptions, UpdateOptions, WriteConcern};
@@ -139,7 +138,7 @@ impl DataStore {
         }
     }
 
-    pub async fn add_document(&self, doc: EncryptedDocument) -> errors::Result<bool> {
+    pub async fn add_document(&self, doc: EncryptedDocument) -> anyhow::Result<bool> {
         debug!("add_document to bucket");
         let coll = self
             .database
@@ -170,14 +169,14 @@ impl DataStore {
             }
             Err(e) => {
                 error!("failed to store document: {:#?}", &e);
-                Err(errors::Error::from(e))
+                Err(e.into())
             }
         }
     }
 
     /// checks if the document exists
     /// document ids are globally unique
-    pub async fn exists_document(&self, id: &String) -> errors::Result<bool> {
+    pub async fn exists_document(&self, id: &String) -> anyhow::Result<bool> {
         debug!("Check if document with id '{}' exists...", id);
         let query = doc! {format!("{}.{}", MONGO_DOC_ARRAY, MONGO_ID): id.clone()};
 
@@ -201,7 +200,7 @@ impl DataStore {
         &self,
         id: &str,
         pid: &str,
-    ) -> errors::Result<Option<EncryptedDocument>> {
+    ) -> anyhow::Result<Option<EncryptedDocument>> {
         debug!("Trying to get doc with id {}...", id);
         let coll = self
             .database
@@ -232,7 +231,7 @@ impl DataStore {
     pub async fn get_document_with_previous_tc(
         &self,
         tc: i64,
-    ) -> errors::Result<Option<EncryptedDocument>> {
+    ) -> anyhow::Result<Option<EncryptedDocument>> {
         let previous_tc = tc - 1;
         debug!("Trying to get document for tc {} ...", previous_tc);
         if previous_tc < 0 {
@@ -276,7 +275,7 @@ impl DataStore {
         sort: &SortingOrder,
         date_from: &chrono::NaiveDateTime,
         date_to: &chrono::NaiveDateTime,
-    ) -> errors::Result<Vec<EncryptedDocument>> {
+    ) -> anyhow::Result<Vec<EncryptedDocument>> {
         debug!(
             "...trying to get page {} of size {} of documents for pid {} of dt {}...",
             pid, dt_id, page, size
@@ -364,7 +363,7 @@ impl DataStore {
         sort: &SortingOrder,
         date_from: &chrono::NaiveDateTime,
         date_to: &chrono::NaiveDateTime,
-    ) -> errors::Result<DocumentBucketSize> {
+    ) -> anyhow::Result<DocumentBucketSize> {
         debug!("...trying to get the offset for page {} of size {} of documents for pid {} of dt {}...", pid, dt_id, page, size);
         let sort_order = match sort {
             SortingOrder::Ascending => 1,

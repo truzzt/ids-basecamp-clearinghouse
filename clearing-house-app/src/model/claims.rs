@@ -1,5 +1,4 @@
 use crate::model::constants::{ENV_SHARED_SECRET, SERVICE_HEADER};
-use crate::model::errors::*;
 use crate::util::ServiceConfig;
 use chrono::{Duration, Utc};
 use num_bigint::BigUint;
@@ -8,6 +7,7 @@ use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};
 use std::env;
 use std::fmt::{Display, Formatter};
+use anyhow::Context;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ChClaims {
@@ -169,7 +169,7 @@ pub fn create_token<T: Display + Clone + serde::Serialize + for<'de> serde::Dese
 pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'de>>(
     token: &str,
     audience: &str,
-) -> errors::Result<T> {
+) -> anyhow::Result<T> {
     use biscuit::Presence::Required;
     use biscuit::Validation::Validate;
 
@@ -180,11 +180,11 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
                 "Shared Secret not configured. Please configure environment variable {}",
                 ENV_SHARED_SECRET
             );
-            return Err(errors::Error::from(e));
+            return Err(e.into());
         }
     };
     let jwt: biscuit::jws::Compact<biscuit::ClaimsSet<T>, biscuit::Empty> = biscuit::JWT::<_, biscuit::Empty>::new_encoded(token);
-    let decoded_jwt = jwt.decode(&signing_secret, biscuit::jwa::SignatureAlgorithm::HS256)?;
+    let decoded_jwt = jwt.decode(&signing_secret, biscuit::jwa::SignatureAlgorithm::HS256).with_context(|| "Failed decoding JWT")?;
     let claim_presence_options = biscuit::ClaimPresenceOptions {
         issuer: Required,
         audience: Required,
