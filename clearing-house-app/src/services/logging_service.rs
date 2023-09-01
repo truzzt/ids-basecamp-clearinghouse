@@ -19,11 +19,12 @@ use crate::services::document_service::DocumentService;
 pub struct LoggingService {
     db: ProcessStore,
     doc_api: DocumentService,
+    write_lock: std::sync::Arc<rocket::tokio::sync::Mutex<()>>,
 }
 
 impl LoggingService {
     pub fn new(db: ProcessStore, doc_api: DocumentService) -> LoggingService {
-        LoggingService { db, doc_api }
+      LoggingService { db, doc_api, write_lock: std::sync::Arc::new(rocket::tokio::sync::Mutex::new(())) }
     }
 
     pub async fn log(
@@ -181,6 +182,7 @@ impl LoggingService {
         let payload = message.payload.as_ref().unwrap().clone();
         // transform message to document
         let mut doc = Document::from(message);
+        let _x = self.write_lock.lock().await;
         match self.db.get_transaction_counter().await {
             Ok(Some(tid)) => {
                 debug!("Storing document...");
