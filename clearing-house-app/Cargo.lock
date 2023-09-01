@@ -336,7 +336,6 @@ dependencies = [
  "num-bigint",
  "once_cell",
  "openssh-keys",
- "percent-encoding",
  "rand",
  "ring",
  "rocket",
