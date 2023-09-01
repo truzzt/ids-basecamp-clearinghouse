@@ -6,8 +6,8 @@ export const options = {
   duration: "1m"
 };
 
-const url = 'http://localhost:8000';
-const TOKEN = 'xxx'
+const url = `http://${__ENV.HOSTNAME}`;
+const TOKEN = `${__ENV.TOKEN}`
 
 export default () => {
   const logMessageHeader = {
