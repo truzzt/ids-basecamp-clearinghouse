@@ -2,10 +2,11 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 
 export const options = {
-  vus: 1
+  vus: 2
 };
 
 const url = 'http://localhost:8000';
+const TOKEN = 'xxx'
 
 export default () => {
   const jwksRes = http.get(`${url}/.well-known/jwks.json`);
@@ -20,7 +21,7 @@ export default () => {
 
   const logMessageHeader = {
     "Content-Type": "application/json",
-    "CH-SERVICE": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiI2OTpGNTo5RDpCMDpERDpBNjo5RDozMDo1Rjo1ODpBQToyRDoyMDo0RDpCMjozOTpGMDo1NDpGQzozQjprZXlpZDo0Rjo2Njo3RDpCRDowODpFRTpDNjo0QTpEMTo5NjpEODo3Qzo2QzpBMjozMjo4QTpFQzpBNjpBRDo0OSIsImlzcyI6IjY5OkY1OjlEOkIwOkREOkE2OjlEOjMwOjVGOjU4OkFBOjJEOjIwOjREOkIyOjM5OkYwOjU0OkZDOjNCOmtleWlkOjRGOjY2OjdEOkJEOjA4OkVFOkM2OjRBOkQxOjk2OkQ4OjdDOjZDOkEyOjMyOjhBOkVDOkE2OkFEOjQ5IiwiaWF0IjoxNjkzNTU2NDM2LCJuYmYiOjE2OTM1NTY0MzYsImV4cCI6MTY5MzU2MDAzNiwiYXVkIjoiMSJ9.WGZVbfJqK2bFwE8vEN29VeZzfPC2F_w2_bBkadNm4WM"
+    "CH-SERVICE": TOKEN
   }
 
   const date = new Date();
@@ -57,6 +58,4 @@ export default () => {
     'ch-app POST logmessage is status 201': (r) => r.status === 201,
   });
 
-
-  sleep(1);
 };
