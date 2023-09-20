@@ -17,8 +17,12 @@ plugins {
 }
 
 dependencies {
-    implementation(edc.util)
-    implementation(edc.core.connector)
-    implementation(edc.sql.core)
-    implementation(edc.spi.core)
+    api(edc.spi.core)
+
+    runtimeOnly(edc.core.connector)
+
+    implementation(edc.spi.web)
+    implementation(edc.api.management.config)
+    implementation(libs.jakarta.rsApi)
+    implementation(libs.jersey.multipart)
 }

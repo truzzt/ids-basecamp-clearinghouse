@@ -12,13 +12,18 @@
  *
  */
 
+
 plugins {
     `java-library`
+    id("application")
 }
 
 dependencies {
-    implementation(edc.util)
-    implementation(edc.core.connector)
-    implementation(edc.sql.core)
-    implementation(edc.spi.core)
+    runtimeOnly(project(":extensions:multipart"))
+
+    runtimeOnly(edc.bundles.connector)
+}
+
+application {
+    mainClass.set("org.eclipse.edc.boot.system.runtime.BaseRuntime")
 }

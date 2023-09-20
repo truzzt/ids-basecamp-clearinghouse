@@ -17,8 +17,5 @@ plugins {
 }
 
 dependencies {
-    implementation(edc.util)
-    implementation(edc.core.connector)
-    implementation(edc.sql.core)
-    implementation(edc.spi.core)
+    api(edc.spi.core)
 }

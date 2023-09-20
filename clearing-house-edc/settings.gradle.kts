@@ -12,14 +12,6 @@
  *
  */
 
-rootProject.name = "clearing-house-edc"
-
-include(":spi")
-include(":core")
-include(":extensions:multipart")
-include(":launchers:connector")
-
-// this is needed to have access to snapshot builds of plugins
 pluginManagement {
     repositories {
         maven {
@@ -42,7 +34,6 @@ dependencyResolutionManagement {
         create("libs") {
             from("org.eclipse.edc:edc-versions:0.0.1-milestone-8")
         }
-        // create version catalog for all EDC modules
         create("edc") {
             version("edc", "0.0.1-milestone-8")
             library("spi-catalog", "org.eclipse.edc", "catalog-spi").versionRef("edc")
@@ -67,9 +58,14 @@ dependencyResolutionManagement {
             library("oauth2-core", "org.eclipse.edc", "oauth2-core").versionRef("edc")
 
             bundle(
-                    "connector",
-                    listOf("boot", "core-connector", "core-jersey", "core-controlplane", "api-observability")
+                "connector",
+                listOf("boot", "core-connector", "core-jersey", "core-controlplane", "api-observability")
             )
         }
     }
 }
+
+include(":spi")
+include(":core")
+include(":extensions:multipart")
+include(":launchers:connector")
