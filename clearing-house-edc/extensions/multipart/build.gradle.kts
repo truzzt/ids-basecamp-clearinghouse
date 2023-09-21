@@ -19,9 +19,8 @@ plugins {
 dependencies {
     api(edc.spi.core)
 
-    runtimeOnly(edc.core.connector)
-
-    implementation(edc.spi.web)
+    implementation(edc.ids)
+    implementation(edc.ids.jsonld.serdes)
     implementation(edc.api.management.config)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jersey.multipart)

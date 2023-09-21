@@ -22,6 +22,7 @@ dependencies {
     runtimeOnly(project(":extensions:multipart"))
 
     runtimeOnly(edc.bundles.connector)
+    runtimeOnly(edc.iam.mock)
 }
 
 application {
