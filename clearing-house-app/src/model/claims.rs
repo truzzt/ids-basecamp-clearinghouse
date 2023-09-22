@@ -49,7 +49,10 @@ impl<'r> FromRequest<'r> for ChClaims {
                         debug!("...retrieved claims and succeed");
                         Outcome::Success(claims)
                     }
-                    Err(_) => Outcome::Failure((Status::BadRequest, ChClaimsError::Invalid)),
+                    Err(e) => {
+                        error!("...failed to retrieve and validate claims: {}", e);
+                        Outcome::Failure((Status::BadRequest, ChClaimsError::Invalid))
+                    },
                 }
             }
         }
@@ -204,12 +207,9 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
         audience: Validate(audience.to_string()),
         ..Default::default()
     };
-    match decoded_jwt.validate(val_options) {
-        Ok(o) => Ok(o),
-        Err(e) => {
-            error!("Failed validating JWT token {}", e);
-            Err(e)
-        }
-    }?;
-    Ok(decoded_jwt.payload().expect("If this fails we will see it!!").private.clone())
+
+    decoded_jwt.validate(val_options)
+        .with_context(|| "Failed validating JWT")?;
+    Ok(decoded_jwt.payload()?.private.clone())
+
 }
