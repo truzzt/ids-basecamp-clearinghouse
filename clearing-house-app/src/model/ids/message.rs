@@ -20,6 +20,7 @@ pub const RESULT_MESSAGE: &str = "ResultMessage";
 pub const REJECTION_MESSAGE: &str = "RejectionMessage";
 pub const MESSAGE_PROC_NOTIFICATION_MESSAGE: &str = "MessageProcessedNotificationMessage";
 
+/// Metadata describing payload exchanged by interacting Connectors.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct IdsMessage {
     //IDS name
@@ -38,77 +39,68 @@ pub struct IdsMessage {
     #[serde(skip)]
     // process id
     pub pid: Option<String>,
-    //IDS name
+    /// Version of the Information Model against which the Message should be interpreted
     #[serde(rename = "ids:modelVersion", alias = "modelVersion")]
-    // Version of the Information Model against which the Message should be interpreted
     pub model_version: String,
-    //IDS name
+    /// Correlated message, e.g., response to a previous message. Value: URI of the correlatedMessage
     #[serde(
     rename = "ids:correlationMessage",
     alias = "correlationMessage",
     skip_serializing_if = "Option::is_none"
     )]
-    //  Correlated message, e.g. a response to a previous request
     pub correlation_message: Option<String>,
-    //IDS name
+    /// Date of issuing the Message
     #[serde(rename = "ids:issued", alias = "issued")]
-    // Date of issuing the Message
     pub issued: InfoModelDateTime,
-    //IDS name
     #[serde(rename = "ids:issuerConnector", alias = "issuerConnector")]
-    // The Connector which is the origin of the message
+    /// Origin Connector of the message. Value: URI of origin Connector
     pub issuer_connector: InfoModelId,
-    //IDS name
+    /// Agent, which initiated the message. Value: URI of an instance of ids:Agent.
     #[serde(rename = "ids:senderAgent", alias = "senderAgent")]
-    // The Agent which initiated the Message
     pub sender_agent: String,
-    //IDS name
+    /// Target Connector. Value: URI of target Connector. Can have multiple values at the same time.
     #[serde(
     rename = "ids:recipientConnector",
     alias = "recipientConnector",
     skip_serializing_if = "Option::is_none"
     )]
-    // The Connector which is the recipient of the message
     pub recipient_connector: Option<Vec<InfoModelId>>,
-    //IDS name
+    /// Agent, for which the message is intended. Value: URI of an instance of ids:Agent. Can have multiple values at the same time
     #[serde(
     rename = "ids:recipientAgent",
     alias = "recipientAgent",
     skip_serializing_if = "Option::is_none"
     )]
-    // The Agent for which the Message is intended
     pub recipient_agent: Option<Vec<InfoModelId>>,
-    //IDS name
+    /// Contract which is (or will be) the legal basis of the data transfer. Value: Instance of class ids:Contract.
     #[serde(
     rename = "ids:transferContract",
     alias = "transferContract",
     skip_serializing_if = "Option::is_none"
     )]
-    // The contract which is (or will be) the legal basis of the data transfer
     pub transfer_contract: Option<String>,
-    //IDS name
+    /// Value describing the version of the content. Value: Version number of the content.
     #[serde(
     rename = "ids:contentVersion",
     alias = "contentVersion",
     skip_serializing_if = "Option::is_none"
     )]
-    // The contract which is (or will be) the legal basis of the data transfer
     pub content_version: Option<String>,
-    //IDS name
+    /// Token representing a claim, that the sender supports a certain security profile. Value: Instance of ids:DynamicAttributeToken.
     #[serde(
     rename = "ids:securityToken",
     alias = "securityToken",
     skip_serializing
     )]
-    // Authorization
     pub security_token: Option<SecurityToken>,
-    //IDS name
+    /// An authorization token. The token can be issued from the Connector of the Data Provider (A) to the Connector of the
+    /// Data Consumer (B). Can be used to avoid full authentication via DAPS, if Connector B wants to access the data of
+    /// Connector A. Value: Instance of ids:Token
     #[serde(
     rename = "ids:authorizationToken",
     alias = "authorizationToken",
     skip_serializing_if = "Option::is_none"
     )]
-    // Authorization
     pub authorization_token: Option<String>,
     //IDS name
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -151,7 +143,7 @@ impl IdsMessage {
     pub fn processed(msg: IdsMessage) -> IdsMessage {
         let mut message = IdsMessage::clone(msg);
         message.id = Some(autogen(MESSAGE_PROC_NOTIFICATION_MESSAGE));
-        message.type_message = MessageType::MessageProcessedNotification;
+        message.type_message = MessageType::MessageProcessedNotificationMessage;
         message
     }
 
