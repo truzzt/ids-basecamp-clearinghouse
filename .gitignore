@@ -6,3 +6,4 @@ data
 .idea/
 node_modules/
 **/*.iml
+.vscode/
