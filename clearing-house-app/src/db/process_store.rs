@@ -6,7 +6,7 @@ use crate::model::process::TransactionCounter;
 use mongodb::bson::doc;
 use mongodb::options::{CreateCollectionOptions, FindOneAndUpdateOptions, UpdateModifications, WriteConcern};
 use mongodb::{Client, Database};
-use rocket::futures::TryStreamExt;
+use futures::TryStreamExt;
 
 #[derive(Clone)]
 pub struct ProcessStore {

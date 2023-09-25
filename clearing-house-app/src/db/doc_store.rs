@@ -7,7 +7,7 @@ use crate::model::SortingOrder;
 use mongodb::bson::doc;
 use mongodb::options::{AggregateOptions, CreateCollectionOptions, IndexOptions, UpdateOptions, WriteConcern};
 use mongodb::{bson, Client, IndexModel};
-use rocket::futures::StreamExt;
+use futures::StreamExt;
 
 #[derive(Clone)]
 pub struct DataStore {

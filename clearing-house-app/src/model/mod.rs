@@ -7,12 +7,10 @@ pub mod ids;
 pub(crate) mod process;
 pub(crate) mod util;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, rocket::FromFormField)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum SortingOrder {
-    #[field(value = "asc")]
     #[serde(rename = "asc")]
     Ascending,
-    #[field(value = "desc")]
     #[serde(rename = "desc")]
     Descending,
 }

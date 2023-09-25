@@ -7,6 +7,8 @@ pub(crate) struct CHConfig {
     pub(crate) clear_db: bool,
     #[serde(default)]
     pub(crate) log_level: Option<LogLevel>,
+    #[serde(default)]
+    pub(crate) signing_key: Option<String>,
 }
 
 /// Contains the log level for the application

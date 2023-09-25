@@ -3,11 +3,13 @@ use crate::util::ServiceConfig;
 use chrono::{Duration, Utc};
 use num_bigint::BigUint;
 use ring::signature::KeyPair;
-use rocket::http::Status;
-use rocket::request::{FromRequest, Outcome, Request};
 use std::env;
 use std::fmt::{Display, Formatter};
+use std::sync::Arc;
 use anyhow::Context;
+use axum::extract::FromRef;
+use axum::response::IntoResponse;
+use crate::AppState;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ChClaims {
@@ -34,27 +36,36 @@ pub enum ChClaimsError {
     Invalid,
 }
 
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for ChClaims {
-    type Error = ChClaimsError;
+pub struct ExtractChClaims(pub ChClaims);
 
-    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        match request.headers().get_one(SERVICE_HEADER) {
-            None => Outcome::Failure((Status::BadRequest, ChClaimsError::Missing)),
-            Some(token) => {
-                debug!("...received service header: {:?}", token);
-                let service_config = request.rocket().state::<ServiceConfig>().unwrap();
-                match decode_token::<ChClaims>(token, service_config.service_id.as_str()) {
-                    Ok(claims) => {
-                        debug!("...retrieved claims and succeed");
-                        Outcome::Success(claims)
-                    }
-                    Err(e) => {
-                        error!("...failed to retrieve and validate claims: {}", e);
-                        Outcome::Failure((Status::BadRequest, ChClaimsError::Invalid))
-                    },
+#[async_trait::async_trait]
+impl<S> axum::extract::FromRequestParts<S> for ExtractChClaims
+    where
+        S: Send + Sync,
+        AppState: FromRef<S>,
+{
+    type Rejection = axum::response::Response;
+
+    async fn from_request_parts(parts: &mut axum::http::request::Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let axum::extract::State(app_state) = axum::extract::State::<AppState>::from_request_parts(parts, state)
+            .await
+            .map_err(|err| err.into_response())?;
+        if let Some(token) = parts.headers.get(SERVICE_HEADER) {
+            let token = token.to_str().unwrap();
+            debug!("...received service header: {:?}", token);
+
+            match decode_token::<ChClaims>(token, app_state.service_config.service_id.as_str()) {
+                Ok(claims) => {
+                    debug!("...retrieved claims and succeed");
+                    Ok(ExtractChClaims(claims))
+                }
+                Err(e) => {
+                    error!("...failed to retrieve and validate claims: {}", e);
+                    Err((axum::http::StatusCode::BAD_REQUEST, "Invalid token").into_response())
                 }
             }
+        } else {
+            Err((axum::http::StatusCode::BAD_REQUEST, "Missing token").into_response())
         }
     }
 }
@@ -211,5 +222,4 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
     decoded_jwt.validate(val_options)
         .with_context(|| "Failed validating JWT")?;
     Ok(decoded_jwt.payload()?.private.clone())
-
 }

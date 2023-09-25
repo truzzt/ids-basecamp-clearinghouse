@@ -3,7 +3,7 @@ use crate::model::constants::{FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIE
 use crate::model::crypto::MasterKey;
 use crate::model::doc_type::DocumentType;
 use mongodb::bson::doc;
-use rocket::futures::TryStreamExt;
+use futures::TryStreamExt;
 use std::process::exit;
 use anyhow::anyhow;
 use crate::db::init_database_client;

@@ -1,33 +1,29 @@
-use crate::{
-    model::claims::{get_jwks, ChClaims},
-    model::SortingOrder,
-    ports::ApiResponse,
-};
-use rocket::fairing::AdHoc;
-use rocket::serde::json::{json, Json};
-use rocket::State;
+
+use biscuit::jwk::JWKSet;
+use crate::{AppState, model::claims::get_jwks, model::SortingOrder, ports::ApiResponse};
+use crate::model::claims::ExtractChClaims;
 
 use crate::model::constants::{
     ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API, ROCKET_PK_API, ROCKET_PROCESS_API,
     ROCKET_QUERY_API,
 };
+use crate::model::ids::IdsQueryResult;
+use crate::model::ids::message::IdsMessage;
 use crate::model::ids::request::ClearingHouseMessage;
-use crate::services::logging_service::LoggingService;
+use crate::model::process::Receipt;
 
-#[rocket::post("/<pid>", format = "json", data = "<message>")]
-async fn log(
-    ch_claims: ChClaims,
-    logging_api: &State<LoggingService>,
-    key_path: &State<String>,
-    message: Json<ClearingHouseMessage>,
-    pid: String,
-) -> ApiResponse {
-    match logging_api
-        .inner()
-        .log(ch_claims, key_path, message.into_inner(), pid)
+//#[rocket::post("/<pid>", format = "json", data = "<message>")]
+pub async fn log(
+    ExtractChClaims(ch_claims): ExtractChClaims,
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Path(pid): axum::extract::Path<String>,
+    axum::extract::Json(message): axum::extract::Json<ClearingHouseMessage>,
+) -> ApiResponse<Receipt> {
+    match state.logging_service
+        .log(ch_claims, state.signing_key_path.as_str(), message, pid)
         .await
     {
-        Ok(id) => ApiResponse::SuccessCreate(json!(id)),
+        Ok(id) => ApiResponse::SuccessCreate(id),
         Err(e) => {
             error!("Error while logging: {:?}", e);
             ApiResponse::InternalError(String::from("Error while logging!"))
@@ -35,19 +31,18 @@ async fn log(
     }
 }
 
-#[rocket::post("/<pid>", format = "json", data = "<message>")]
-async fn create_process(
-    ch_claims: ChClaims,
-    logging_api: &State<LoggingService>,
-    message: Json<ClearingHouseMessage>,
-    pid: String,
-) -> ApiResponse {
-    match logging_api
-        .inner()
-        .create_process(ch_claims, message.into_inner(), pid)
+//#[rocket::post("/<pid>", format = "json", data = "<message>")]
+pub async fn create_process(
+    ExtractChClaims(ch_claims): ExtractChClaims,
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Path(pid): axum::extract::Path<String>,
+    axum::extract::Json(message): axum::extract::Json<ClearingHouseMessage>,
+) -> ApiResponse<String> {
+    match state.logging_service
+        .create_process(ch_claims, message, pid)
         .await
     {
-        Ok(id) => ApiResponse::SuccessCreate(json!(id)),
+        Ok(id) => ApiResponse::SuccessCreate(id),
         Err(e) => {
             error!("Error while creating process: {:?}", e);
             ApiResponse::InternalError(String::from("Error while creating process!"))
@@ -55,34 +50,33 @@ async fn create_process(
     }
 }
 
-#[rocket::post("/<_pid>", format = "json", rank = 50)]
-async fn unauth(_pid: Option<String>) -> ApiResponse {
+//#[rocket::post("/<_pid>", format = "json", rank = 50)]
+/*async fn unauth(_pid: Option<String>) -> ApiResponse {
     ApiResponse::Unauthorized(String::from("Token not valid!"))
-}
+}*/
 
-#[rocket::post("/<_pid>/<_id>", format = "json", rank = 50)]
-async fn unauth_id(_pid: Option<String>, _id: Option<String>) -> ApiResponse {
+//#[rocket::post("/<_pid>/<_id>", format = "json", rank = 50)]
+/*async fn unauth_id(_pid: Option<String>, _id: Option<String>) -> ApiResponse {
     ApiResponse::Unauthorized(String::from("Token not valid!"))
-}
+}*/
 
-#[rocket::post(
+/*#[rocket::post(
     "/<pid>?<page>&<size>&<sort>&<date_to>&<date_from>",
     format = "json",
     data = "<message>"
-)]
-async fn query_pid(
-    ch_claims: ChClaims,
-    logging_api: &State<LoggingService>,
-    page: Option<i32>,
-    size: Option<i32>,
-    sort: Option<SortingOrder>,
-    date_to: Option<String>,
-    date_from: Option<String>,
-    pid: String,
-    message: Json<ClearingHouseMessage>,
-) -> ApiResponse {
-    match logging_api
-        .inner()
+)]*/
+pub async fn query_pid(
+    ExtractChClaims(ch_claims): ExtractChClaims,
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Query(page): axum::extract::Query<Option<i32>>,
+    axum::extract::Query(size): axum::extract::Query<Option<i32>>,
+    axum::extract::Query(sort): axum::extract::Query<Option<SortingOrder>>,
+    axum::extract::Query(date_to): axum::extract::Query<Option<String>>,
+    axum::extract::Query(date_from): axum::extract::Query<Option<String>>,
+    axum::extract::Path(pid): axum::extract::Path<String>,
+    axum::extract::Json(message): axum::extract::Json<ClearingHouseMessage>,
+) -> ApiResponse<IdsQueryResult> {
+    match state.logging_service
         .query_pid(
             ch_claims,
             page,
@@ -91,11 +85,11 @@ async fn query_pid(
             date_to,
             date_from,
             pid,
-            message.into_inner(),
+            message,
         )
         .await
     {
-        Ok(result) => ApiResponse::SuccessOk(json!(result)),
+        Ok(result) => ApiResponse::SuccessOk(result),
         Err(e) => {
             error!("Error while querying: {:?}", e);
             ApiResponse::InternalError(String::from("Error while querying!"))
@@ -103,20 +97,19 @@ async fn query_pid(
     }
 }
 
-#[rocket::post("/<pid>/<id>", format = "json", data = "<message>")]
-async fn query_id(
-    ch_claims: ChClaims,
-    logging_api: &State<LoggingService>,
-    pid: String,
-    id: String,
-    message: Json<ClearingHouseMessage>,
-) -> ApiResponse {
-    match logging_api
-        .inner()
-        .query_id(ch_claims, pid, id, message.into_inner())
+//#[rocket::post("/<pid>/<id>", format = "json", data = "<message>")]
+pub async fn query_id(
+    ExtractChClaims(ch_claims): ExtractChClaims,
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Path(pid): axum::extract::Path<String>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+    axum::extract::Json(message): axum::extract::Json<ClearingHouseMessage>,
+) -> ApiResponse<IdsMessage> {
+    match state.logging_service
+        .query_id(ch_claims, pid, id, message)
         .await
     {
-        Ok(result) => ApiResponse::SuccessOk(json!(result)),
+        Ok(result) => ApiResponse::SuccessOk(result),
         Err(e) => {
             error!("Error while querying: {:?}", e);
             ApiResponse::InternalError(String::from("Error while querying!"))
@@ -124,32 +117,10 @@ async fn query_id(
     }
 }
 
-#[rocket::get("/.well-known/jwks.json", format = "json")]
-async fn get_public_sign_key(key_path: &State<String>) -> ApiResponse {
-    match get_jwks(key_path.as_str()) {
-        Some(jwks) => ApiResponse::SuccessOk(json!(jwks)),
+//#[rocket::get("/.well-known/jwks.json", format = "json")]
+pub async fn get_public_sign_key(axum::extract::State(state): axum::extract::State<AppState>) -> ApiResponse<JWKSet<biscuit::Empty>> {
+    match get_jwks(state.signing_key_path.as_str()) {
+        Some(jwks) => ApiResponse::SuccessOk(jwks),
         None => ApiResponse::InternalError(String::from("Error reading signing key")),
     }
-}
-
-pub fn mount_api() -> AdHoc {
-    AdHoc::on_ignite("Mounting Clearing House API", |rocket| async {
-        rocket
-            .mount(
-                format!("{}{}", ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_LOG_API).as_str(),
-                rocket::routes![log, unauth],
-            )
-            .mount(
-                ROCKET_PROCESS_API.to_string().as_str(),
-                rocket::routes![create_process, unauth],
-            )
-            .mount(
-                format!("{}{}", ROCKET_CLEARING_HOUSE_BASE_API, ROCKET_QUERY_API).as_str(),
-                rocket::routes![query_id, query_pid, unauth, unauth_id],
-            )
-            .mount(
-                ROCKET_PK_API.to_string().as_str(),
-                rocket::routes![get_public_sign_key],
-            )
-    })
 }

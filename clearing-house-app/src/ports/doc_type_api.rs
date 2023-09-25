@@ -1,19 +1,16 @@
 use crate::model::constants::{DEFAULT_PROCESS_ID, ROCKET_DOC_TYPE_API};
 use crate::ports::ApiResponse;
-use rocket::fairing::AdHoc;
-use rocket::serde::json::{json, Json};
-use rocket::State;
+use crate::AppState;
 
 use crate::model::doc_type::DocumentType;
-use crate::services::keyring_service::KeyringService;
 
-#[rocket::post("/", format = "json", data = "<doc_type>")]
+//#[rocket::post("/", format = "json", data = "<doc_type>")]
 async fn create_doc_type(
-    key_api: &State<KeyringService>,
-    doc_type: Json<DocumentType>,
-) -> ApiResponse {
-    match key_api.inner().create_doc_type(doc_type.into_inner()).await {
-        Ok(dt) => ApiResponse::SuccessCreate(json!(dt)),
+    axum::extract::State(state): axum::extract::State<crate::AppState>,
+    axum::extract::Json(doc_type): axum::extract::Json<DocumentType>,
+) -> ApiResponse<DocumentType> {
+    match state.keyring_service.create_doc_type(doc_type).await {
+        Ok(dt) => ApiResponse::SuccessCreate(dt),
         Err(e) => {
             error!("Error while adding doctype: {:?}", e);
             ApiResponse::InternalError(e.to_string())
@@ -21,18 +18,14 @@ async fn create_doc_type(
     }
 }
 
-#[rocket::post("/<id>", format = "json", data = "<doc_type>")]
+//#[rocket::post("/<id>", format = "json", data = "<doc_type>")]
 async fn update_doc_type(
-    key_api: &State<KeyringService>,
-    id: String,
-    doc_type: Json<DocumentType>,
-) -> ApiResponse {
-    match key_api
-        .inner()
-        .update_doc_type(id, doc_type.into_inner())
-        .await
-    {
-        Ok(id) => ApiResponse::SuccessOk(json!(id)),
+    axum::extract::State(state): axum::extract::State<crate::AppState>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+    axum::extract::Json(doc_type): axum::extract::Json<DocumentType>,
+) -> ApiResponse<bool> {
+    match state.keyring_service.update_doc_type(id, doc_type).await {
+        Ok(id) => ApiResponse::SuccessOk(id),
         Err(e) => {
             error!("Error while adding doctype: {:?}", e);
             ApiResponse::InternalError(e.to_string())
@@ -40,15 +33,22 @@ async fn update_doc_type(
     }
 }
 
-#[rocket::delete("/<id>", format = "json")]
-async fn delete_default_doc_type(key_api: &State<KeyringService>, id: String) -> ApiResponse {
-    delete_doc_type(key_api, id, DEFAULT_PROCESS_ID.to_string()).await
+//#[rocket::delete("/<id>", format = "json")]
+async fn delete_default_doc_type(
+    state: axum::extract::State<crate::AppState>,
+    id: axum::extract::Path<String>,
+) -> ApiResponse<String> {
+    delete_doc_type(state, id, axum::extract::Path(DEFAULT_PROCESS_ID.to_string())).await
 }
 
-#[rocket::delete("/<pid>/<id>", format = "json")]
-async fn delete_doc_type(key_api: &State<KeyringService>, id: String, pid: String) -> ApiResponse {
-    match key_api.inner().delete_doc_type(id, pid).await {
-        Ok(id) => ApiResponse::SuccessOk(json!(id)),
+//#[rocket::delete("/<pid>/<id>", format = "json")]
+async fn delete_doc_type(
+    axum::extract::State(state): axum::extract::State<crate::AppState>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+    axum::extract::Path(pid): axum::extract::Path<String>,
+) -> ApiResponse<String> {
+    match state.keyring_service.delete_doc_type(id, pid).await {
+        Ok(id) => ApiResponse::SuccessOk(id),
         Err(e) => {
             error!("Error while deleting doctype: {:?}", e);
             ApiResponse::InternalError(e.to_string())
@@ -56,17 +56,20 @@ async fn delete_doc_type(key_api: &State<KeyringService>, id: String, pid: Strin
     }
 }
 
-#[rocket::get("/<id>", format = "json")]
-async fn get_default_doc_type(key_api: &State<KeyringService>, id: String) -> ApiResponse {
-    get_doc_type(key_api, id, DEFAULT_PROCESS_ID.to_string()).await
+//#[rocket::get("/<id>", format = "json")]
+async fn get_default_doc_type(state: axum::extract::State<crate::AppState>,
+                              id: axum::extract::Path<String>) -> ApiResponse<Option<DocumentType>>{
+    get_doc_type(state, id, axum::extract::Path(DEFAULT_PROCESS_ID.to_string())).await
 }
 
-#[rocket::get("/<pid>/<id>", format = "json")]
-async fn get_doc_type(key_api: &State<KeyringService>, id: String, pid: String) -> ApiResponse {
-    match key_api.inner().get_doc_type(id, pid).await {
+//#[rocket::get("/<pid>/<id>", format = "json")]
+async fn get_doc_type(axum::extract::State(state): axum::extract::State<crate::AppState>,
+                      axum::extract::Path(id): axum::extract::Path<String>,
+                      axum::extract::Path(pid): axum::extract::Path<String>) -> ApiResponse<Option<DocumentType>> {
+    match state.keyring_service.get_doc_type(id, pid).await {
         Ok(dt) => match dt {
-            Some(dt) => ApiResponse::SuccessOk(json!(dt)),
-            None => ApiResponse::SuccessOk(json!(null)),
+            Some(dt) => ApiResponse::SuccessOk(Some(dt)),
+            None => ApiResponse::SuccessOk(None),
         },
         Err(e) => {
             error!("Error while retrieving doctype: {:?}", e);
@@ -75,10 +78,10 @@ async fn get_doc_type(key_api: &State<KeyringService>, id: String, pid: String) 
     }
 }
 
-#[rocket::get("/", format = "json")]
-async fn get_doc_types(key_api: &State<KeyringService>) -> ApiResponse {
-    match key_api.inner().get_doc_types().await {
-        Ok(dt) => ApiResponse::SuccessOk(json!(dt)),
+//#[rocket::get("/", format = "json")]
+async fn get_doc_types(axum::extract::State(state): axum::extract::State<crate::AppState>) -> ApiResponse<Vec<DocumentType>> {
+    match state.keyring_service.get_doc_types().await {
+        Ok(dt) => ApiResponse::SuccessOk(dt),
         Err(e) => {
             error!("Error while retrieving doctypes: {:?}", e);
             ApiResponse::InternalError(e.to_string())
@@ -86,19 +89,16 @@ async fn get_doc_types(key_api: &State<KeyringService>) -> ApiResponse {
     }
 }
 
-pub fn mount_api() -> AdHoc {
-    AdHoc::on_ignite("Mounting Document Type API", |rocket| async {
-        rocket.mount(
-            ROCKET_DOC_TYPE_API,
-            rocket::routes![
-                create_doc_type,
-                update_doc_type,
-                delete_default_doc_type,
-                delete_doc_type,
-                get_default_doc_type,
-                get_doc_type,
-                get_doc_types
-            ],
-        )
-    })
+pub fn router() -> axum::Router<AppState> {
+    axum::Router::new()
+        .route("/",
+               axum::routing::get(get_doc_types)
+            .post(create_doc_type))
+        .route("/:id",
+               axum::routing::get(get_default_doc_type)
+            .post(update_doc_type)
+            .delete(delete_default_doc_type))
+        .route("/:pid/:id",
+               axum::routing::get(get_doc_type)
+                   .delete(delete_doc_type))
 }

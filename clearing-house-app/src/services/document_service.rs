@@ -12,15 +12,16 @@ use crate::services::keyring_service::KeyringService;
 use crate::services::{DocumentReceipt, QueryResult};
 use anyhow::anyhow;
 use std::convert::TryFrom;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct DocumentService {
     db: DataStore,
-    key_api: KeyringService,
+    key_api: Arc<KeyringService>,
 }
 
 impl DocumentService {
-    pub fn new(db: DataStore, key_api: KeyringService) -> Self {
+    pub fn new(db: DataStore, key_api: Arc<KeyringService>) -> Self {
         Self { db, key_api }
     }
 
