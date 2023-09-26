@@ -1,13 +1,12 @@
 use crate::model::constants::{ENV_SHARED_SECRET, SERVICE_HEADER};
-use crate::util::ServiceConfig;
+use crate::AppState;
+use anyhow::Context;
+use axum::extract::FromRef;
+use axum::response::IntoResponse;
 use chrono::{Duration, Utc};
 use num_bigint::BigUint;
 use ring::signature::KeyPair;
-use rocket::http::Status;
-use rocket::request::{FromRequest, Outcome, Request};
 use std::env;
-use std::fmt::{Display, Formatter};
-use anyhow::Context;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ChClaims {
@@ -22,8 +21,8 @@ impl ChClaims {
     }
 }
 
-impl Display for ChClaims {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl std::fmt::Display for ChClaims {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "<{}>", self.client_id)
     }
 }
@@ -34,27 +33,40 @@ pub enum ChClaimsError {
     Invalid,
 }
 
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for ChClaims {
-    type Error = ChClaimsError;
+pub struct ExtractChClaims(pub ChClaims);
 
-    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        match request.headers().get_one(SERVICE_HEADER) {
-            None => Outcome::Failure((Status::BadRequest, ChClaimsError::Missing)),
-            Some(token) => {
-                debug!("...received service header: {:?}", token);
-                let service_config = request.rocket().state::<ServiceConfig>().unwrap();
-                match decode_token::<ChClaims>(token, service_config.service_id.as_str()) {
-                    Ok(claims) => {
-                        debug!("...retrieved claims and succeed");
-                        Outcome::Success(claims)
-                    }
-                    Err(e) => {
-                        error!("...failed to retrieve and validate claims: {}", e);
-                        Outcome::Failure((Status::BadRequest, ChClaimsError::Invalid))
-                    },
+#[async_trait::async_trait]
+impl<S> axum::extract::FromRequestParts<S> for ExtractChClaims
+where
+    S: Send + Sync,
+    AppState: FromRef<S>,
+{
+    type Rejection = axum::response::Response;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        let axum::extract::State(app_state) =
+            axum::extract::State::<AppState>::from_request_parts(parts, state)
+                .await
+                .map_err(|err| err.into_response())?;
+        if let Some(token) = parts.headers.get(SERVICE_HEADER) {
+            let token = token.to_str().unwrap();
+            debug!("...received service header: {:?}", token);
+
+            match decode_token::<ChClaims>(token, app_state.service_config.service_id.as_str()) {
+                Ok(claims) => {
+                    debug!("...retrieved claims and succeed");
+                    Ok(ExtractChClaims(claims))
+                }
+                Err(e) => {
+                    error!("...failed to retrieve and validate claims: {}", e);
+                    Err((axum::http::StatusCode::BAD_REQUEST, "Invalid token").into_response())
                 }
             }
+        } else {
+            Err((axum::http::StatusCode::BAD_REQUEST, "Missing token").into_response())
         }
     }
 }
@@ -127,7 +139,9 @@ pub fn create_service_token(issuer: &str, audience: &str, client_id: &str) -> St
     create_token(issuer, audience, &private_claims)
 }
 
-pub fn create_token<T: Display + Clone + serde::Serialize + for<'de> serde::Deserialize<'de>>(
+pub fn create_token<
+    T: std::fmt::Display + Clone + serde::Serialize + for<'de> serde::Deserialize<'de>,
+>(
     issuer: &str,
     audience: &str,
     private_claims: &T,
@@ -185,7 +199,8 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
             return Err(e.into());
         }
     };
-    let jwt: biscuit::jws::Compact<biscuit::ClaimsSet<T>, biscuit::Empty> = biscuit::JWT::<_, biscuit::Empty>::new_encoded(token);
+    let jwt: biscuit::jws::Compact<biscuit::ClaimsSet<T>, biscuit::Empty> =
+        biscuit::JWT::<_, biscuit::Empty>::new_encoded(token);
     let decoded_jwt = match jwt.decode(&signing_secret, biscuit::jwa::SignatureAlgorithm::HS256) {
         Ok(x) => Ok(x),
         Err(e) => {
@@ -202,14 +217,14 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
     };
     let val_options = biscuit::ValidationOptions {
         claim_presence_options,
-        // issued_at: Validate(Duration::minutes(5)),
         // Issuer is not validated. Wouldn't make much of a difference if we did
+        // issued_at: Validate(Duration::minutes(5)),
         audience: Validate(audience.to_string()),
         ..Default::default()
     };
 
-    decoded_jwt.validate(val_options)
+    decoded_jwt
+        .validate(val_options)
         .with_context(|| "Failed validating JWT")?;
     Ok(decoded_jwt.payload()?.private.clone())
-
 }

@@ -3,11 +3,11 @@ use crate::model::crypto::{KeyEntry, KeyMap};
 use crate::model::util::new_uuid;
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::{Aes256GcmSiv, KeyInit};
+use base64::Engine;
 use blake2_rfc::blake2b::Blake2b;
 use chrono::Local;
 use generic_array::GenericArray;
 use std::collections::HashMap;
-use base64::Engine;
 use uuid::Uuid;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
@@ -104,10 +104,8 @@ impl Document {
         let mut cts = vec![];
 
         let keys = key_map.keys;
-        let key_ct= match key_map.keys_enc {
-            Some(ct) => {
-                hex::encode(ct)
-            }
+        let key_ct = match key_map.keys_enc {
+            Some(ct) => hex::encode(ct),
             None => {
                 anyhow::bail!("Missing key ct");
             }
@@ -322,7 +320,6 @@ fn format_pt_for_storage(field_name: &str, pt: &str) -> String {
 fn format_tc(tc: i64) -> String {
     format!("{:08}", tc)
 }
-
 
 #[cfg(test)]
 mod test {

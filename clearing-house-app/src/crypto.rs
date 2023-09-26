@@ -124,11 +124,10 @@ pub fn restore_keys(secret: &String, dt: DocumentType) -> anyhow::Result<KeyMap>
 
 fn restore_kdf(secret: &String) -> anyhow::Result<Hkdf<Sha256>> {
     debug!("restoring kdf from secret");
-    let prk = hex::decode(secret)
-        .map_err(|e| {
-            error!("Error while decoding master key: {}", e);
-            anyhow!("Error while encrypting key seed!")
-        })?;
+    let prk = hex::decode(secret).map_err(|e| {
+        error!("Error while decoding master key: {}", e);
+        anyhow!("Error while encrypting key seed!")
+    })?;
 
     match Hkdf::<Sha256>::from_prk(prk.as_slice()) {
         Ok(kdf) => Ok(kdf),

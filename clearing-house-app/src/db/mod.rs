@@ -9,11 +9,12 @@ pub trait DataStoreApi {
     fn new(client: Client) -> Self;
 }
 
-pub async fn init_database_client<T: DataStoreApi>(db_url: &str, client_name: Option<String>) -> anyhow::Result<T> {
+pub async fn init_database_client<T: DataStoreApi>(
+    db_url: &str,
+    client_name: Option<String>,
+) -> anyhow::Result<T> {
     let mut client_options = match ClientOptions::parse(&db_url.to_string()).await {
-        Ok(co) => {
-            co
-        }
+        Ok(co) => co,
         Err(_) => {
             anyhow::bail!("Can't parse database connection string");
         }

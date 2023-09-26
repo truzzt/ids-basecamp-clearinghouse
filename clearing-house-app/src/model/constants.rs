@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub const CONTENT_TYPE: &str = "Content-Type";
 pub const APPLICATION_JSON: &str = "application/json";
 pub const SIGNING_KEY: &str = "signing_key";

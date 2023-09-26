@@ -143,16 +143,13 @@ impl KeyringService {
                 match self.db.get_document_type(&dt_id).await {
                     Ok(Some(dt)) => {
                         // validate keys_ct input
-                        let keys_ct = hex::decode(keys_ct)
-                            .map_err(|e| {
-                                error!("Error while decoding key ciphertext: {}", e);
-                                anyhow!("Error while decrypting keys") // InternalError
-                            })?;
+                        let keys_ct = hex::decode(keys_ct).map_err(|e| {
+                            error!("Error while decoding key ciphertext: {}", e);
+                            anyhow!("Error while decrypting keys") // InternalError
+                        })?;
 
                         match restore_key_map(key, dt, keys_ct) {
-                            Ok(key_map) => {
-                                Ok(key_map)
-                            }
+                            Ok(key_map) => Ok(key_map),
                             Err(e) => {
                                 error!("Error while generating key map: {}", e);
                                 Err(anyhow!("Error while restoring keys")) // InternalError

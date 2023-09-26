@@ -44,9 +44,9 @@ pub struct IdsMessage {
     pub model_version: String,
     /// Correlated message, e.g., response to a previous message. Value: URI of the correlatedMessage
     #[serde(
-    rename = "ids:correlationMessage",
-    alias = "correlationMessage",
-    skip_serializing_if = "Option::is_none"
+        rename = "ids:correlationMessage",
+        alias = "correlationMessage",
+        skip_serializing_if = "Option::is_none"
     )]
     pub correlation_message: Option<String>,
     /// Date of issuing the Message
@@ -60,46 +60,46 @@ pub struct IdsMessage {
     pub sender_agent: String,
     /// Target Connector. Value: URI of target Connector. Can have multiple values at the same time.
     #[serde(
-    rename = "ids:recipientConnector",
-    alias = "recipientConnector",
-    skip_serializing_if = "Option::is_none"
+        rename = "ids:recipientConnector",
+        alias = "recipientConnector",
+        skip_serializing_if = "Option::is_none"
     )]
     pub recipient_connector: Option<Vec<InfoModelId>>,
     /// Agent, for which the message is intended. Value: URI of an instance of ids:Agent. Can have multiple values at the same time
     #[serde(
-    rename = "ids:recipientAgent",
-    alias = "recipientAgent",
-    skip_serializing_if = "Option::is_none"
+        rename = "ids:recipientAgent",
+        alias = "recipientAgent",
+        skip_serializing_if = "Option::is_none"
     )]
     pub recipient_agent: Option<Vec<InfoModelId>>,
     /// Contract which is (or will be) the legal basis of the data transfer. Value: Instance of class ids:Contract.
     #[serde(
-    rename = "ids:transferContract",
-    alias = "transferContract",
-    skip_serializing_if = "Option::is_none"
+        rename = "ids:transferContract",
+        alias = "transferContract",
+        skip_serializing_if = "Option::is_none"
     )]
     pub transfer_contract: Option<String>,
     /// Value describing the version of the content. Value: Version number of the content.
     #[serde(
-    rename = "ids:contentVersion",
-    alias = "contentVersion",
-    skip_serializing_if = "Option::is_none"
+        rename = "ids:contentVersion",
+        alias = "contentVersion",
+        skip_serializing_if = "Option::is_none"
     )]
     pub content_version: Option<String>,
     /// Token representing a claim, that the sender supports a certain security profile. Value: Instance of ids:DynamicAttributeToken.
     #[serde(
-    rename = "ids:securityToken",
-    alias = "securityToken",
-    skip_serializing
+        rename = "ids:securityToken",
+        alias = "securityToken",
+        skip_serializing
     )]
     pub security_token: Option<SecurityToken>,
     /// An authorization token. The token can be issued from the Connector of the Data Provider (A) to the Connector of the
     /// Data Consumer (B). Can be used to avoid full authentication via DAPS, if Connector B wants to access the data of
     /// Connector A. Value: Instance of ids:Token
     #[serde(
-    rename = "ids:authorizationToken",
-    alias = "authorizationToken",
-    skip_serializing_if = "Option::is_none"
+        rename = "ids:authorizationToken",
+        alias = "authorizationToken",
+        skip_serializing_if = "Option::is_none"
     )]
     pub authorization_token: Option<String>,
     //IDS name
@@ -117,7 +117,10 @@ impl Default for IdsMessage {
         IdsMessage {
             context: Some(std::collections::HashMap::from([
                 ("ids".to_string(), "https://w3id.org/idsa/core/".to_string()),
-                ("idsc".to_string(), "https://w3id.org/idsa/code/".to_string())
+                (
+                    "idsc".to_string(),
+                    "https://w3id.org/idsa/code/".to_string(),
+                ),
             ])),
             type_message: MessageType::Message,
             id: Some(autogen("MessageProcessedNotification")),
@@ -379,5 +382,9 @@ impl From<IdsMessage> for Document {
 }
 
 fn autogen(message: &str) -> String {
-    format!("https://w3id.org/idsa/autogen/{}/{}", message, Document::create_uuid())
+    format!(
+        "https://w3id.org/idsa/autogen/{}/{}",
+        message,
+        Document::create_uuid()
+    )
 }
