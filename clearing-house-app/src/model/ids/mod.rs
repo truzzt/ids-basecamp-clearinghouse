@@ -159,7 +159,6 @@ pub enum MessageType {
     #[serde(rename = "ids:RejectionMessage")]
     RejectionMessage,
 
-
     /// ## Self-description
     /// Message requesting metadata. If no URI is supplied via the ids:requestedElement field, this messages is treated like a self-description request and the recipient should return its self-description via an ids:DescriptionResponseMessage. However, if a URI is supplied, the Connector should either return metadata about the requested element via an ids:DescriptionResponseMessage, or send an ids:RejectionMessage, e.g., because the element was not found.
     #[serde(rename = "ids:DescriptionRequestMessage")]

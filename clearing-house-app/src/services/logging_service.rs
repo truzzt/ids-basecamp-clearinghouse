@@ -23,7 +23,11 @@ pub struct LoggingService {
 
 impl LoggingService {
     pub fn new(db: ProcessStore, doc_api: Arc<DocumentService>) -> LoggingService {
-      LoggingService { db, doc_api, write_lock: Arc::new(tokio::sync::Mutex::new(())) }
+        LoggingService {
+            db,
+            doc_api,
+            write_lock: Arc::new(tokio::sync::Mutex::new(())),
+        }
     }
 
     pub async fn log(
@@ -68,7 +72,8 @@ impl LoggingService {
 
                         if self.db.store_process(new_process).await.is_err() {
                             error!("Error while creating process '{}'", &pid);
-                            return Err(anyhow!("Error while creating process")); // InternalError
+                            return Err(anyhow!("Error while creating process"));
+                            // InternalError
                         }
                     }
                     Err(_) => {
@@ -95,8 +100,7 @@ impl LoggingService {
                 }
 
                 debug!("logging message for pid {}", &pid);
-                self.log_message(user, key_path, m.clone())
-                    .await
+                self.log_message(user, key_path, m.clone()).await
             }
         }
     }

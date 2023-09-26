@@ -50,8 +50,10 @@ openssh-keys = "0.6.2"
 # Async runtime
 tokio = { version = ">= 1.32.0", features = ["macros", "rt-multi-thread", "signal"] }
 # HTTP server
-axum = { version = "0.6.20", features = ["json", "http2", "headers"] }
+axum = { version = "0.6.20", features = ["json", "http2"] }
+# Helper to allow defining traits for async functions
 async-trait = "0.1.73"
+# Helper for working with futures
 futures = "0.3.28"
 
 [dev-dependencies]

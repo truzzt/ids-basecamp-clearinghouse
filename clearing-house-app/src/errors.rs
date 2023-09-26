@@ -15,7 +15,7 @@ impl std::fmt::Display for AppError {
     }
 }
 
-impl From<anyhow::Error> for AppError{
+impl From<anyhow::Error> for AppError {
     fn from(err: anyhow::Error) -> Self {
         Self::Generic(err.into())
     }

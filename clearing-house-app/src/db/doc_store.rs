@@ -1,13 +1,19 @@
-use anyhow::anyhow;
 use crate::db::doc_store::bucket::{restore_from_bucket, DocumentBucketSize, DocumentBucketUpdate};
-use crate::db::{DataStoreApi, init_database_client};
-use crate::model::constants::{DOCUMENT_DB, DOCUMENT_DB_CLIENT, MAX_NUM_RESPONSE_ENTRIES, MONGO_COLL_DOCUMENT_BUCKET, MONGO_COUNTER, MONGO_DOC_ARRAY, MONGO_DT_ID, MONGO_FROM_TS, MONGO_ID, MONGO_PID, MONGO_TC, MONGO_TO_TS, MONGO_TS};
+use crate::db::{init_database_client, DataStoreApi};
+use crate::model::constants::{
+    DOCUMENT_DB, DOCUMENT_DB_CLIENT, MAX_NUM_RESPONSE_ENTRIES, MONGO_COLL_DOCUMENT_BUCKET,
+    MONGO_COUNTER, MONGO_DOC_ARRAY, MONGO_DT_ID, MONGO_FROM_TS, MONGO_ID, MONGO_PID, MONGO_TC,
+    MONGO_TO_TS, MONGO_TS,
+};
 use crate::model::document::{Document, EncryptedDocument};
 use crate::model::SortingOrder;
-use mongodb::bson::doc;
-use mongodb::options::{AggregateOptions, CreateCollectionOptions, IndexOptions, UpdateOptions, WriteConcern};
-use mongodb::{bson, Client, IndexModel};
+use anyhow::anyhow;
 use futures::StreamExt;
+use mongodb::bson::doc;
+use mongodb::options::{
+    AggregateOptions, CreateCollectionOptions, IndexOptions, UpdateOptions, WriteConcern,
+};
+use mongodb::{bson, Client, IndexModel};
 
 #[derive(Clone)]
 pub struct DataStore {
@@ -31,7 +37,7 @@ impl DataStore {
             db_url.as_str(),
             Some(DOCUMENT_DB_CLIENT.to_string()),
         )
-            .await
+        .await
         {
             Ok(datastore) => {
                 debug!("Check if database is empty...");

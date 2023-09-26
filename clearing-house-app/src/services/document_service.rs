@@ -5,9 +5,7 @@ use crate::model::constants::{
 };
 use crate::model::crypto::{KeyCt, KeyCtList};
 use crate::model::document::Document;
-use crate::model::{
-    parse_date, validate_and_sanitize_dates, SortingOrder,
-};
+use crate::model::{parse_date, validate_and_sanitize_dates, SortingOrder};
 use crate::services::keyring_service::KeyringService;
 use crate::services::{DocumentReceipt, QueryResult};
 use anyhow::anyhow;
@@ -176,7 +174,9 @@ impl DocumentService {
         let parsed_date_to = parse_date(date_to, true);
 
         // Validation of dates with various checks. If none given dates default to date_now (date_to) and (date_now - 2 weeks) (date_from)
-        let Ok((sanitized_date_from, sanitized_date_to)) = validate_and_sanitize_dates(parsed_date_from, parsed_date_to, None) else {
+        let Ok((sanitized_date_from, sanitized_date_to)) =
+            validate_and_sanitize_dates(parsed_date_from, parsed_date_to, None)
+        else {
             debug!("date validation failed!");
             return Err(anyhow!("Invalid date parameter!")); // BadRequest
         };

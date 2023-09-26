@@ -1,12 +1,17 @@
-use anyhow::anyhow;
-use crate::db::{DataStoreApi, init_database_client};
-use crate::model::constants::{MONGO_COLL_PROCESSES, MONGO_COLL_TRANSACTIONS, MONGO_ID, MONGO_TC, PROCESS_DB, PROCESS_DB_CLIENT};
+use crate::db::{init_database_client, DataStoreApi};
+use crate::model::constants::{
+    MONGO_COLL_PROCESSES, MONGO_COLL_TRANSACTIONS, MONGO_ID, MONGO_TC, PROCESS_DB,
+    PROCESS_DB_CLIENT,
+};
 use crate::model::process::Process;
 use crate::model::process::TransactionCounter;
-use mongodb::bson::doc;
-use mongodb::options::{CreateCollectionOptions, FindOneAndUpdateOptions, UpdateModifications, WriteConcern};
-use mongodb::{Client, Database};
+use anyhow::anyhow;
 use futures::TryStreamExt;
+use mongodb::bson::doc;
+use mongodb::options::{
+    CreateCollectionOptions, FindOneAndUpdateOptions, UpdateModifications, WriteConcern,
+};
+use mongodb::{Client, Database};
 
 #[derive(Clone)]
 pub struct ProcessStore {
@@ -31,7 +36,7 @@ impl ProcessStore {
             db_url.as_str(),
             Some(PROCESS_DB_CLIENT.to_string()),
         )
-            .await
+        .await
         {
             Ok(process_store) => {
                 debug!("...check if database is empty...");
