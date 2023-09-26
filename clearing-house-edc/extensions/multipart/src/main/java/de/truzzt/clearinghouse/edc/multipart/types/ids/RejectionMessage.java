@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 
 import java.net.URI;
 
-public class RejectionMessage extends Message {
+public class RejectionMessage extends LogMessage {
 
     @JsonAlias({"https://w3id.org/idsa/core/rejectionReason", "ids:rejectionReason", "rejectionReason"})
     RejectionReason rejectionReason;

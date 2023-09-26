@@ -1,6 +1,8 @@
 package de.truzzt.clearinghouse.edc.multipart;
 
 import de.truzzt.clearinghouse.edc.multipart.controller.MultipartController;
+import de.truzzt.clearinghouse.edc.multipart.handler.Handler;
+import de.truzzt.clearinghouse.edc.multipart.handler.LogHandler;
 import de.truzzt.clearinghouse.edc.multipart.types.TypeManagerUtil;
 import org.eclipse.edc.connector.api.management.configuration.ManagementApiConfiguration;
 import org.eclipse.edc.protocol.ids.jsonld.JsonLd;
@@ -11,6 +13,8 @@ import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
+
+import java.util.LinkedList;
 
 import static org.eclipse.edc.protocol.ids.util.ConnectorIdUtil.resolveConnectorId;
 
@@ -43,7 +47,12 @@ public class MultipartExtension implements ServiceExtension {
         var connectorId = resolveConnectorId(context);
         var typeManagerUtil = new TypeManagerUtil(JsonLd.getObjectMapper());
 
-        var multipartController = new MultipartController(connectorId, typeManagerUtil);
+        var monitor = context.getMonitor();
+
+        var handlers = new LinkedList<Handler>();
+        handlers.add(new LogHandler(monitor,connectorId,typeManagerUtil));
+
+        var multipartController = new MultipartController(monitor, connectorId, typeManagerUtil, handlers);
         webService.registerResource(managementApiConfig.getContextAlias(), multipartController);
     }
 

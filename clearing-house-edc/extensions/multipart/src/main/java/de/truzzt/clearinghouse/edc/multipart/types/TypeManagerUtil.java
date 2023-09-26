@@ -17,7 +17,7 @@ package de.truzzt.clearinghouse.edc.multipart.types;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.multipart.types.ids.DynamicAttributeToken;
-import de.truzzt.clearinghouse.edc.multipart.types.ids.Message;
+import de.truzzt.clearinghouse.edc.multipart.types.ids.LogMessage;
 import de.truzzt.clearinghouse.edc.multipart.types.jwt.JwtPayload;
 import org.eclipse.edc.spi.EdcException;
 
@@ -33,9 +33,9 @@ public class TypeManagerUtil {
         this.mapper = mapper;
     }
 
-    public Message parseMessage(InputStream streamToken) {
+    public LogMessage parseMessage(InputStream streamToken) {
         try {
-            return mapper.readValue(streamToken, Message.class);
+            return mapper.readValue(streamToken, LogMessage.class);
         } catch (IOException e) {
             throw new EdcException("Error parsing Header to Message", e);
         }

@@ -22,10 +22,9 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 
-public class Message {
+public class LogMessage {
 
 
     @JsonProperty("@context")
@@ -55,18 +54,6 @@ public class Message {
     @JsonAlias({"ids:modelVersion", "modelVersion"})
     String modelVersion;
 
-    @JsonProperty("ids:correlationMessage")
-    @JsonAlias({"ids:correlationMessage", "correlationMessage"})
-    URI correlationMessage;
-
-    @JsonProperty("ids:recipientConnector")
-    @JsonAlias({"ids:recipientConnector", "recipientConnector"})
-    List<URI> recipientConnector;
-
-    @JsonProperty("ids:recipientAgent")
-    @JsonAlias({"ids:recipientAgent", "recipientAgent"})
-    List<URI> recipientAgent;
-
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSzzz")
     @NotNull
     @JsonProperty("ids:issued")
@@ -79,18 +66,14 @@ public class Message {
     @JsonAlias({"ids:senderAgent", "senderAgent"})
     private URI senderAgent;
 
-    @JsonProperty("ids:contentVersion")
-    @JsonAlias({"ids:contentVersion", "contentVersion"})
-    String contentVersion;
-
     // all classes have a generic property array
     @JsonIgnore
     protected Map<String, Object> properties;
 
-    public Message() {
+    public LogMessage() {
     }
 
-    public Message(URI id) {
+    public LogMessage(URI id) {
         this.id = id;
     }
 
@@ -126,30 +109,6 @@ public class Message {
         this.modelVersion = modelVersion;
     }
 
-    public URI getCorrelationMessage() {
-        return correlationMessage;
-    }
-
-    public void setCorrelationMessage(URI correlationMessage) {
-        this.correlationMessage = correlationMessage;
-    }
-
-    public List<URI> getRecipientConnector() {
-        return recipientConnector;
-    }
-
-    public void setRecipientConnector(List<URI> recipientConnector) {
-        this.recipientConnector = recipientConnector;
-    }
-
-    public List<URI> getRecipientAgent() {
-        return recipientAgent;
-    }
-
-    public void setRecipientAgent(List<URI> recipientAgent) {
-        this.recipientAgent = recipientAgent;
-    }
-
     public XMLGregorianCalendar getIssued() {
         return issued;
     }
@@ -172,14 +131,6 @@ public class Message {
 
     public void setSenderAgent(URI senderAgent) {
         this.senderAgent = senderAgent;
-    }
-
-    public String getContentVersion() {
-        return contentVersion;
-    }
-
-    public void setContentVersion(String contentVersion) {
-        this.contentVersion = contentVersion;
     }
 
     public Context getContext() {
