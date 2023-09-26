@@ -29,14 +29,11 @@ impl DataStoreApi for ProcessStore {
 }
 
 impl ProcessStore {
-    pub async fn init_process_store(db_url: String, clear_db: bool) -> anyhow::Result<Self> {
+    pub async fn init_process_store(db_url: &str, clear_db: bool) -> anyhow::Result<Self> {
         debug!("...using database url: '{:#?}'", &db_url);
 
-        match init_database_client::<ProcessStore>(
-            db_url.as_str(),
-            Some(PROCESS_DB_CLIENT.to_string()),
-        )
-        .await
+        match init_database_client::<ProcessStore>(db_url, Some(PROCESS_DB_CLIENT.to_string()))
+            .await
         {
             Ok(process_store) => {
                 debug!("...check if database is empty...");

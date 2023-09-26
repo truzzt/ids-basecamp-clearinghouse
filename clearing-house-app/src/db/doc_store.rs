@@ -31,13 +31,9 @@ impl DataStoreApi for DataStore {
 }
 
 impl DataStore {
-    pub async fn init_datastore(db_url: String, clear_db: bool) -> anyhow::Result<Self> {
+    pub async fn init_datastore(db_url: &str, clear_db: bool) -> anyhow::Result<Self> {
         debug!("Using mongodb url: '{:#?}'", &db_url);
-        match init_database_client::<DataStore>(
-            db_url.as_str(),
-            Some(DOCUMENT_DB_CLIENT.to_string()),
-        )
-        .await
+        match init_database_client::<DataStore>(db_url, Some(DOCUMENT_DB_CLIENT.to_string())).await
         {
             Ok(datastore) => {
                 debug!("Check if database is empty...");

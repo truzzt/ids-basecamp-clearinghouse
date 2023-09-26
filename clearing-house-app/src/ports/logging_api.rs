@@ -114,7 +114,7 @@ async fn get_public_sign_key(
 
 pub(crate) fn router() -> axum::routing::Router<AppState> {
     axum::Router::new()
-        .route("/log/message/:pid", axum::routing::post(log))
+        .route("/messages/log/:pid", axum::routing::post(log))
         .route("/process/:pid", axum::routing::post(create_process))
         .route("/messages/query/:pid", axum::routing::post(query_pid))
         .route("/messages/query/:pid/:id", axum::routing::post(query_id))

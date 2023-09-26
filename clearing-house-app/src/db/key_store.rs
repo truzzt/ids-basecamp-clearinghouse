@@ -27,12 +27,10 @@ impl DataStoreApi for KeyStore {
 }
 
 impl KeyStore {
-    pub async fn init_keystore(db_url: String, clear_db: bool) -> anyhow::Result<Self> {
+    pub async fn init_keystore(db_url: &str, clear_db: bool) -> anyhow::Result<Self> {
         debug!("Using database url: '{:#?}'", &db_url);
 
-        match init_database_client::<KeyStore>(db_url.as_str(), Some(KEYRING_DB_CLIENT.to_string()))
-            .await
-        {
+        match init_database_client::<KeyStore>(db_url, Some(KEYRING_DB_CLIENT.to_string())).await {
             Ok(keystore) => {
                 debug!("Check if database is empty...");
                 match keystore

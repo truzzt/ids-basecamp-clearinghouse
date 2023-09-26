@@ -139,7 +139,9 @@ pub fn create_service_token(issuer: &str, audience: &str, client_id: &str) -> St
     create_token(issuer, audience, &private_claims)
 }
 
-pub fn create_token<T: std::fmt::Display + Clone + serde::Serialize + for<'de> serde::Deserialize<'de>>(
+pub fn create_token<
+    T: std::fmt::Display + Clone + serde::Serialize + for<'de> serde::Deserialize<'de>,
+>(
     issuer: &str,
     audience: &str,
     private_claims: &T,
@@ -215,8 +217,8 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
     };
     let val_options = biscuit::ValidationOptions {
         claim_presence_options,
-        // issued_at: Validate(Duration::minutes(5)),
         // Issuer is not validated. Wouldn't make much of a difference if we did
+        // issued_at: Validate(Duration::minutes(5)),
         audience: Validate(audience.to_string()),
         ..Default::default()
     };
