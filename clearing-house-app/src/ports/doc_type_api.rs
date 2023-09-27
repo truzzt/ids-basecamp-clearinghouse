@@ -1,6 +1,5 @@
 use crate::model::constants::DEFAULT_PROCESS_ID;
 use crate::ports::ApiResponse;
-use crate::AppState;
 
 use crate::model::doc_type::DocumentType;
 
@@ -100,7 +99,7 @@ async fn get_doc_types(
     }
 }
 
-pub(crate) fn router() -> axum::Router<AppState> {
+pub(crate) fn router() -> axum::Router<crate::AppState> {
     axum::Router::new()
         .route("/", axum::routing::get(get_doc_types).post(create_doc_type))
         .route(

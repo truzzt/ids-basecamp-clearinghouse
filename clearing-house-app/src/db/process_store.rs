@@ -13,7 +13,7 @@ use mongodb::options::{
 };
 use mongodb::{Client, Database};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ProcessStore {
     pub(crate) client: Client,
     database: Database,
@@ -91,6 +91,7 @@ impl ProcessStore {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn get_transaction_counter(&self) -> anyhow::Result<Option<i64>> {
         debug!("Getting transaction counter...");
         let coll = self
@@ -102,6 +103,7 @@ impl ProcessStore {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn increment_transaction_counter(&self) -> anyhow::Result<Option<i64>> {
         debug!("Getting transaction counter...");
         let coll = self
@@ -142,6 +144,7 @@ impl ProcessStore {
     }
 
     /// checks if the id exits
+    #[tracing::instrument(skip_all)]
     pub async fn exists_process(&self, pid: &String) -> anyhow::Result<bool> {
         debug!("Check if process with pid '{}' exists...", pid);
         let coll = self.database.collection::<Process>(MONGO_COLL_PROCESSES);
@@ -158,6 +161,7 @@ impl ProcessStore {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn get_process(&self, pid: &String) -> anyhow::Result<Option<Process>> {
         debug!("Trying to get process with id {}...", pid);
         let coll = self.database.collection::<Process>(MONGO_COLL_PROCESSES);
@@ -170,6 +174,7 @@ impl ProcessStore {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn is_authorized(&self, user: &String, pid: &String) -> anyhow::Result<bool> {
         debug!(
             "checking if user '{}' is authorized to access '{}'",
@@ -191,14 +196,15 @@ impl ProcessStore {
         }
     }
 
-    // store process in db
-    pub async fn store_process(&self, process: Process) -> anyhow::Result<bool> {
+    /// store process in db
+    #[tracing::instrument(skip_all)]
+    pub async fn store_process(&self, process: Process) -> anyhow::Result<()> {
         debug!("Storing process with pid {:#?}...", &process.id);
         let coll = self.database.collection::<Process>(MONGO_COLL_PROCESSES);
         match coll.insert_one(process, None).await {
             Ok(_r) => {
                 debug!("...added new process: {}", &_r.inserted_id);
-                Ok(true)
+                Ok(())
             }
             Err(e) => {
                 error!("...failed to store process: {:#?}", &e);

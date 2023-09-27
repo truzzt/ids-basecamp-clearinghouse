@@ -14,11 +14,52 @@ use crate::model::{
 };
 use crate::services::document_service::DocumentService;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LoggingService {
     db: ProcessStore,
     doc_api: Arc<DocumentService>,
     write_lock: Arc<tokio::sync::Mutex<()>>,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum LoggingServiceError {
+    // BadRequest
+    #[error("Received empty payload, which cannot be logged!")]
+    EmptyPayloadReceived,
+    // BadRequest
+    #[error("Logging to default PID is not allowed!")]
+    AttemptedLogToDefaultPid,
+    // InternalError
+    #[error("Error during database operation: {description}: {source}")]
+    DatabaseError {
+        source: anyhow::Error,
+        description: String,
+    },
+    #[error("User not authorized!")]
+    UserNotAuthorized,
+    // Forbidden
+    #[error("Authorization failed!")]
+    AuthorizationFailed {
+        source: anyhow::Error,
+        description: String,
+    },
+    // BadRequest
+    #[error("Document already exists!")]
+    DocumentAlreadyExists,
+}
+
+impl axum::response::IntoResponse for LoggingServiceError {
+    fn into_response(self) -> axum::response::Response {
+        use axum::http::StatusCode;
+        match self {
+            LoggingServiceError::EmptyPayloadReceived => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            LoggingServiceError::AttemptedLogToDefaultPid => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            LoggingServiceError::DatabaseError { source, description } => (StatusCode::INTERNAL_SERVER_ERROR, format!("{}: {}", description, source)).into_response(),
+            LoggingServiceError::UserNotAuthorized => (StatusCode::FORBIDDEN, self.to_string()).into_response(),
+            LoggingServiceError::AuthorizationFailed { source, description } => (StatusCode::INTERNAL_SERVER_ERROR, format!("{}: {}", description, source)).into_response(),
+            LoggingServiceError::DocumentAlreadyExists => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+        }
+    }
 }
 
 impl LoggingService {
@@ -36,7 +77,7 @@ impl LoggingService {
         key_path: &str,
         msg: ClearingHouseMessage,
         pid: String,
-    ) -> anyhow::Result<Receipt> {
+    ) -> Result<Receipt, LoggingServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         let user = &ch_claims.client_id;
         // Add non-InfoModel information to IdsMessage
@@ -50,14 +91,14 @@ impl LoggingService {
             || (m.payload.is_some() && m.payload.as_ref().unwrap().trim().is_empty())
         {
             error!("Trying to log an empty payload!");
-            return Err(anyhow!("No payload received for logging!")); // BadRequest
+            return Err(LoggingServiceError::EmptyPayloadReceived); // BadRequest
         }
 
         // filter out calls for default process id and call application logic
         match DEFAULT_PROCESS_ID.eq(pid.as_str()) {
             true => {
                 warn!("Log to default pid '{}' not allowed", DEFAULT_PROCESS_ID);
-                Err(anyhow!("Document already exists")) // BadRequest
+                Err(LoggingServiceError::AttemptedLogToDefaultPid) // BadRequest
             }
             false => {
                 // convenience: if process does not exist, we create it but only if no error occurred before
@@ -70,15 +111,14 @@ impl LoggingService {
                         // create a new process
                         let new_process = Process::new(pid.clone(), vec![user.clone()]);
 
-                        if self.db.store_process(new_process).await.is_err() {
+                        if let Err(e) = self.db.store_process(new_process).await {
                             error!("Error while creating process '{}'", &pid);
-                            return Err(anyhow!("Error while creating process"));
-                            // InternalError
+                            return Err(LoggingServiceError::DatabaseError { source: e, description: "Creating process failed".to_string() }); // InternalError
                         }
                     }
-                    Err(_) => {
+                    Err(e) => {
                         error!("Error while getting process '{}'", &pid);
-                        return Err(anyhow!("Error while getting process")); // InternalError
+                        return Err(LoggingServiceError::DatabaseError { source: e, description: "Getting process failed".to_string() }); // InternalError
                     }
                 }
 
@@ -87,15 +127,18 @@ impl LoggingService {
                     Ok(true) => info!("User authorized."),
                     Ok(false) => {
                         warn!("User is not authorized to write to pid '{}'", &pid);
-                        warn!("This is the forbidden branch");
-                        return Err(anyhow!("User not authorized!")); // Forbidden
+                        return Err(LoggingServiceError::UserNotAuthorized); // Forbidden
                     }
-                    Err(_) => {
+                    Err(e) => {
                         error!(
                             "Error while checking authorization of user '{}' for '{}'",
                             &user, &pid
                         );
-                        return Err(anyhow!("Error during authorization"));
+                        return Err(LoggingServiceError::AuthorizationFailed {
+                            source: e,
+                            description: format!("Error while checking authorization of user '{}' for '{}'",
+                                                 &user, &pid),
+                        });
                     }
                 }
 
@@ -175,12 +218,13 @@ impl LoggingService {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     async fn log_message(
         &self,
         user: &str,
         key_path: &str,
         message: IdsMessage,
-    ) -> anyhow::Result<Receipt> {
+    ) -> Result<Receipt, LoggingServiceError> {
         debug!("transforming message to document...");
         let payload = message.payload.as_ref().unwrap().clone();
         // transform message to document
@@ -214,27 +258,23 @@ impl LoggingService {
                                 debug!("...done. Signing receipt...");
                                 Ok(transaction.sign(key_path))
                             }
-                            _ => {
+                            Ok(None) => unreachable!("increment_transaction_counter never returns None!"),
+                            Err(e) => {
                                 error!("Error while incrementing transaction id!");
-                                Err(anyhow!("Internal error while preparing transaction data"))
-                                // InternalError
+                                Err(LoggingServiceError::DatabaseError { source: e, description: "Error while incrementing transaction id!".to_string() }) // InternalError
                             }
                         }
                     }
                     Err(e) => {
                         error!("Error while creating document: {:?}", e);
-                        Err(anyhow!("Document already exists")) // BadRequest
+                        Err(LoggingServiceError::DocumentAlreadyExists) // BadRequest
                     }
                 }
             }
-            Ok(None) => {
-                println!("None!");
-                Err(anyhow!("Internal error while preparing transaction data")) // InternalError
-            }
+            Ok(None) => unreachable!("get_transaction_counter never returns None!"),
             Err(e) => {
                 error!("Error while getting transaction id!");
-                println!("{}", e);
-                Err(anyhow!("Internal error while preparing transaction data")) // InternalError
+                Err(LoggingServiceError::DatabaseError { source: e, description: "Error while getting transaction id".to_string()}) // InternalError
             }
         }
     }

@@ -74,7 +74,7 @@ impl AppState {
 async fn main() -> Result<(), anyhow::Error> {
     // Read configuration
     let conf = config::read_config(None);
-    config::configure_logging(&conf.log_level);
+    config::configure_logging(&conf);
 
     // Initialize application state
     let app_state = AppState::init(&conf).await?;

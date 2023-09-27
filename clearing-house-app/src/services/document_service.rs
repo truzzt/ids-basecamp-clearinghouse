@@ -12,7 +12,7 @@ use anyhow::anyhow;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DocumentService {
     db: DataStore,
     key_api: Arc<KeyringService>,
@@ -23,6 +23,7 @@ impl DocumentService {
         Self { db, key_api }
     }
 
+    #[tracing::instrument(skip_all)]
     pub(crate) async fn create_enc_document(
         &self,
         ch_claims: ChClaims,
@@ -120,6 +121,7 @@ impl DocumentService {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub(crate) async fn get_enc_documents_for_pid(
         &self,
         ch_claims: ChClaims,
@@ -285,6 +287,7 @@ impl DocumentService {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub(crate) async fn get_enc_document(
         &self,
         ch_claims: ChClaims,

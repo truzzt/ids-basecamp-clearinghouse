@@ -55,6 +55,7 @@ axum = { version = "0.6.20", features = ["json", "http2"] }
 async-trait = "0.1.73"
 # Helper for working with futures
 futures = "0.3.28"
+thiserror = "1.0.48"
 
 [dev-dependencies]
 # Controlling execution of unit test cases, which could interfere with each other

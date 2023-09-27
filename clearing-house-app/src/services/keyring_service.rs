@@ -6,7 +6,7 @@ use crate::model::crypto::{KeyCtList, KeyMap, KeyMapListItem};
 use crate::model::doc_type::DocumentType;
 use anyhow::anyhow;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct KeyringService {
     db: KeyStore,
 }
@@ -16,6 +16,7 @@ impl KeyringService {
         KeyringService { db }
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn generate_keys(
         &self,
         ch_claims: ChClaims,
@@ -58,6 +59,7 @@ impl KeyringService {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub(crate) async fn decrypt_keys(
         &self,
         ch_claims: ChClaims,
@@ -126,6 +128,7 @@ impl KeyringService {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn decrypt_key_map(
         &self,
         ch_claims: ChClaims,
@@ -173,6 +176,7 @@ impl KeyringService {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub(crate) async fn decrypt_multiple_keys(
         &self,
         ch_claims: ChClaims,

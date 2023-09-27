@@ -15,7 +15,7 @@ use mongodb::options::{
 };
 use mongodb::{bson, Client, IndexModel};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DataStore {
     pub(crate) client: mongodb::Client,
     database: mongodb::Database,

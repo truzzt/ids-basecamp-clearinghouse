@@ -9,6 +9,7 @@ pub(crate) struct CHConfig {
     pub(crate) log_level: Option<LogLevel>,
     #[serde(default)]
     pub(crate) signing_key: Option<String>,
+    performance_tracing: Option<bool>,
 }
 
 /// Contains the log level for the application
@@ -72,17 +73,23 @@ pub(crate) fn read_config(config_file_override: Option<&std::path::Path>) -> CHC
 }
 
 /// Configure logging based on environment variable `RUST_LOG`
-pub(crate) fn configure_logging(log_level: &Option<LogLevel>) {
+pub(crate) fn configure_logging(config: &CHConfig) {
     if std::env::var("RUST_LOG").is_err() {
-        if let Some(level) = log_level {
+        if let Some(level) = &config.log_level {
             std::env::set_var("RUST_LOG", level.to_string());
         }
     }
 
     // setup logging
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .init();
+    let mut subscriber_builder = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env());
+
+    // Add performance tracing
+    if let Some(true) = config.performance_tracing {
+        subscriber_builder = subscriber_builder.with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE);
+    }
+
+    subscriber_builder.init();
 }
 
 #[cfg(test)]
