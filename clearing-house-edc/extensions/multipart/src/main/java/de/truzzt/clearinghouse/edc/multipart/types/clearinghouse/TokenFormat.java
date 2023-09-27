@@ -12,7 +12,7 @@
  *
  */
 
-package de.truzzt.clearinghouse.edc.multipart.types.ids;
+package de.truzzt.clearinghouse.edc.multipart.types.clearinghouse;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jetbrains.annotations.NotNull;
@@ -23,9 +23,13 @@ public class TokenFormat {
 
     @JsonProperty("@id")
     @NotNull
-    private URI id;
+    private final String id;
 
-    public URI getId() {
+    public TokenFormat(@NotNull URI id) {
+        this.id = id.toString();
+    }
+
+    public String getId() {
         return id;
     }
 }

@@ -14,7 +14,6 @@
 
 package de.truzzt.clearinghouse.edc.multipart.types.ids;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -27,20 +26,19 @@ import java.net.URI;
 public class RejectionReason {
 
     @JsonProperty("@id")
-    @JsonAlias({"@id", "id"})
     @NotNull
     private URI id;
 
     public RejectionReason() {
     }
 
-    public RejectionReason(URI id) {
+    public RejectionReason(@NotNull URI id) {
         this.id = id;
     }
 
     public static final RejectionReason BAD_PARAMETERS = new RejectionReason(URI.create("https://w3id.org/idsa/code/BAD_PARAMETERS"));
 
-    public static final RejectionReason  INTERNAL_RECIPIENT_ERROR =
+    public static final RejectionReason INTERNAL_RECIPIENT_ERROR =
             new RejectionReason(URI.create("https://w3id.org/idsa/code/INTERNAL_RECIPIENT_ERROR"));
 
     public static final RejectionReason MALFORMED_MESSAGE =

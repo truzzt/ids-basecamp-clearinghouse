@@ -1,18 +1,20 @@
-package de.truzzt.clearinghouse.edc.multipart.controller;
+package de.truzzt.clearinghouse.edc.multipart;
 
 import de.truzzt.clearinghouse.edc.multipart.handler.Handler;
 import de.truzzt.clearinghouse.edc.multipart.message.MultipartRequest;
 import de.truzzt.clearinghouse.edc.multipart.message.MultipartResponse;
 import de.truzzt.clearinghouse.edc.multipart.types.TypeManagerUtil;
-import de.truzzt.clearinghouse.edc.multipart.types.ids.LogMessage;
+import de.truzzt.clearinghouse.edc.multipart.types.ids.Message;
+
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
-import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataParam;
@@ -30,10 +32,12 @@ import static java.lang.String.format;
 @Consumes({MediaType.MULTIPART_FORM_DATA})
 @Produces({MediaType.MULTIPART_FORM_DATA})
 @Path("/")
-public class MultipartController {
+public class ClearingHouseMultipartController {
 
     private static final String HEADER = "header";
     private static final String PAYLOAD = "payload";
+    private static final String PID = "pid";
+    private static final String LOG_ID = "InfrastructureController";
 
     private final Monitor monitor;
     private final IdsId connectorId;
@@ -42,10 +46,10 @@ public class MultipartController {
 
     private final TypeManagerUtil typeManagerUtil;
 
-    public MultipartController(@NotNull Monitor monitor,
-                               @NotNull IdsId connectorId,
-                               @NotNull TypeManagerUtil typeManagerUtil,
-                               @NotNull List<Handler> multipartHandlers) {
+    public ClearingHouseMultipartController(@NotNull Monitor monitor,
+                                            @NotNull IdsId connectorId,
+                                            @NotNull TypeManagerUtil typeManagerUtil,
+                                            @NotNull List<Handler> multipartHandlers) {
         this.monitor = monitor;
         this.connectorId = connectorId;
         this.typeManagerUtil = typeManagerUtil;
@@ -53,46 +57,67 @@ public class MultipartController {
     }
 
     @POST
-    @Path("log")
-    public FormDataMultiPart request(@FormDataParam(HEADER) InputStream headerInputStream,
-                                     @FormDataParam(PAYLOAD) String payload) {
+    @Path("messages/log/{pid}")
+    public Response request(@PathParam(PID) String pid,
+                            @FormDataParam(HEADER) InputStream headerInputStream,
+                            @FormDataParam(PAYLOAD) String payload) {
 
+        // Check if header is missing
         if (headerInputStream == null) {
-            return createFormDataMultiPart(malformedMessage(null, connectorId));
+            monitor.warning(LOG_ID + ": Header is missing");
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
+                    .build();
         }
 
-        LogMessage header;
+        // Convert header to message
+        Message header;
         try {
-            header = typeManagerUtil.parseMessage(headerInputStream);
+            header = typeManagerUtil.parse(headerInputStream, Message.class);
         } catch (Exception e) {
-            monitor.warning(format("InfrastructureController: Header parsing failed: %s", e.getMessage()));
-            return createFormDataMultiPart(malformedMessage(null, connectorId));
-        }
-
-        if (header == null) {
-            return createFormDataMultiPart(malformedMessage(null, connectorId));
+            monitor.warning(format(LOG_ID + ": Header parsing failed: %s", e.getMessage()));
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
+                    .build();
         }
 
         // Check if any required header field missing
-        if (header.getId() == null || header.getIssuerConnector() == null || header.getSenderAgent() == null) {
-            return createFormDataMultiPart(malformedMessage(header, connectorId));
+        if (header.getId() == null
+                || header.getType() == null
+                || header.getModelVersion() == null
+                || header.getIssued() == null
+                || header.getIssuerConnector() == null
+                || header.getSenderAgent() == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(createFormDataMultiPart(malformedMessage(header, connectorId)))
+                    .build();
         }
 
         // Check if DAT present
         var dynamicAttributeToken = header.getSecurityToken();
         if (dynamicAttributeToken == null || dynamicAttributeToken.getTokenValue() == null) {
-            monitor.warning("InfrastructureController: Token is missing in header");
-            return createFormDataMultiPart(notAuthenticated(header, connectorId));
+            monitor.warning(LOG_ID + ": Token is missing in header");
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(createFormDataMultiPart(notAuthenticated(header, connectorId)))
+                    .build();
+        }
+
+        // Check if payload is missing
+        if (payload == null) {
+            monitor.warning(LOG_ID + ": Payload is missing");
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
+                    .build();
         }
 
         // Build the multipart request
-        var emptyClaimToken = ClaimToken.Builder.newInstance().build();
         var multipartRequest = MultipartRequest.Builder.newInstance()
+                .pid(pid)
                 .header(header)
                 .payload(payload)
-                .claimToken(emptyClaimToken)
                 .build();
 
+        // Send to handler processing
         var multipartResponse = multipartHandlers.stream()
                 .filter(h -> h.canHandle(multipartRequest))
                 .findFirst()
@@ -101,10 +126,13 @@ public class MultipartController {
                         .header(messageTypeNotSupported(header, connectorId))
                         .build());
 
-        return createFormDataMultiPart(multipartResponse.getHeader(), multipartResponse.getPayload());
+        // Build response
+        return Response.status(Response.Status.CREATED)
+                .entity(createFormDataMultiPart(multipartResponse.getHeader(), multipartResponse.getPayload()))
+                .build();
     }
 
-    private FormDataMultiPart createFormDataMultiPart(LogMessage header, Object payload) {
+    private FormDataMultiPart createFormDataMultiPart(Message header, Object payload) {
         var multiPart = createFormDataMultiPart(header);
 
         if (payload != null) {
@@ -114,7 +142,7 @@ public class MultipartController {
         return multiPart;
     }
 
-    private FormDataMultiPart createFormDataMultiPart(LogMessage header) {
+    private FormDataMultiPart createFormDataMultiPart(Message header) {
         var multiPart = new FormDataMultiPart();
         if (header != null) {
             multiPart.bodyPart(new FormDataBodyPart(HEADER, typeManagerUtil.toJson(header), MediaType.APPLICATION_JSON_TYPE));

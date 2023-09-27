@@ -1,7 +1,7 @@
 package de.truzzt.clearinghouse.edc.multipart.util;
 
 import de.truzzt.clearinghouse.edc.multipart.message.MultipartResponse;
-import de.truzzt.clearinghouse.edc.multipart.types.ids.LogMessage;
+import de.truzzt.clearinghouse.edc.multipart.types.ids.Message;
 import de.truzzt.clearinghouse.edc.multipart.types.ids.RejectionMessage;
 import de.truzzt.clearinghouse.edc.multipart.types.ids.RejectionReason;
 import org.eclipse.edc.protocol.ids.spi.domain.IdsConstants;
@@ -18,23 +18,22 @@ import java.time.ZonedDateTime;
 import java.util.GregorianCalendar;
 import java.util.UUID;
 
-import static org.eclipse.edc.protocol.ids.util.CalendarUtil.gregorianNow;
-
 public class ResponseUtil {
 
     private static final String PROCESSED_NOTIFICATION_TYPE = "ids:MessageProcessedNotificationMessage";
 
-    public static MultipartResponse createMultipartResponse(@NotNull LogMessage header) {
+    public static MultipartResponse createMultipartResponse(@NotNull Message header, @NotNull Object payload) {
         return MultipartResponse.Builder.newInstance()
                 .header(header)
+                .payload(payload)
                 .build();
     }
 
-    public static LogMessage messageProcessedNotification(@NotNull LogMessage correlationMessage,
+    public static Message messageProcessedNotification(@NotNull Message correlationMessage,
                                                        @NotNull IdsId connectorId) {
         var messageId = getMessageId();
 
-        LogMessage message =  new LogMessage(messageId);
+        Message message =  new Message(messageId);
         message.setContext(correlationMessage.getContext());
         message.setType(PROCESSED_NOTIFICATION_TYPE);
         message.setSecurityToken(correlationMessage.getSecurityToken());
@@ -47,7 +46,7 @@ public class ResponseUtil {
     }
 
     @NotNull
-    public static RejectionMessage notAuthenticated(@NotNull LogMessage correlationMessage,
+    public static RejectionMessage notAuthenticated(@NotNull Message correlationMessage,
                                                     @NotNull IdsId connectorId) {
         RejectionMessage rejectionMessage = createRejectionMessage(correlationMessage, connectorId);
         rejectionMessage.setRejectionReason(RejectionReason.NOT_AUTHENTICATED);
@@ -56,7 +55,7 @@ public class ResponseUtil {
     }
 
     @NotNull
-    public static RejectionMessage malformedMessage(@Nullable LogMessage correlationMessage,
+    public static RejectionMessage malformedMessage(@Nullable Message correlationMessage,
                                                     @NotNull IdsId connectorId) {
         RejectionMessage rejectionMessage = createRejectionMessage(correlationMessage, connectorId);
         rejectionMessage.setRejectionReason(RejectionReason.MALFORMED_MESSAGE);
@@ -65,7 +64,7 @@ public class ResponseUtil {
     }
 
     @NotNull
-    public static RejectionMessage messageTypeNotSupported(@NotNull LogMessage correlationMessage,
+    public static RejectionMessage messageTypeNotSupported(@NotNull Message correlationMessage,
                                                            @NotNull IdsId connectorId) {
         RejectionMessage rejectionMessage = createRejectionMessage(correlationMessage, connectorId);
         rejectionMessage.setRejectionReason(RejectionReason.MESSAGE_TYPE_NOT_SUPPORTED);
@@ -74,7 +73,7 @@ public class ResponseUtil {
     }
 
     @NotNull
-    public static RejectionMessage badParameters(@NotNull LogMessage correlationMessage,
+    public static RejectionMessage badParameters(@NotNull Message correlationMessage,
                                                  @NotNull IdsId connectorId) {
         RejectionMessage rejectionMessage =  createRejectionMessage(correlationMessage, connectorId);
         rejectionMessage.setRejectionReason(RejectionReason.BAD_PARAMETERS);
@@ -83,7 +82,7 @@ public class ResponseUtil {
     }
 
     @NotNull
-    private static RejectionMessage createRejectionMessage(@Nullable LogMessage correlationMessage,
+    private static RejectionMessage createRejectionMessage(@Nullable Message correlationMessage,
                                                            @NotNull IdsId connectorId) {
         var messageId = getMessageId();
 

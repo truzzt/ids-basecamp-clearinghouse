@@ -14,61 +14,47 @@
 
 package de.truzzt.clearinghouse.edc.multipart.types.ids;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import de.truzzt.clearinghouse.edc.multipart.types.ids.util.VocabUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "@type")
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonTypeName("ids:DynamicAttributeToken")
-public class DynamicAttributeToken {
+public class SecurityToken {
+
+    @JsonProperty("@type")
+    @NotNull
+    private String type;
 
     @JsonProperty("@id")
-    @JsonAlias({"@id", "id"})
     @NotNull
     private URI id;
 
+    @JsonProperty("ids:tokenFormat")
     @NotNull
-    @JsonAlias({"ids:tokenFormat", "tokenFormat"})
     private TokenFormat tokenFormat;
 
+    @JsonProperty("ids:tokenValue")
     @NotNull
-    @JsonAlias({"ids:tokenValue", "tokenValue"})
     private String tokenValue;
 
-    private DynamicAttributeToken() {
+    private SecurityToken() {
         id = VocabUtil.createRandomUrl("dynamicAttributeToken");
     }
 
-    @JsonProperty("@id")
-    public URI getId() {
-        return id;
+    public String getType() {
+        return type;
     }
 
-    public void setId(URI id) {
-        this.id = id;
+    public URI getId() {
+        return id;
     }
 
     public TokenFormat getTokenFormat() {
         return tokenFormat;
     }
 
-    public void setTokenFormat(TokenFormat tokenFormat) {
-        this.tokenFormat = tokenFormat;
-    }
-
     public String getTokenValue() {
         return tokenValue;
     }
-
-    public void setTokenValue(String tokenValue) {
-        this.tokenValue = tokenValue;
-    }
 }
-

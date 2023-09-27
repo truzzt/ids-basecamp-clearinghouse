@@ -14,9 +14,7 @@
 
 package de.truzzt.clearinghouse.edc.multipart.message;
 
-
-import de.truzzt.clearinghouse.edc.multipart.types.ids.LogMessage;
-import org.eclipse.edc.spi.iam.ClaimToken;
+import de.truzzt.clearinghouse.edc.multipart.types.ids.Message;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,36 +22,34 @@ import java.util.Objects;
 
 public class MultipartRequest {
 
-    private final LogMessage header;
+    private final String pid;
+    private final Message header;
     private final String payload;
-    private final ClaimToken claimToken;
 
-    private MultipartRequest(@NotNull LogMessage header, @Nullable String payload, ClaimToken claimToken) {
+
+    private MultipartRequest(String pid, @NotNull Message header, @Nullable String payload) {
+        this.pid = pid;
         this.header = header;
         this.payload = payload;
-        this.claimToken = claimToken;
     }
 
-    @NotNull
-    public LogMessage getHeader() {
+    public String getPid() {
+        return pid;
+    }
+
+    public Message getHeader() {
         return header;
     }
 
-    @Nullable
     public String getPayload() {
         return payload;
     }
 
-    @Nullable
-    public ClaimToken getClaimToken() {
-        return claimToken;
-    }
-
     public static class Builder {
 
-        private LogMessage header;
+        private String pid;
+        private Message header;
         private String payload;
-        private ClaimToken claimToken;
 
         private Builder() {
         }
@@ -62,25 +58,25 @@ public class MultipartRequest {
             return new Builder();
         }
 
-        public Builder header(@NotNull LogMessage header) {
+        public Builder pid(@NotNull String pid) {
+            this.pid = pid;
+            return this;
+        }
+
+        public Builder header(@NotNull Message header) {
             this.header = header;
             return this;
         }
 
-        public Builder payload(@Nullable String payload) {
+        public Builder payload(@NotNull String payload) {
             this.payload = payload;
-            return this;
-        }
-
-        public Builder claimToken(@NotNull ClaimToken claimToken) {
-            this.claimToken = claimToken;
             return this;
         }
 
         public MultipartRequest build() {
             Objects.requireNonNull(header, "Multipart request header is null.");
-            Objects.requireNonNull(claimToken, "Multipart request claim token is null.");
-            return new MultipartRequest(header, payload, claimToken);
+
+            return new MultipartRequest(pid, header, payload);
         }
     }
 }

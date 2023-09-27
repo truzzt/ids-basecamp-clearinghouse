@@ -9,26 +9,22 @@
  *
  *  Contributors:
  *       Microsoft Corporation - Initial implementation
- *       truzzt GmbH - PostgreSQL implementation
  *
  */
 
-package de.truzzt.clearinghouse.edc.multipart.types.jwt;
+package de.truzzt.clearinghouse.edc.multipart.types.clearinghouse;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jetbrains.annotations.NotNull;
 
-public class JwtPayload {
+public class LoggingMessageResponse {
 
+    @JsonProperty("data")
     @NotNull
-    @JsonAlias({"https://w3id.org/idsa/core/sub", "ids:sub", "sub"})
-    private String sub;
+    private String data;
 
-    public String getSub() {
-        return sub;
+    public String getData() {
+        return data;
     }
 
-    public void setSub(String sub) {
-        this.sub = sub;
-    }
 }

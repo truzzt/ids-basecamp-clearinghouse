@@ -14,23 +14,23 @@
 
 package de.truzzt.clearinghouse.edc.multipart.types.ids;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jetbrains.annotations.NotNull;
+
 public class Context {
+    @JsonProperty("ids")
+    @NotNull
     private String ids;
+
+    @JsonProperty("idsc")
+    @NotNull
     private String idsc;
 
     public String getIds() {
         return ids;
     }
 
-    public void setIds(String ids) {
-        this.ids = ids;
-    }
-
     public String getIdsc() {
         return idsc;
-    }
-
-    public void setIdsc(String idsc) {
-        this.idsc = idsc;
     }
 }

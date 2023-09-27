@@ -16,14 +16,10 @@ package de.truzzt.clearinghouse.edc.multipart.types;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.multipart.types.ids.DynamicAttributeToken;
-import de.truzzt.clearinghouse.edc.multipart.types.ids.LogMessage;
-import de.truzzt.clearinghouse.edc.multipart.types.jwt.JwtPayload;
 import org.eclipse.edc.spi.EdcException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Base64;
 
 public class TypeManagerUtil {
 
@@ -33,22 +29,11 @@ public class TypeManagerUtil {
         this.mapper = mapper;
     }
 
-    public LogMessage parseMessage(InputStream streamToken) {
+    public <T> T parse(InputStream inputStream, Class<T> type) {
         try {
-            return mapper.readValue(streamToken, LogMessage.class);
+            return mapper.readValue(inputStream, type);
         } catch (IOException e) {
-            throw new EdcException("Error parsing Header to Message", e);
-        }
-    }
-
-    public JwtPayload parseToken(DynamicAttributeToken token) {
-        try {
-            Base64.Decoder decoder = Base64.getUrlDecoder();
-            String[] chunks = token.getTokenValue().split("\\.");
-            return mapper.readValue(decoder.decode(chunks[1]), JwtPayload.class);
-
-        } catch (IOException e) {
-            throw new EdcException("Error parsing Token", e);
+            throw new EdcException("Error parsing to type " + type, e);
         }
     }
 

@@ -14,18 +14,14 @@
 
 package de.truzzt.clearinghouse.edc.multipart.types.ids;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jetbrains.annotations.NotNull;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 import java.net.URI;
-import java.util.Map;
 
-public class LogMessage {
-
+public class Message {
 
     @JsonProperty("@context")
     @NotNull
@@ -39,50 +35,36 @@ public class LogMessage {
     @NotNull
     private String type;
 
-    @NotNull
     @JsonProperty("ids:securityToken")
-    @JsonAlias({"ids:securityToken", "securityToken"})
-    private DynamicAttributeToken securityToken;
-
     @NotNull
+    private SecurityToken securityToken;
+
     @JsonProperty("ids:issuerConnector")
-    @JsonAlias({"ids:issuerConnector", "issuerConnector"})
+    @NotNull
     private URI issuerConnector;
 
-    @NotNull
     @JsonProperty("ids:modelVersion")
-    @JsonAlias({"ids:modelVersion", "modelVersion"})
+    @NotNull
     String modelVersion;
 
+    @JsonProperty("ids:issued")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSzzz")
     @NotNull
-    @JsonProperty("ids:issued")
-    @JsonAlias({"ids:issued", "issued"})
     XMLGregorianCalendar issued;
 
-
-    @NotNull
     @JsonProperty("ids:senderAgent")
-    @JsonAlias({"ids:senderAgent", "senderAgent"})
+    @NotNull
     private URI senderAgent;
 
-    // all classes have a generic property array
-    @JsonIgnore
-    protected Map<String, Object> properties;
-
-    public LogMessage() {
+    public Message() {
     }
 
-    public LogMessage(URI id) {
+    public Message(URI id) {
         this.id = id;
     }
 
     public URI getId() {
         return id;
-    }
-
-    public void setId(URI id) {
-        this.id = id;
     }
 
     public String getType() {
@@ -117,11 +99,11 @@ public class LogMessage {
         this.issued = issued;
     }
 
-    public DynamicAttributeToken getSecurityToken() {
+    public SecurityToken getSecurityToken() {
         return securityToken;
     }
 
-    public void setSecurityToken(DynamicAttributeToken securityToken) {
+    public void setSecurityToken(SecurityToken securityToken) {
         this.securityToken = securityToken;
     }
 
@@ -141,4 +123,3 @@ public class LogMessage {
         this.context = context;
     }
 }
-

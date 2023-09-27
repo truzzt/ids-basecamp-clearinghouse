@@ -24,4 +24,6 @@ dependencies {
     implementation(edc.api.management.config)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jersey.multipart)
+
+    implementation("com.auth0:java-jwt:4.2.2")
 }

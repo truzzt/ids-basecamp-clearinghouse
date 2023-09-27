@@ -14,8 +14,8 @@
 
 package de.truzzt.clearinghouse.edc.multipart.message;
 
-import de.truzzt.clearinghouse.edc.multipart.types.ids.DynamicAttributeToken;
-import de.truzzt.clearinghouse.edc.multipart.types.ids.LogMessage;
+import de.truzzt.clearinghouse.edc.multipart.types.ids.SecurityToken;
+import de.truzzt.clearinghouse.edc.multipart.types.ids.Message;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,16 +24,16 @@ import java.util.function.Function;
 
 public class MultipartResponse {
 
-    private final LogMessage header;
+    private final Message header;
     private final Object payload;
 
-    private MultipartResponse(@NotNull LogMessage header, @Nullable Object payload) {
+    private MultipartResponse(@NotNull Message header, @Nullable Object payload) {
         this.header = header;
         this.payload = payload;
     }
 
     @NotNull
-    public LogMessage getHeader() {
+    public Message getHeader() {
         return header;
     }
 
@@ -42,13 +42,13 @@ public class MultipartResponse {
         return payload;
     }
 
-    public void setSecurityToken(Function<LogMessage, DynamicAttributeToken> getToken) {
+    public void setSecurityToken(Function<Message, SecurityToken> getToken) {
         getHeader().setSecurityToken(getToken.apply(getHeader()));
     }
 
     public static class Builder {
 
-        private LogMessage header;
+        private Message header;
         private Object payload;
 
         private Builder() {
@@ -58,7 +58,7 @@ public class MultipartResponse {
             return new Builder();
         }
 
-        public Builder header(@Nullable LogMessage header) {
+        public Builder header(@Nullable Message header) {
             this.header = header;
             return this;
         }

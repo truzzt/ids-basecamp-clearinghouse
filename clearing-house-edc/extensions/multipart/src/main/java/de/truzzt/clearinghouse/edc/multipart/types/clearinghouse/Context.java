@@ -12,20 +12,30 @@
  *
  */
 
-package de.truzzt.clearinghouse.edc.multipart.types.ids;
+package de.truzzt.clearinghouse.edc.multipart.types.clearinghouse;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.URI;
-
-public class TokenFormat {
-
-    @JsonProperty("@id")
+public class Context {
+    @JsonProperty("ids")
     @NotNull
-    private URI id;
+    private String ids;
 
-    public URI getId() {
-        return id;
+    @JsonProperty("idsc")
+    @NotNull
+    private String idsc;
+
+    public Context(@NotNull String ids, @NotNull String idsc) {
+        this.ids = ids;
+        this.idsc = idsc;
+    }
+
+    public String getIds() {
+        return ids;
+    }
+
+    public String getIdsc() {
+        return idsc;
     }
 }

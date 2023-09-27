@@ -12,20 +12,24 @@
  *
  */
 
-package de.truzzt.clearinghouse.edc.multipart.types.ids;
+package de.truzzt.clearinghouse.edc.multipart.types.clearinghouse;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.URI;
+public class LoggingMessageRequest {
 
-public class TokenFormat {
-
-    @JsonProperty("@id")
+    @JsonProperty("header")
     @NotNull
-    private URI id;
+    private RequestHeader header;
 
-    public URI getId() {
-        return id;
+    @JsonProperty("payload")
+    @NotNull
+    private String payload;
+
+    public LoggingMessageRequest(@NotNull RequestHeader header, @NotNull String payload) {
+        this.header = header;
+        this.payload = payload;
     }
 }
+

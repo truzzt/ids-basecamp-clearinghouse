@@ -14,19 +14,21 @@
 
 package de.truzzt.clearinghouse.edc.multipart.types.ids;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
 
-public class RejectionMessage extends LogMessage {
+public class RejectionMessage extends Message {
 
-    @JsonAlias({"https://w3id.org/idsa/core/rejectionReason", "ids:rejectionReason", "rejectionReason"})
+    @JsonProperty("ids:rejectionReason")
+    @NotNull
     RejectionReason rejectionReason;
 
     public RejectionMessage() {
     }
 
-    public RejectionMessage(URI id) {
+    public RejectionMessage(@NotNull URI id) {
         super(id);
     }
 
@@ -34,7 +36,7 @@ public class RejectionMessage extends LogMessage {
         return rejectionReason;
     }
 
-    public void setRejectionReason(RejectionReason rejectionReason) {
+    public void setRejectionReason(@NotNull RejectionReason rejectionReason) {
         this.rejectionReason = rejectionReason;
     }
 }
