@@ -10,7 +10,7 @@ import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
 import okhttp3.ResponseBody;
 
-public class LoggingMessageDelegate implements AppSenderDelegate<LoggingMessageRequest, LoggingMessageResponse> {
+public class LoggingMessageDelegate implements AppSenderDelegate<LoggingMessageResponse> {
 
     private final TypeManagerUtil typeManagerUtil;
 

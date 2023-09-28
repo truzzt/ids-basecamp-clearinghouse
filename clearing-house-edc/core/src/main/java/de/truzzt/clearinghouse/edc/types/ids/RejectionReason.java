@@ -36,10 +36,8 @@ public class RejectionReason {
         this.id = id;
     }
 
-    public static final RejectionReason BAD_PARAMETERS = new RejectionReason(URI.create("https://w3id.org/idsa/code/BAD_PARAMETERS"));
-
-    public static final RejectionReason INTERNAL_RECIPIENT_ERROR =
-            new RejectionReason(URI.create("https://w3id.org/idsa/code/INTERNAL_RECIPIENT_ERROR"));
+    public static final RejectionReason BAD_PARAMETERS =
+            new RejectionReason(URI.create("https://w3id.org/idsa/code/BAD_PARAMETERS"));
 
     public static final RejectionReason MALFORMED_MESSAGE =
             new RejectionReason(URI.create("https://w3id.org/idsa/code/MALFORMED_MESSAGE"));

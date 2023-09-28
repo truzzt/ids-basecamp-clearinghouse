@@ -15,7 +15,7 @@ package de.truzzt.clearinghouse.edc.app.delegate;
 
 import okhttp3.ResponseBody;
 
-public interface AppSenderDelegate<R, P> {
+public interface AppSenderDelegate<B> {
 
-    P parseResponseBody(ResponseBody responseBody);
+    B parseResponseBody(ResponseBody responseBody);
 }

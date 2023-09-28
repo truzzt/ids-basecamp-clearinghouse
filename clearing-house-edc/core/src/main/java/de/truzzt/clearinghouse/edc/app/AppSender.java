@@ -41,7 +41,7 @@ public class AppSender {
         this.typeManagerUtil = typeManagerUtil;
     }
 
-    public <R, P> P send(AppSenderRequest request, AppSenderDelegate<R, P> appSenderDelegate) {
+    public <R, P> P send(AppSenderRequest request, AppSenderDelegate<P> appSenderDelegate) {
 
         var json = typeManagerUtil.toJson(request.getBody());
         var requestBody = RequestBody.create(json, MediaType.get(JSON_CONTENT_TYPE));
@@ -53,27 +53,24 @@ public class AppSender {
                 .post(requestBody)
                 .build();
 
-        Response response;
-        try {
-            response = httpClient.execute(httpRequest);
+        try (Response response = httpClient.execute(httpRequest)) {
             monitor.debug("Response received from Clearing House App. Status: " + response.code());
 
+            if (response.isSuccessful()) {
+                try (var body = response.body()) {
+                    if (body == null) {
+                        throw new EdcException("Received an empty response body from Clearing House App");
+                    } else {
+                        return appSenderDelegate.parseResponseBody(body);
+                    }
+                } catch (Exception e) {
+                    throw new EdcException("Error reading Clearing House App response body", e);
+                }
+            } else {
+                throw new EdcException(format("Received an error from Clearing House App. Status: %s, message: %s", response.code(), response.message()));
+            }
         } catch (java.io.IOException e) {
             throw new EdcException("Error sending request to Clearing House App", e);
-        }
-
-        if (response.isSuccessful()) {
-            try (var body = response.body()) {
-                if (body == null) {
-                    throw new EdcException("Received an empty response body from Clearing House App");
-                } else {
-                    return appSenderDelegate.parseResponseBody(body);
-                }
-            } catch (Exception e) {
-                throw new EdcException("Error reading Clearing House App response body", e);
-            }
-        } else {
-            throw new EdcException(format("Received an error from Clearing House App. Status: %s, message: %s", response.code(), response.message()));
         }
     }
 }

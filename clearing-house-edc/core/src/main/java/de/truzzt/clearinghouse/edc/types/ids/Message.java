@@ -56,6 +56,9 @@ public class Message {
     @NotNull
     private URI senderAgent;
 
+    @JsonProperty("ids:correlationMessage")
+    private Message correlationMessage;
+
     public Message() {
     }
 
@@ -121,5 +124,13 @@ public class Message {
 
     public void setContext(Context context) {
         this.context = context;
+    }
+
+    public Message getCorrelationMessage() {
+        return correlationMessage;
+    }
+
+    public void setCorrelationMessage(Message correlationMessage) {
+        this.correlationMessage = correlationMessage;
     }
 }

@@ -15,12 +15,10 @@
 package de.truzzt.clearinghouse.edc.dto;
 
 import de.truzzt.clearinghouse.edc.types.ids.Message;
-import de.truzzt.clearinghouse.edc.types.ids.SecurityToken;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
-import java.util.function.Function;
 
 public class HandlerResponse {
 
@@ -40,10 +38,6 @@ public class HandlerResponse {
     @Nullable
     public Object getPayload() {
         return payload;
-    }
-
-    public void setSecurityToken(Function<Message, SecurityToken> getToken) {
-        getHeader().setSecurityToken(getToken.apply(getHeader()));
     }
 
     public static class Builder {

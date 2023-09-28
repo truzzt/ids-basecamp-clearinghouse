@@ -20,11 +20,11 @@ import org.jetbrains.annotations.NotNull;
 public class Context {
     @JsonProperty("ids")
     @NotNull
-    private String ids;
+    private final String ids;
 
     @JsonProperty("idsc")
     @NotNull
-    private String idsc;
+    private final String idsc;
 
     public Context(@NotNull String ids, @NotNull String idsc) {
         this.ids = ids;

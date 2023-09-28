@@ -24,19 +24,19 @@ public class SecurityToken {
 
     @JsonProperty("@type")
     @NotNull
-    private String type;
+    private final String type;
 
     @JsonProperty("@id")
     @NotNull
-    private String id;
+    private final String id;
 
     @JsonProperty("tokenFormat")
     @NotNull
-    private TokenFormat tokenFormat;
+    private final TokenFormat tokenFormat;
 
     @JsonProperty("tokenValue")
     @NotNull
-    private String tokenValue;
+    private final String tokenValue;
 
     private SecurityToken(@NotNull String type,
                          @NotNull String id,

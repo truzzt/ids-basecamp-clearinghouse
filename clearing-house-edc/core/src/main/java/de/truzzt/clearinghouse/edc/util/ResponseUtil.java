@@ -91,6 +91,7 @@ public class ResponseUtil {
         rejectionMessage.setIssued(gregorianNow());
         rejectionMessage.setIssuerConnector(connectorId.toUri());
         rejectionMessage.setSenderAgent(connectorId.toUri());
+        rejectionMessage.setCorrelationMessage(correlationMessage);
 
         return rejectionMessage;
     }
