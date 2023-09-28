@@ -12,19 +12,24 @@
  *
  */
 
-
 plugins {
     `java-library`
     id("application")
+    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 dependencies {
     runtimeOnly(project(":extensions:multipart"))
 
     runtimeOnly(edc.bundles.connector)
-    runtimeOnly(edc.iam.mock)
+    runtimeOnly(edc.oauth2.core)
 }
 
 application {
     mainClass.set("org.eclipse.edc.boot.system.runtime.BaseRuntime")
+}
+
+tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+    mergeServiceFiles()
+    archiveFileName.set("clearing-house-edc.jar")
 }

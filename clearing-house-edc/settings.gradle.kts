@@ -68,7 +68,7 @@ dependencyResolutionManagement {
     }
 }
 
-include(":spi")
 include(":core")
 include(":extensions:multipart")
-include(":launchers:connector")
+include(":launchers:connector-prod")
+include(":launchers:connector-local")
