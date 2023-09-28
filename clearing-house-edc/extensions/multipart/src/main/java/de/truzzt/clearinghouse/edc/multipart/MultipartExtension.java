@@ -51,7 +51,7 @@ public class MultipartExtension implements ServiceExtension {
         var clearingHouseAppSender = new AppSender(monitor, httpClient, typeManagerUtil);
 
         var handlers = new LinkedList<Handler>();
-        handlers.add(new LogMessageHandler(monitor, connectorId, typeManagerUtil, clearingHouseAppSender));
+        handlers.add(new LogMessageHandler(monitor, connectorId, typeManagerUtil, clearingHouseAppSender, context));
 
         var multipartController = new MultipartController(monitor, connectorId, typeManagerUtil, handlers);
         webService.registerResource(managementApiConfig.getContextAlias(), multipartController);

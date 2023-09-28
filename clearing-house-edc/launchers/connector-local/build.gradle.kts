@@ -22,8 +22,10 @@ plugins {
 dependencies {
     runtimeOnly(project(":extensions:multipart"))
 
+    runtimeOnly(edc.config.filesystem)
     runtimeOnly(edc.bundles.connector)
     runtimeOnly(edc.iam.mock)
+
 }
 
 application {
