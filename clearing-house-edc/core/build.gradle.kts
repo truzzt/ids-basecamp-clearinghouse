@@ -16,6 +16,14 @@ plugins {
     `java-library`
 }
 
+val auth0JWTVersion: String by project
+
 dependencies {
     api(edc.spi.core)
+
+    implementation(edc.ids)
+    implementation(edc.ids.jsonld.serdes)
+    implementation(edc.api.management.config)
+
+    implementation("com.auth0:java-jwt:${auth0JWTVersion}")
 }

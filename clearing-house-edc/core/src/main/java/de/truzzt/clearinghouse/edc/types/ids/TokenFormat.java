@@ -12,18 +12,22 @@
  *
  */
 
-plugins {
-    `java-library`
-}
+package de.truzzt.clearinghouse.edc.types.ids;
 
-dependencies {
-    api(edc.spi.core)
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jetbrains.annotations.NotNull;
 
-    implementation(project(":core"))
+import java.net.URI;
 
-    implementation(edc.ids)
-    implementation(edc.ids.jsonld.serdes)
-    implementation(edc.api.management.config)
-    implementation(libs.jakarta.rsApi)
-    implementation(libs.jersey.multipart)
+public class TokenFormat {
+
+    public static final String JWT_TOKEN_FORMAT = "idsc:JWT";
+
+    @JsonProperty("@id")
+    @NotNull
+    private URI id;
+
+    public URI getId() {
+        return id;
+    }
 }

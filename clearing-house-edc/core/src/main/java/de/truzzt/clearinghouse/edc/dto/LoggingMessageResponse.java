@@ -12,18 +12,19 @@
  *
  */
 
-plugins {
-    `java-library`
-}
+package de.truzzt.clearinghouse.edc.dto;
 
-dependencies {
-    api(edc.spi.core)
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jetbrains.annotations.NotNull;
 
-    implementation(project(":core"))
+public class LoggingMessageResponse {
 
-    implementation(edc.ids)
-    implementation(edc.ids.jsonld.serdes)
-    implementation(edc.api.management.config)
-    implementation(libs.jakarta.rsApi)
-    implementation(libs.jersey.multipart)
+    @JsonProperty("data")
+    @NotNull
+    private String data;
+
+    public String getData() {
+        return data;
+    }
+
 }
