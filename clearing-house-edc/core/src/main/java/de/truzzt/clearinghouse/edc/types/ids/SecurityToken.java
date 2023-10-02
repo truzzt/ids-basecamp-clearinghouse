@@ -22,13 +22,13 @@ import java.net.URI;
 
 public class SecurityToken {
 
-    @JsonProperty("@type")
-    @NotNull
-    private String type;
-
     @JsonProperty("@id")
     @NotNull
     private URI id;
+
+    @JsonProperty("@type")
+    @NotNull
+    private String type;
 
     @JsonProperty("ids:tokenFormat")
     @NotNull
@@ -38,23 +38,35 @@ public class SecurityToken {
     @NotNull
     private String tokenValue;
 
-    private SecurityToken() {
+    public SecurityToken() {
         id = VocabUtil.createRandomUrl("dynamicAttributeToken");
-    }
-
-    public String getType() {
-        return type;
     }
 
     public URI getId() {
         return id;
     }
+    public void setId(URI id) {
+        this.id = id;
+    }
+
+    public String getType() {
+        return type;
+    }
+    public void setType(String type) {
+        this.type = type;
+    }
 
     public TokenFormat getTokenFormat() {
         return tokenFormat;
     }
+    public void setTokenFormat(TokenFormat tokenFormat) {
+        this.tokenFormat = tokenFormat;
+    }
 
     public String getTokenValue() {
         return tokenValue;
+    }
+    public void setTokenValue(String tokenValue) {
+        this.tokenValue = tokenValue;
     }
 }

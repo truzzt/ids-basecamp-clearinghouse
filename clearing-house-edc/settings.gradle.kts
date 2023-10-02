@@ -57,8 +57,8 @@ dependencyResolutionManagement {
             library("spi-ids", "org.eclipse.edc", "ids-spi").versionRef("edc")
             library("ids", "org.eclipse.edc", "ids").versionRef("edc")
             library("ids-jsonld-serdes", "org.eclipse.edc", "ids-jsonld-serdes").versionRef("edc")
-            library("iam-mock", "org.eclipse.edc", "iam-mock").versionRef("edc")
             library("oauth2-core", "org.eclipse.edc", "oauth2-core").versionRef("edc")
+            library("vault-filesystem", "org.eclipse.edc", "vault-filesystem").versionRef("edc")
 
             bundle(
                 "connector",
@@ -70,5 +70,5 @@ dependencyResolutionManagement {
 
 include(":core")
 include(":extensions:multipart")
-include(":launchers:connector-prod")
 include(":launchers:connector-local")
+include(":launchers:connector-prod")

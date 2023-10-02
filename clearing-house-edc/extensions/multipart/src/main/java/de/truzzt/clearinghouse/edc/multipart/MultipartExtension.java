@@ -5,7 +5,9 @@ import de.truzzt.clearinghouse.edc.handler.LogMessageHandler;
 import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import org.eclipse.edc.connector.api.management.configuration.ManagementApiConfiguration;
+import org.eclipse.edc.protocol.ids.api.configuration.IdsApiConfiguration;
 import org.eclipse.edc.protocol.ids.jsonld.JsonLd;
+import org.eclipse.edc.protocol.ids.spi.service.DynamicAttributeTokenService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Requires;
@@ -37,6 +39,12 @@ public class MultipartExtension implements ServiceExtension {
     @Inject
     private EdcHttpClient httpClient;
 
+    @Inject
+    private DynamicAttributeTokenService tokenService;
+
+    @Inject
+    private IdsApiConfiguration idsApiConfiguration;
+
     @Override
     public String name() {
         return NAME;
@@ -53,7 +61,12 @@ public class MultipartExtension implements ServiceExtension {
         var handlers = new LinkedList<Handler>();
         handlers.add(new LogMessageHandler(monitor, connectorId, typeManagerUtil, clearingHouseAppSender, context));
 
-        var multipartController = new MultipartController(monitor, connectorId, typeManagerUtil, handlers);
+        var multipartController = new MultipartController(monitor,
+                connectorId,
+                typeManagerUtil,
+                tokenService,
+                idsApiConfiguration.getIdsWebhookAddress(),
+                handlers);
         webService.registerResource(managementApiConfig.getContextAlias(), multipartController);
     }
 }

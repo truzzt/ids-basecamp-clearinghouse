@@ -14,9 +14,10 @@ import org.jetbrains.annotations.NotNull;
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.createMultipartResponse;
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.messageProcessedNotification;
 
-public class LogMessageHandler implements Handler {
+import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_SETTING;
+import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_DEFAULT_VALUE;
 
-    private static final String APP_BASE_URL = "edc.truzzt.app.base.url";
+public class LogMessageHandler implements Handler {
 
     private final Monitor monitor;
     private final IdsId connectorId;
@@ -47,7 +48,7 @@ public class LogMessageHandler implements Handler {
 
     @Override
     public @NotNull HandlerResponse handleRequest(@NotNull HandlerRequest handlerRequest) {
-        var baseUrl = context.getSetting(APP_BASE_URL,APP_BASE_URL);
+        var baseUrl = context.getSetting(APP_BASE_URL_SETTING, APP_BASE_URL_DEFAULT_VALUE);
         var header = handlerRequest.getHeader();
 
         var url = senderDelegate.buildRequestUrl(baseUrl, handlerRequest);

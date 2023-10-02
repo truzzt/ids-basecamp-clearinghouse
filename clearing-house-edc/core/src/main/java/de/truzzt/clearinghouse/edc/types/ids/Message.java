@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 import java.net.URI;
+import java.util.List;
 
 public class Message {
 
@@ -42,6 +43,10 @@ public class Message {
     @JsonProperty("ids:issuerConnector")
     @NotNull
     private URI issuerConnector;
+
+    @JsonProperty("ids:recipientConnector")
+    @NotNull
+    private List<URI> recipientConnector;
 
     @JsonProperty("ids:modelVersion")
     @NotNull
@@ -84,6 +89,14 @@ public class Message {
 
     public void setIssuerConnector(URI issuerConnector) {
         this.issuerConnector = issuerConnector;
+    }
+
+    public List<URI> getRecipientConnector() {
+        return recipientConnector;
+    }
+
+    public void setRecipientConnector(List<URI> recipientConnector) {
+        this.recipientConnector = recipientConnector;
     }
 
     public String getModelVersion() {

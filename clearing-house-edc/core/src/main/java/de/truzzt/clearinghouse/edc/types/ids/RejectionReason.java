@@ -48,6 +48,27 @@ public class RejectionReason {
     public static final RejectionReason NOT_AUTHENTICATED =
             new RejectionReason(URI.create("https://w3id.org/idsa/code/NOT_AUTHENTICATED"));
 
+    public static final RejectionReason INTERNAL_RECIPIENT_ERROR =
+            new RejectionReason(URI.create("https://w3id.org/idsa/code/INTERNAL_RECIPIENT_ERROR"));
+
+    public static final RejectionReason METHOD_NOT_SUPPORTED =
+            new RejectionReason(URI.create("https://w3id.org/idsa/code/METHOD_NOT_SUPPORTED"));
+
+    public static final RejectionReason NOT_AUTHORIZED =
+            new RejectionReason(URI.create("https://w3id.org/idsa/code/NOT_AUTHORIZED"));
+
+    public static final RejectionReason NOT_FOUND =
+            new RejectionReason(URI.create("https://w3id.org/idsa/code/NOT_FOUND"));
+
+    public static final RejectionReason TEMPORARILY_NOT_AVAILABLE =
+            new RejectionReason(URI.create("https://w3id.org/idsa/code/TEMPORARILY_NOT_AVAILABLE"));
+
+    public static final RejectionReason TOO_MANY_RESULTS =
+            new RejectionReason(URI.create("https://w3id.org/idsa/code/TOO_MANY_RESULTS"));
+
+    public static final RejectionReason VERSION_NOT_SUPPORTED =
+            new RejectionReason(URI.create("https://w3id.org/idsa/code/VERSION_NOT_SUPPORTED"));
+
     public URI getId() {
         return id;
     }

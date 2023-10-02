@@ -73,10 +73,10 @@ public class ResponseUtil {
     }
 
     @NotNull
-    public static RejectionMessage badParameters(@NotNull Message correlationMessage,
+    public static RejectionMessage internalRecipientError(@NotNull Message correlationMessage,
                                                  @NotNull IdsId connectorId) {
         RejectionMessage rejectionMessage =  createRejectionMessage(correlationMessage, connectorId);
-        rejectionMessage.setRejectionReason(RejectionReason.BAD_PARAMETERS);
+        rejectionMessage.setRejectionReason(RejectionReason.INTERNAL_RECIPIENT_ERROR);
 
         return rejectionMessage;
     }

@@ -22,10 +22,10 @@ plugins {
 dependencies {
     runtimeOnly(project(":extensions:multipart"))
 
-    runtimeOnly(edc.config.filesystem)
     runtimeOnly(edc.bundles.connector)
-    runtimeOnly(edc.iam.mock)
-
+    runtimeOnly(edc.config.filesystem)
+    runtimeOnly(edc.vault.filesystem)
+    runtimeOnly(edc.oauth2.core)
 }
 
 application {
