@@ -11,6 +11,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+        run:
+          working-directory: ./clearing-house-edc    
     permissions:
       contents: read
       packages: write
