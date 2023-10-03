@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
         run:
-          working-directory: ./clearing-house-edc    
+          working-directory: ./clearing-house-edc
     permissions:
       contents: read
       packages: write
@@ -29,7 +29,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build project deliveries
+      - name: Build project extensions
         run: ./gradlew clean build
 
       - name: Install cosign
@@ -59,7 +59,7 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v4
         with:
-          context: .
+          context: ./launchers/connector-prod
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
