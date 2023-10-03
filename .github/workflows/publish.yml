@@ -1,8 +1,8 @@
-name: Docker
-
+name: Publish
 on:
-  push:
-    tags: [ 'v*' ]
+    push:
+      branches:
+        - feat/edc-extension
 
 env:
   REGISTRY: ghcr.io
