@@ -59,7 +59,7 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v4
         with:
-          context: ./launchers/connector-prod
+          context: ./clearing-house-edc/launchers/connector-prod
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
