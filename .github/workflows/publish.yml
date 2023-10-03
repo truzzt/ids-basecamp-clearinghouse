@@ -3,13 +3,33 @@ on:
     push:
       branches:
         - feat/edc-extension
+        - feat/ch-app-docker-image
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  publish_ch_app:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Change directory
+      run: cd clearing-house-app
+
+    - name: Login to GitHub Container Registry
+      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+    - name: Build Docker image
+      run: docker build -t ghcr.io/truzzt/ids-basecamp-clearinghouse/chapp:latest .
+
+    - name: Push Docker image
+      run: docker push ghcr.io/truzzt/ids-basecamp-clearinghouse/chapp:latest
+
+  publish_ch_edc:
     runs-on: ubuntu-latest
     defaults:
         run:
