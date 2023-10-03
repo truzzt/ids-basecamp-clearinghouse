@@ -16,15 +16,12 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
-    
-    - name: Change directory
-      run: cd clearing-house-app
 
     - name: Login to GitHub Container Registry
       run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
     - name: Build Docker image
-      run: docker build -t ghcr.io/truzzt/ids-basecamp-clearinghouse/chapp:latest .
+      run: cd clearing-house-app && docker build -t ghcr.io/truzzt/ids-basecamp-clearinghouse/chapp:latest .
 
     - name: Push Docker image
       run: docker push ghcr.io/truzzt/ids-basecamp-clearinghouse/chapp:latest
