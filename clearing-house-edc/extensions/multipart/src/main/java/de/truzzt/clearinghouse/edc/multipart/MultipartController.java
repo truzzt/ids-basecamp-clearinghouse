@@ -192,7 +192,10 @@ public class MultipartController {
 
     private boolean getResponseToken(Message header, HandlerResponse handlerResponse) {
 
-        if ((header.getRecipientConnector() == null) || (header.getRecipientConnector().isEmpty())) {
+        handlerResponse.getHeader().setSecurityToken(header.getSecurityToken());
+        return true;
+
+        /*if ((header.getRecipientConnector() == null) || (header.getRecipientConnector().isEmpty())) {
             monitor.severe(LOG_ID + ": Recipient connector is missing");
             return false;
         }
@@ -213,7 +216,7 @@ public class MultipartController {
         } else {
             monitor.severe(LOG_ID + ": Failed to get response token: " + tokenResult.getFailureDetail());
             return false;
-        }
+        }*/
     }
 
     private FormDataMultiPart createFormDataMultiPart(Message header, Object payload) {
