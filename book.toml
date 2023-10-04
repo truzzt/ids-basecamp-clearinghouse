@@ -2,5 +2,5 @@
 authors = ["mschoenenberg", "dhommen"]
 language = "en"
 multilingual = false
-src = "docs"
+src = "doc"
 title = "Documentation"
