@@ -1,3 +1,32 @@
+# [1.0.0-alpha.2](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2023-10-04)
+
+
+### Bug Fixes
+
+* **ch-app:** Add error log and removed assert ([0d07fe5](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/0d07fe55c3a83a2b4d22adde2e7c70ddc44b2c06))
+* **ch-app:** Fix security issue through updating dependencies ([2613559](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/26135597ccc4a8f9f040f496732fb7e275504ce9))
+* **ch-app:** Reenable new serde crates, due to resolved issues with precompiled binaries ([e2784b9](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/e2784b9b642987cc1ddb9ffa2ca7057cb6382d25))
+* **ch-app:** Updated dependencies to fix security vulnerability ([fe19cdf](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/fe19cdf8c153a1108759a27f689ed3fdc2197ff4))
+* **ch-edc:** add missing vault filesystem ([e845269](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/e845269a2149f9b02b5dac71c4f40649052a8d12))
+* **ci:** Delete .github/workflows/rust.yml to fix failing CI ([3a8d5a1](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/3a8d5a15c08151ea2d43f70d7a25ecb4f4555424))
+* **tests:** add __ENV for hostname and token ([209244c](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/209244c551e8e9fd4eed5e00b620a271e5fd57e9))
+* updating .gitignore to exclude vscode files ([1ce073f](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/1ce073fef0b2e70d97c58d1b14a7dec104bed3a1))
+
+
+### Features
+
+* basic endpoint functions working ([f1726e7](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/f1726e74574a596e1216d4cf468af1ccfd07443e))
+* **ch-app:** add Dockerfile and GH action ([f64aa14](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/f64aa14c802e91a34b85437d07d79eba756ea504))
+* create connector and extension modules ([fa47ff8](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/fa47ff8f18feeefd77fdcf6be9cfe266981f358b))
+* **doc:** Add internal description to docs ([4e89ba6](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/4e89ba6755095d30d23df8caec3463561112cafe))
+* **docs:** add d2 diagramming integration to workflow ([24e87ef](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/24e87efc96516a22dc1edc4d89662cebd537d2bf))
+* **docs:** add mdbook for documentation ([0cf4ada](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/0cf4adaa5494a8ae3bc679ee0387b90bc3079e38))
+* **docs:** Enable GitHub Pages generation ([36bfaa3](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/36bfaa3f569ee86be8f8cc072cb951aeaca8e295))
+* externalization of environments variables ([f8e187e](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/f8e187e59c32483c8250252683804f0b86643de7))
+* starting create objects and method ([f13f15e](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/f13f15e7e35c866f011a4474bc3bd5722d8a40b9))
+* **tests:** add load tests ([a88175b](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/a88175bb083ce0091459e8b47c4c27ac042f782b))
+* **tests:** add smoke tests ([e31f806](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/e31f8066b08ebac341aa3b081056bbd110b72680))
+
 # 1.0.0-alpha.1 (2023-08-29)
 
 
