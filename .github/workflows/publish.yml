@@ -1,15 +1,41 @@
 name: Publish
+
 on:
-    push:
-      branches:
-        - feat/edc-extension
+  workflow_run:
+    workflows: [release]
+    types:
+      - completed
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  publish_ch_app:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Login to GitHub Container Registry
+      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+    - name: Get latest release
+      id: get_latest_release
+      run: echo "LATEST_RELEASE=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+
+    - name: Build Docker image
+      env:
+        DOCKER_IMAGE_TAG: ${{ env.LATEST_RELEASE }}
+      run: cd clearing-house-app && docker build -t ghcr.io/truzzt/ids-basecamp-clearinghouse/chapp:$DOCKER_IMAGE_TAG .
+
+    - name: Push Docker image
+      env:
+        DOCKER_IMAGE_TAG: ${{ env.LATEST_RELEASE }}
+      run: docker push ghcr.io/truzzt/ids-basecamp-clearinghouse/chapp:$DOCKER_IMAGE_TAG
+
+  publish_ch_edc:
     runs-on: ubuntu-latest
     defaults:
         run:
