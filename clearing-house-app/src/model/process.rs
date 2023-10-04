@@ -5,8 +5,8 @@ pub struct Process {
 }
 
 impl Process {
-    pub fn new(id: String, owners: Vec<String>) -> Process {
-        Process { id, owners }
+    pub fn new(id: String, owners: Vec<String>) -> Self {
+        Self { id, owners }
     }
 }
 
@@ -21,8 +21,8 @@ pub struct OwnerList {
 }
 
 impl OwnerList {
-    pub fn new(owners: Vec<String>) -> OwnerList {
-        OwnerList { owners }
+    pub fn new(owners: Vec<String>) -> Self {
+        Self { owners }
     }
 }
 

@@ -1,14 +1,17 @@
-use crate::db::DataStoreApi;
+use crate::db::{init_database_client, DataStoreApi};
 use crate::model::constants::{
     MONGO_COLL_PROCESSES, MONGO_COLL_TRANSACTIONS, MONGO_ID, MONGO_TC, PROCESS_DB,
+    PROCESS_DB_CLIENT,
 };
-use crate::model::errors::*;
 use crate::model::process::Process;
 use crate::model::process::TransactionCounter;
+use anyhow::anyhow;
+use futures::TryStreamExt;
 use mongodb::bson::doc;
-use mongodb::options::{FindOneAndUpdateOptions, UpdateModifications};
+use mongodb::options::{
+    CreateCollectionOptions, FindOneAndUpdateOptions, UpdateModifications, WriteConcern,
+};
 use mongodb::{Client, Database};
-use rocket::futures::TryStreamExt;
 
 #[derive(Clone)]
 pub struct ProcessStore {
@@ -26,7 +29,69 @@ impl DataStoreApi for ProcessStore {
 }
 
 impl ProcessStore {
-    pub async fn get_transaction_counter(&self) -> errors::Result<Option<i64>> {
+    pub async fn init_process_store(db_url: &str, clear_db: bool) -> anyhow::Result<Self> {
+        debug!("...using database url: '{:#?}'", &db_url);
+
+        match init_database_client::<ProcessStore>(db_url, Some(PROCESS_DB_CLIENT.to_string()))
+            .await
+        {
+            Ok(process_store) => {
+                debug!("...check if database is empty...");
+                match process_store
+                    .client
+                    .database(PROCESS_DB)
+                    .list_collection_names(None)
+                    .await
+                {
+                    Ok(colls) => {
+                        debug!("... found collections: {:#?}", &colls);
+                        if !colls.is_empty() && clear_db {
+                            debug!(
+                                "...database not empty and clear_db == true. Dropping database..."
+                            );
+                            match process_store.client.database(PROCESS_DB).drop(None).await {
+                                Ok(_) => {
+                                    debug!("... done.");
+                                }
+                                Err(_) => {
+                                    debug!("... failed.");
+                                    return Err(anyhow!("Failed to drop database"));
+                                }
+                            };
+                        }
+                        if colls.is_empty() || clear_db {
+                            debug!("..database empty. Need to initialize...");
+                            let mut write_concern = WriteConcern::default();
+                            write_concern.journal = Some(true);
+                            let mut options = CreateCollectionOptions::default();
+                            options.write_concern = Some(write_concern);
+                            debug!("...create collection {} ...", MONGO_COLL_TRANSACTIONS);
+                            match process_store
+                                .client
+                                .database(PROCESS_DB)
+                                .create_collection(MONGO_COLL_TRANSACTIONS, options)
+                                .await
+                            {
+                                Ok(_) => {
+                                    debug!("... done.");
+                                }
+                                Err(_) => {
+                                    debug!("... failed.");
+                                    return Err(anyhow!("Failed to create collection"));
+                                }
+                            };
+                        }
+                        debug!("... database initialized.");
+                        Ok(process_store)
+                    }
+                    Err(_) => Err(anyhow!("Failed to list collections")),
+                }
+            }
+            Err(_) => Err(anyhow!("Failed to initialize database client")),
+        }
+    }
+
+    pub async fn get_transaction_counter(&self) -> anyhow::Result<Option<i64>> {
         debug!("Getting transaction counter...");
         let coll = self
             .database
@@ -37,7 +102,7 @@ impl ProcessStore {
         }
     }
 
-    pub async fn increment_transaction_counter(&self) -> errors::Result<Option<i64>> {
+    pub async fn increment_transaction_counter(&self) -> anyhow::Result<Option<i64>> {
         debug!("Getting transaction counter...");
         let coll = self
             .database
@@ -51,7 +116,7 @@ impl ProcessStore {
         }
     }
 
-    pub async fn get_processes(&self) -> errors::Result<Vec<Process>> {
+    pub async fn get_processes(&self) -> anyhow::Result<Vec<Process>> {
         debug!("Trying to get all processes...");
         let coll = self.database.collection::<Process>(MONGO_COLL_PROCESSES);
         let result = coll
@@ -63,7 +128,7 @@ impl ProcessStore {
         Ok(result)
     }
 
-    pub async fn delete_process(&self, pid: &String) -> errors::Result<bool> {
+    pub async fn delete_process(&self, pid: &String) -> anyhow::Result<bool> {
         debug!("Trying to delete process with pid '{}'...", pid);
         let coll = self.database.collection::<Process>(MONGO_COLL_PROCESSES);
         let result = coll.delete_one(doc! { MONGO_ID: pid }, None).await?;
@@ -77,7 +142,7 @@ impl ProcessStore {
     }
 
     /// checks if the id exits
-    pub async fn exists_process(&self, pid: &String) -> errors::Result<bool> {
+    pub async fn exists_process(&self, pid: &String) -> anyhow::Result<bool> {
         debug!("Check if process with pid '{}' exists...", pid);
         let coll = self.database.collection::<Process>(MONGO_COLL_PROCESSES);
         let result = coll.find_one(Some(doc! { MONGO_ID: pid }), None).await?;
@@ -93,19 +158,19 @@ impl ProcessStore {
         }
     }
 
-    pub async fn get_process(&self, pid: &String) -> errors::Result<Option<Process>> {
+    pub async fn get_process(&self, pid: &String) -> anyhow::Result<Option<Process>> {
         debug!("Trying to get process with id {}...", pid);
         let coll = self.database.collection::<Process>(MONGO_COLL_PROCESSES);
         match coll.find_one(Some(doc! { MONGO_ID: pid }), None).await {
             Ok(process) => Ok(process),
             Err(e) => {
                 error!("Error while getting process: {:#?}!", &e);
-                Err(errors::Error::from(e))
+                Err(e.into())
             }
         }
     }
 
-    pub async fn is_authorized(&self, user: &String, pid: &String) -> errors::Result<bool> {
+    pub async fn is_authorized(&self, user: &String, pid: &String) -> anyhow::Result<bool> {
         debug!(
             "checking if user '{}' is authorized to access '{}'",
             user, pid
@@ -122,12 +187,12 @@ impl ProcessStore {
                 trace!("didn't find process");
                 Ok(false)
             }
-            _ => Err(format!("User '{}' could not be authorized", &user).into()),
+            _ => Err(anyhow!("User '{}' could not be authorized", &user).into()),
         }
     }
 
     // store process in db
-    pub async fn store_process(&self, process: Process) -> errors::Result<bool> {
+    pub async fn store_process(&self, process: Process) -> anyhow::Result<bool> {
         debug!("Storing process with pid {:#?}...", &process.id);
         let coll = self.database.collection::<Process>(MONGO_COLL_PROCESSES);
         match coll.insert_one(process, None).await {
@@ -137,7 +202,7 @@ impl ProcessStore {
             }
             Err(e) => {
                 error!("...failed to store process: {:#?}", &e);
-                Err(errors::Error::from(e))
+                Err(e.into())
             }
         }
     }

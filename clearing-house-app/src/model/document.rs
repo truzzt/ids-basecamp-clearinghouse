@@ -1,9 +1,9 @@
 use crate::model::constants::SPLIT_CT;
 use crate::model::crypto::{KeyEntry, KeyMap};
-use crate::model::errors::*;
 use crate::model::util::new_uuid;
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::{Aes256GcmSiv, KeyInit};
+use base64::Engine;
 use blake2_rfc::blake2b::Blake2b;
 use chrono::Local;
 use generic_array::GenericArray;
@@ -21,7 +21,7 @@ impl DocumentPart {
         DocumentPart { name, content }
     }
 
-    pub fn encrypt(&self, key: &[u8], nonce: &[u8]) -> errors::Result<Vec<u8>> {
+    pub fn encrypt(&self, key: &[u8], nonce: &[u8]) -> anyhow::Result<Vec<u8>> {
         const EXP_KEY_SIZE: usize = 32;
         const EXP_NONCE_SIZE: usize = 12;
         // check key size
@@ -31,7 +31,7 @@ impl DocumentPart {
                 key.len(),
                 EXP_KEY_SIZE
             );
-            error_chain::bail!("Incorrect key size")
+            anyhow::bail!("Incorrect key size")
         }
         // check nonce size
         else if nonce.len() != EXP_NONCE_SIZE {
@@ -40,7 +40,7 @@ impl DocumentPart {
                 nonce.len(),
                 EXP_NONCE_SIZE
             );
-            error_chain::bail!("Incorrect nonce size")
+            anyhow::bail!("Incorrect nonce size")
         } else {
             let key = GenericArray::from_slice(key);
             let nonce = GenericArray::from_slice(nonce);
@@ -51,18 +51,18 @@ impl DocumentPart {
                     let pt = format_pt_for_storage(&self.name, pt);
                     match cipher.encrypt(nonce, pt.as_bytes()) {
                         Ok(ct) => Ok(ct),
-                        Err(e) => error_chain::bail!("Error while encrypting {}", e),
+                        Err(e) => anyhow::bail!("Error while encrypting {}", e),
                     }
                 }
                 None => {
                     error!("Tried to encrypt empty document part.");
-                    error_chain::bail!("Nothing to encrypt");
+                    anyhow::bail!("Nothing to encrypt");
                 }
             }
         }
     }
 
-    pub fn decrypt(key: &[u8], nonce: &[u8], ct: &[u8]) -> errors::Result<DocumentPart> {
+    pub fn decrypt(key: &[u8], nonce: &[u8], ct: &[u8]) -> anyhow::Result<DocumentPart> {
         let key = GenericArray::from_slice(key);
         let nonce = GenericArray::from_slice(nonce);
         let cipher = Aes256GcmSiv::new(key);
@@ -74,7 +74,7 @@ impl DocumentPart {
                 Ok(DocumentPart::new(name, Some(content)))
             }
             Err(e) => {
-                error_chain::bail!("Error while decrypting: {}", e)
+                anyhow::bail!("Error while decrypting: {}", e)
             }
         }
     }
@@ -99,17 +99,15 @@ impl Document {
 
     // each part is encrypted using the part specific key from the key map
     // the hash is set to "0". Chaining is not done here.
-    pub fn encrypt(&self, key_map: KeyMap) -> errors::Result<EncryptedDocument> {
+    pub fn encrypt(&self, key_map: KeyMap) -> anyhow::Result<EncryptedDocument> {
         debug!("encrypting document of doc_type {}", self.dt_id);
         let mut cts = vec![];
 
         let keys = key_map.keys;
-        let key_ct= match key_map.keys_enc {
-            Some(ct) => {
-                hex::encode(ct)
-            }
+        let key_ct = match key_map.keys_enc {
+            Some(ct) => hex::encode(ct),
             None => {
-                error_chain::bail!("Missing key ct");
+                anyhow::bail!("Missing key ct");
             }
         };
 
@@ -121,14 +119,14 @@ impl Document {
             // check if there's a key for this part
             if !keys.contains_key(&part.name) {
                 error!("Missing key for part '{}'", &part.name);
-                error_chain::bail!("Missing key for part '{}'", &part.name);
+                anyhow::bail!("Missing key for part '{}'", &part.name);
             }
             // get the key for this part
             let key_entry = keys.get(&part.name).unwrap();
             let ct = part.encrypt(key_entry.key.as_slice(), key_entry.nonce.as_slice());
             if ct.is_err() {
                 warn!("Encryption error. No ct received!");
-                error_chain::bail!("Encryption error. No ct received!");
+                anyhow::bail!("Encryption error. No ct received!");
             }
             let ct_string = hex::encode_upper(ct.unwrap());
 
@@ -205,17 +203,17 @@ pub struct EncryptedDocument {
 impl EncryptedDocument {
     /// Note: KeyMap keys need to be KeyEntry.ids in this case
     // Decryption is done without checking the hashes. Do this before calling this method
-    pub fn decrypt(&self, keys: HashMap<String, KeyEntry>) -> errors::Result<Document> {
+    pub fn decrypt(&self, keys: HashMap<String, KeyEntry>) -> anyhow::Result<Document> {
         let mut pts = vec![];
         for ct in self.cts.iter() {
             let ct_parts = ct.split(SPLIT_CT).collect::<Vec<&str>>();
             if ct_parts.len() != 2 {
-                error_chain::bail!("Integrity violation! Ciphertexts modified");
+                anyhow::bail!("Integrity violation! Ciphertexts modified");
             }
             // get key and nonce
             let key_entry = keys.get(ct_parts[0]);
             if key_entry.is_none() {
-                error_chain::bail!("Key for id '{}' does not exist!", ct_parts[0]);
+                anyhow::bail!("Key for id '{}' does not exist!", ct_parts[0]);
             }
             let key = key_entry.unwrap().key.as_slice();
             let nonce = key_entry.unwrap().nonce.as_slice();
@@ -228,7 +226,7 @@ impl EncryptedDocument {
             match DocumentPart::decrypt(key, nonce, ct.as_slice()) {
                 Ok(part) => pts.push(part),
                 Err(e) => {
-                    error_chain::bail!("Error while decrypting: {}", e);
+                    anyhow::bail!("Error while decrypting: {}", e);
                 }
             }
         }
@@ -263,7 +261,7 @@ impl EncryptedDocument {
             hasher.update(ct.as_bytes());
         }
 
-        let res = base64::encode(hasher.finalize());
+        let res = base64::engine::general_purpose::STANDARD.encode(hasher.finalize());
         debug!("hashed cts: '{}'", &res);
         res
     }
@@ -291,11 +289,11 @@ impl EncryptedDocument {
 }
 
 /// companion to format_pt_for_storage
-pub fn restore_pt(pt: &str) -> errors::Result<(String, String, String)> {
+pub fn restore_pt(pt: &str) -> anyhow::Result<(String, String, String)> {
     trace!("Trying to restore plain text");
     let vec: Vec<&str> = pt.split(SPLIT_CT).collect();
     if vec.len() != 3 {
-        error_chain::bail!("Could not restore plaintext");
+        anyhow::bail!("Could not restore plaintext");
     }
     Ok((
         String::from(vec[0]),
@@ -305,11 +303,11 @@ pub fn restore_pt(pt: &str) -> errors::Result<(String, String, String)> {
 }
 
 /// companion to format_pt_for_storage_no_dt
-pub fn restore_pt_no_dt(pt: &str) -> errors::Result<(String, String)> {
+pub fn restore_pt_no_dt(pt: &str) -> anyhow::Result<(String, String)> {
     trace!("Trying to restore plain text");
     let vec: Vec<&str> = pt.split(SPLIT_CT).collect();
     if vec.len() != 2 {
-        error_chain::bail!("Could not restore plaintext");
+        anyhow::bail!("Could not restore plaintext");
     }
     Ok((String::from(vec[0]), String::from(vec[1])))
 }
@@ -321,4 +319,26 @@ fn format_pt_for_storage(field_name: &str, pt: &str) -> String {
 
 fn format_tc(tc: i64) -> String {
     format!("{:08}", tc)
+}
+
+#[cfg(test)]
+mod test {
+    /// Purpose of this test case: The `base64::encode` function has been deprecated in favor of
+    /// `base64::engine::Engine::encode`. This test case ensures that the new function works as
+    /// expected.
+    #[test]
+    fn hash() {
+        let doc = super::EncryptedDocument::new(
+            String::from("id"),
+            String::from("pid"),
+            String::from("dt_id"),
+            42,
+            12,
+            String::from("keys_ct"),
+            vec![String::from("ct1"), String::from("ct2")],
+        );
+
+        let hash = doc.hash();
+        assert_eq!("X/BsEutzaPbi555duyusiD9z5aUCwE7oNIMteMtdYLEAqJ7FJ0Ln13J3t1Qw8MMJhLCb9rRE8bRbqHtV4mYqRA==", hash);
+    }
 }
