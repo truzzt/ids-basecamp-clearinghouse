@@ -1,0 +1,506 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Documentation</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Admin Guide</li><li class="chapter-item expanded "><a href="content/admin-guide/installation.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="content/admin-guide/maintenance.html"><strong aria-hidden="true">2.</strong> Maintenance</a></li><li class="chapter-item expanded affix "><li class="part-title">Internals</li><li class="chapter-item expanded "><a href="content/internals/architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="content/internals/communication.html"><strong aria-hidden="true">3.1.</strong> Communication</a></li><li class="chapter-item expanded "><a href="content/internals/functionality.html"><strong aria-hidden="true">3.2.</strong> Functionality</a></li></ol></li><li class="chapter-item expanded "><a href="Proposal.html"><strong aria-hidden="true">4.</strong> Proposal</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="maintenance"><a class="header" href="#maintenance">Maintenance</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
+<p>The Clearingouse consist of two services: The Clearinghouse-EDC and the Clearinghouse-App. The Clearinghouse-EDC is used to terminate IDS connections and map the requests to the API of the Clearinghouse-App. The Clearinghouse-App is the brain of the the Clearinghouse and uses complex algorithms to encrypt and store log messages in the MongoDB and provide mechanisms to query for log messages.</p>
+<pre><code class="language-d2">direction: right
+ch: Clearinghouse {
+    cha: Clearinghouse-App
+    che: Clearinghouse-EDC
+    m: MongoDB {
+        shape: cylinder
+    }
+
+    che -&gt; cha: REST
+    cha -&gt; m
+}
+c: Connector
+c -&gt; ch: IDS Multipart
+</code></pre>
+<blockquote>
+<p><strong>Short history lesson</strong></p>
+<p>The clearinghouse-app consisted before out of three separate microservices - logging, keyring, document - which were merged into one service. The reason for this is that the services were too tightly coupled and there was no benefit in having them separated. The new service is called just &quot;clearinghouse-app&quot;.</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="communication"><a class="header" href="#communication">Communication</a></h1>
+<p>The APIs are documented in the following dscriptions:</p>
+<ul>
+<li>Connector to Clearinghouse: <a href="https://github.com/International-Data-Spaces-Association/IDS-G/tree/main/Communication/protocols/multipart">IDS-G</a></li>
+<li>Clearinghouse to Clearinghouse-App: <a href="https://github.com/truzzt/ids-basecamp-clearinghouse-postman/blob/main/index.yaml">OpenAPI</a></li>
+</ul>
+<p>The following section contains examples of the communication between the components.</p>
+<h2 id="connector-to-clearinghouse-edc"><a class="header" href="#connector-to-clearinghouse-edc">Connector to Clearinghouse-EDC</a></h2>
+<p>The Clearinghouse-EDC received IDS-Multipart messages of the type <code>ids:LogMessage</code> in the <em>header</em> and an arbitrary <em>payload</em>. The following shows an example of a multipart message:</p>
+<pre><code>POST /messages/log/1 HTTP/1.1
+Host: ch-ids.aisec.fraunhofer.de
+Content-Type: multipart/form-data; boundary=X-TEST-REQUEST-BOUNDARY
+Accept: */*
+
+--X-TEST-REQUEST-BOUNDARY
+Content-Disposition: form-data; name=&quot;header&quot;
+Content-Type: application/json
+{
+  &quot;@context&quot; : {
+    &quot;ids&quot; : &quot;https://w3id.org/idsa/core/&quot;,
+    &quot;idsc&quot; : &quot;https://w3id.org/idsa/code/&quot;
+  },
+  &quot;@type&quot; : &quot;ids:LogMessage&quot;,
+  &quot;@id&quot; : &quot;https://w3id.org/idsa/autogen/logMessage/c6c15a90-7799-4aa1-ac21-9323b87a7xv9&quot;,
+  &quot;ids:securityToken&quot; : {
+    &quot;@type&quot; : &quot;ids:DynamicAttributeToken&quot;,
+    &quot;@id&quot; : &quot;https://w3id.org/idsa/autogen/dynamicAttributeToken/6378asd9-480d-80df-c5cb02e4e260&quot;,
+    &quot;ids:tokenFormat&quot; : {
+      &quot;@id&quot; : &quot;idsc:JWT&quot;
+    },
+    &quot;ids:tokenValue&quot; : &quot;eyJ0eXAiOiJKV1QiLCJraWQiOiJkZWZhdWx0IiwiYWxnIjoi.....&quot;
+  },
+  &quot;ids:senderAgent&quot; : &quot;http://example.org&quot;,
+  &quot;ids:modelVersion&quot; : &quot;4.1.0&quot;,
+  &quot;ids:issued&quot; : {
+    &quot;@value&quot; : &quot;2020-12-14T08:57:57.057+01:00&quot;,
+    &quot;@type&quot; : &quot;http://www.w3.org/2001/XMLSchema#dateTimeStamp&quot;
+  },
+  &quot;ids:issuerConnector&quot; : {
+    &quot;@id&quot; : &quot;https://companyA.com/connector/59a68243-dd96-4c8d-88a9-0f0e03e13b1b&quot;
+  }
+}
+--X-TEST-REQUEST-BOUNDARY
+Content-Disposition: form-data; name=&quot;payload&quot;
+Content-Type: application/json
+{
+  &quot;@context&quot; : &quot;https://w3id.org/idsa/contexts/context.jsonld&quot;,
+  &quot;@type&quot; : &quot;ids:ConnectorUpdateMessage&quot;,
+  &quot;id&quot; : &quot;http://industrialdataspace.org/connectorAvailableMessage/34d761cf-5ca4-4a77-a7f4-b14d8f75636a&quot;,
+  &quot;issued&quot; : &quot;2019-12-02T08:25:08.245Z&quot;,
+  &quot;modelVersion&quot; : &quot;4.1.0&quot;,
+  &quot;issuerConnector&quot; : &quot;https://companyA.com/connector/59a68243-dd96-4c8d-88a9-0f0e03e13b1b&quot;,
+  &quot;securityToken&quot; : {
+    &quot;@type&quot; : &quot;ids:DynamicAttributeToken&quot;,
+    &quot;tokenFormat&quot; : &quot;https://w3id.org/idsa/code/tokenformat/JWT&quot;,
+    &quot;tokenValue&quot; : &quot;eyJhbGciOiJSUzI1NiIsInR5cCI...&quot;
+}
+--X-TEST-REQUEST-BOUNDARY--
+</code></pre>
+<h2 id="clearinghouse-edc-to-clearinghouse-app"><a class="header" href="#clearinghouse-edc-to-clearinghouse-app">Clearinghouse-EDC to Clearinghouse-App</a></h2>
+<p>The Clearinghouse-EDC extracts the <em>header</em> and <em>payload</em> and forwards it to the Clearinghouse-App via REST. The message looks like this:</p>
+<pre><code class="language-json">{
+    &quot;header&quot;: {
+        &quot;@context&quot; : {
+            &quot;ids&quot; : &quot;https://w3id.org/idsa/core/&quot;,
+            &quot;idsc&quot; : &quot;https://w3id.org/idsa/code/&quot;
+        },
+        &quot;@type&quot; : &quot;ids:LogMessage&quot;,
+        &quot;@id&quot; : &quot;https://w3id.org/idsa/autogen/logMessage/c6c15a90-7799-4aa1-ac21-9323b87a7xv9&quot;,
+        &quot;ids:securityToken&quot; : {
+            &quot;@type&quot; : &quot;ids:DynamicAttributeToken&quot;,
+            &quot;@id&quot; : &quot;https://w3id.org/idsa/autogen/dynamicAttributeToken/6378asd9-480d-80df-c5cb02e4e260&quot;,
+            &quot;ids:tokenFormat&quot; : {
+            &quot;@id&quot; : &quot;idsc:JWT&quot;
+            },
+            &quot;ids:tokenValue&quot; : &quot;eyJ0eXAiOiJKV1QiLCJraWQiOiJkZWZhdWx0IiwiYWxnIjoi.....&quot;
+        },
+        &quot;ids:senderAgent&quot; : &quot;http://example.org&quot;,
+        &quot;ids:modelVersion&quot; : &quot;4.1.0&quot;,
+        &quot;ids:issued&quot; : {
+            &quot;@value&quot; : &quot;2020-12-14T08:57:57.057+01:00&quot;,
+            &quot;@type&quot; : &quot;http://www.w3.org/2001/XMLSchema#dateTimeStamp&quot;
+        },
+        &quot;ids:issuerConnector&quot; : {
+            &quot;@id&quot; : &quot;https://companyA.com/connector/59a68243-dd96-4c8d-88a9-0f0e03e13b1b&quot;
+        }
+    },
+    &quot;payload&quot;: {
+        &quot;@context&quot; : &quot;https://w3id.org/idsa/contexts/context.jsonld&quot;,
+        &quot;@type&quot; : &quot;ids:ConnectorUpdateMessage&quot;,
+        &quot;id&quot; : &quot;http://industrialdataspace.org/connectorAvailableMessage/34d761cf-5ca4-4a77-a7f4-b14d8f75636a&quot;,
+        &quot;issued&quot; : &quot;2019-12-02T08:25:08.245Z&quot;,
+        &quot;modelVersion&quot; : &quot;4.1.0&quot;,
+        &quot;issuerConnector&quot; : &quot;https://companyA.com/connector/59a68243-dd96-4c8d-88a9-0f0e03e13b1b&quot;,
+        &quot;securityToken&quot; : {
+            &quot;@type&quot; : &quot;ids:DynamicAttributeToken&quot;,
+            &quot;tokenFormat&quot; : &quot;https://w3id.org/idsa/code/tokenformat/JWT&quot;,
+            &quot;tokenValue&quot; : &quot;eyJhbGciOiJSUzI1NiIsInR5cCI...&quot;
+        }
+    }
+}
+</code></pre>
+<h2 id="clearinghouse-app-to-clearinghouse-edc"><a class="header" href="#clearinghouse-app-to-clearinghouse-edc">Clearinghouse-App to Clearinghouse-EDC</a></h2>
+<pre><code class="language-json">{
+    &quot;data&quot;: &quot;eyJhbGciOiJQUzUxMiIsImtpZCI6IlFyYS8vMjlGcnhiajVoaDVBemVmK0czNlNlaU9tOXE3czgrdzh1R0xEMjgifQ.eyJ0cmFuc2FjdGlvbl9pZCI6IjAwMDAwMDAwIiwidGltZXN0YW1wIjoxNjk2NDExMTM2LCJwcm9jZXNzX2lkIjoiMSIsImRvY3VtZW50X2lkIjoiNmNkNDQwNjQtZWFjNi00NmQzLWFhZTUtODcxYjgwYjU4OWMxIiwicGF5bG9hZCI6Int9IiwiY2hhaW5faGFzaCI6IjAiLCJjbGllbnRfaWQiOiJGNjoyNTo1ODpDNTo2MTo2ODo3QToyMTpGMTo0MDo5Rjo0RTpGQjo5NTpEQjo5OTo4ODpDOTpBNzoxQTpDNTpGODpCRjo0Qzo1NToxODo1NjozNTozNTo0MzpDNTpEQzo5NDpCNTpFQjo0NTozMDpGNTpBRjpDRSIsImNsZWFyaW5nX2hvdXNlX3ZlcnNpb24iOiIwLjEwLjAifQ.eo1KoF9gAZLF7CuhuQ-Sd9WSjw6dvDsrmM8w-A-FdTl4cOaPqp75k9O0tKxY8_ZNBsWmOzBzAfGng6YdvpDHIw9xFZTA7N_UMjTrrPuc8ehrVO2rwltTKb8N2bK4bQ4_Uq22Kd8mSFI6IyOZ7KeTkZ_iN30PXlYFAdt2GQHoT7xNERyQbHNEkJmOgGnaraMv0xEbl2zJktQqkTH9Kk4ZF2T_GbxKInhVxUhOsJ707ZeQ2Nxk4H6yO2RXwG5yKXFkwBDOMLg1f0Dnrgz_H1f-fQ7gPOrAL_4G4L7M9o7EVkMJlMpJR1xNBCeYbT_IvfL1CB5gi1NF-VNzt-8Zg5Yj-vNNR9j38yZTe6vH2dMkGl20B99KrEKTjkyVkCUIKnlb3oEKldse0E4ouw9v6WnIWq33-KnGV0ajwZrs13bQLZyLWvdNCBmYA5NujzbqOGkDROXloAB6MXBm5KiGTU8FxrqS6s_J7OW1CLTlAlTFF_U2Tr1xSvcusnpOGrU22IrCuqVuGCNNGCrPYjKJmMc05wIG0cmdxTdRnoe8R-vOVg2Zd07jdrBLX5l5tZtF60LC8DZKw4k2JaCu37W_dXdWHLSXEnpR9MGgnqC8MbOAMIIzSXpWKFdXcS-86SkgTvDA16geN_Bj7Ac6xcuUnEhM3_9tVnpjNMgPcStyO0KiP3c&quot;
+}
+</code></pre>
+<h2 id="clearinghouse-edc-to-connector"><a class="header" href="#clearinghouse-edc-to-connector">Clearinghouse-EDC to Connector</a></h2>
+<pre><code>--Boundary_1_377557244_1696411137008
+Content-Type: application/json
+Content-Disposition: form-data; name=&quot;header&quot;
+
+{
+    &quot;@context&quot;: {
+        &quot;ids&quot;: &quot;https://w3id.org/idsa/core/&quot;,
+        &quot;idsc&quot;: &quot;https://w3id.org/idsa/code/&quot;
+    },
+    &quot;@id&quot;: &quot;urn:message:92a2da5a-b5de-4709-bda9-c16a0ae293f6&quot;,
+    &quot;@type&quot;: &quot;ids:MessageProcessedNotificationMessage&quot;,
+    &quot;ids:securityToken&quot;: {
+        &quot;@id&quot;: &quot;https://w3id.org/idsa/autogen/dynamicAttributeToken/6378asd9-480d-80df-c5cb02e4e260&quot;,
+        &quot;@type&quot;: &quot;ids:DynamicAttributeToken&quot;,
+        &quot;ids:tokenFormat&quot;: {
+            &quot;@id&quot;: &quot;idsc:JWT&quot;
+        },
+        &quot;ids:tokenValue&quot;: &quot;eyJ0eXAiOiJhdCtqd3QiLCJraWQiOiJkNzRlYzU1MGY0MzkxYTAwZGIwODA5Mzg5MjdjOGU4YWQ0NjE3NmM4NGQ3MzhkZGMwODM1ODMzYzM5YWJkMzRhIiwiYWxnIjoiUlMyNTYifQ.eyJzY29wZSI6Imlkc2M6SURTX0NPTk5FQ1RPUl9BVFRSSUJVVEVTX0FMTCIsImF1ZCI6WyJpZHNjOklEU19DT05ORUNUT1JTX0FMTCJdLCJpc3MiOiJkYXBzLmRlbW8udHJ1enp0cG9ydC5jb20iLCJzdWIiOiJGNjoyNTo1ODpDNTo2MTo2ODo3QToyMTpGMTo0MDo5Rjo0RTpGQjo5NTpEQjo5OTo4ODpDOTpBNzoxQTpDNTpGODpCRjo0Qzo1NToxODo1NjozNTozNTo0MzpDNTpEQzo5NDpCNTpFQjo0NTozMDpGNTpBRjpDRSIsIm5iZiI6MTY5NjQxMTAxNiwiaWF0IjoxNjk2NDExMDE2LCJqdGkiOiI0MjY2OTY0NC01MzgzLTQ2NDYtYmMxMC0zMzJlMzRkMjdmNGMiLCJleHAiOjE2OTY0MTQ2MTYsImNsaWVudF9pZCI6IkY2OjI1OjU4OkM1OjYxOjY4OjdBOjIxOkYxOjQwOjlGOjRFOkZCOjk1OkRCOjk5Ojg4OkM5OkE3OjFBOkM1OkY4OkJGOjRDOjU1OjE4OjU2OjM1OjM1OjQzOkM1OkRDOjk0OkI1OkVCOjQ1OjMwOkY1OkFGOkNFIn0.sa2zCMCwap7KjqV6RkzQ4jeR-nMPXo546oqxSzyZSPamhfkPc35LfldZTkuX_gxy6P1Ra2ltrannQTH7467FC8H00giF3mamZ_LuyUHMRUZzab0UvNJaGqt1mJZaMiOnupixP1cUhsXszfmCRKXWvatbwvlc0nhw5gdO2lH_njWBrXUy5Bt2MIIFp892ijf_rP5KC7yfa0cW9lwTFuWZYMMRBeOfY_g1Mx_YVkQXy9mFI0x3zC6rms8jq8OWRompNfkQ7mZsiFPAafls2f0iP8M2HKWA8JeOG5rkAIw0ESWSVT7iB-oV50LlX7L7zAYVLGdDyM3s_khDNxrbvlW_bQ&quot;
+    },
+    &quot;ids:issuerConnector&quot;: {
+        &quot;@id&quot;: &quot;urn:connector:example-connector&quot;
+    },
+    &quot;ids:modelVersion&quot;: &quot;4.1.3&quot;,
+    &quot;ids:issued&quot;: {
+        &quot;@value&quot;: &quot;2023-10-04T09:18:56.998Z&quot;,
+        &quot;@type&quot;: &quot;http://www.w3.org/2001/XMLSchema#dateTimeStamp&quot;
+    },
+    &quot;ids:senderAgent&quot;: {
+        &quot;@id&quot;: &quot;urn:connector:example-connector&quot;
+    }
+}
+--Boundary_1_377557244_1696411137008
+Content-Type: application/json
+Content-Disposition: form-data; name=&quot;payload&quot;
+
+{
+    &quot;data&quot;: &quot;eyJhbGciOiJQUzUxMiIsImtpZCI6IlFyYS8vMjlGcnhiajVoaDVBemVmK0czNlNlaU9tOXE3czgrdzh1R0xEMjgifQ.eyJ0cmFuc2FjdGlvbl9pZCI6IjAwMDAwMDAwIiwidGltZXN0YW1wIjoxNjk2NDExMTM2LCJwcm9jZXNzX2lkIjoiMSIsImRvY3VtZW50X2lkIjoiNmNkNDQwNjQtZWFjNi00NmQzLWFhZTUtODcxYjgwYjU4OWMxIiwicGF5bG9hZCI6Int9IiwiY2hhaW5faGFzaCI6IjAiLCJjbGllbnRfaWQiOiJGNjoyNTo1ODpDNTo2MTo2ODo3QToyMTpGMTo0MDo5Rjo0RTpGQjo5NTpEQjo5OTo4ODpDOTpBNzoxQTpDNTpGODpCRjo0Qzo1NToxODo1NjozNTozNTo0MzpDNTpEQzo5NDpCNTpFQjo0NTozMDpGNTpBRjpDRSIsImNsZWFyaW5nX2hvdXNlX3ZlcnNpb24iOiIwLjEwLjAifQ.eo1KoF9gAZLF7CuhuQ-Sd9WSjw6dvDsrmM8w-A-FdTl4cOaPqp75k9O0tKxY8_ZNBsWmOzBzAfGng6YdvpDHIw9xFZTA7N_UMjTrrPuc8ehrVO2rwltTKb8N2bK4bQ4_Uq22Kd8mSFI6IyOZ7KeTkZ_iN30PXlYFAdt2GQHoT7xNERyQbHNEkJmOgGnaraMv0xEbl2zJktQqkTH9Kk4ZF2T_GbxKInhVxUhOsJ707ZeQ2Nxk4H6yO2RXwG5yKXFkwBDOMLg1f0Dnrgz_H1f-fQ7gPOrAL_4G4L7M9o7EVkMJlMpJR1xNBCeYbT_IvfL1CB5gi1NF-VNzt-8Zg5Yj-vNNR9j38yZTe6vH2dMkGl20B99KrEKTjkyVkCUIKnlb3oEKldse0E4ouw9v6WnIWq33-KnGV0ajwZrs13bQLZyLWvdNCBmYA5NujzbqOGkDROXloAB6MXBm5KiGTU8FxrqS6s_J7OW1CLTlAlTFF_U2Tr1xSvcusnpOGrU22IrCuqVuGCNNGCrPYjKJmMc05wIG0cmdxTdRnoe8R-vOVg2Zd07jdrBLX5l5tZtF60LC8DZKw4k2JaCu37W_dXdWHLSXEnpR9MGgnqC8MbOAMIIzSXpWKFdXcS-86SkgTvDA16geN_Bj7Ac6xcuUnEhM3_9tVnpjNMgPcStyO0KiP3c&quot;
+}
+--Boundary_1_377557244_1696411137008--
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="functionality"><a class="header" href="#functionality">Functionality</a></h1>
+<h2 id="logging-a-message"><a class="header" href="#logging-a-message">Logging a message</a></h2>
+<p>The logging service (as an entity inside the remaining clearinghouse-app) is responsible for orchestrating the flow between document service and keyring service:</p>
+<p>When logging a message, the message consists of two parts, originating from the IDS communication structure. There is a <code>header</code> and a <code>payload</code>.</p>
+<p>The logging service creates a process id (if not exists) and checks the authorization.</p>
+<p>After all prerequisites are checked and completed, the logging-service  merges <code>header</code> and <code>payload</code> into a Document starts to get the transaction counter and assigns it to the Document.</p>
+<p>Now the document service comes into play: First checking if the document exists already, then requesting the keyring service to generate a key map for the document. The key map is then used to encrypt the document (back in the document service) and then the document is stored in the database.</p>
+<p>Finally the transaction counter is incremented and a reciept is signed and send back to the Clearinghouse-EDC.</p>
+<h3 id="encryption"><a class="header" href="#encryption">Encryption</a></h3>
+<p>There is a randomly generated Master Key stored in the database.</p>
+<p>Each document has a number of fields. For each document a random secret is generated. This secret is used to derive multiple secrets with the HKDF Algorithm from the original secret. These derived secrets are used to encrypt the fields of the document with AES-256-GCM-SIV.</p>
+<p>The original secret is encrypted also with AES-256-GCM-SIV with a derived key from the Master Key and stored in the database alongside the Document.</p>
+<h3 id="detailed-internal-diagram"><a class="header" href="#detailed-internal-diagram">Detailed internal diagram</a></h3>
+<pre><code class="language-d2">log: fn log {
+  gp: fn db.get_process
+  ia: fn db.is_authorized
+  sp: fn db.store_process
+  de: process exists? {
+    shape: diamond
+  }
+
+  gp -&gt; de
+  de -&gt; sp: No
+  de -&gt; ia: Yes
+  sp -&gt; ia
+}
+
+lm: fn log_message {
+
+  gt: fn db.get_transaction_counter
+  df: Document::from(message)
+  ced: fn doc_api.create_encrypted_document {
+    ed: fn db.exists_document
+    gk: fn key_api.generate_keys {
+      gm: fn db.get_master_key
+      gdt: fn db.get_document_type
+      gkm: fn generate_key_map
+
+      gm -&gt; gdt
+      gdt -&gt; gkm
+
+    }
+    de: fn doc.encrypt
+    pt: fn db.get_document_with_previous_transaction_counter
+    ad: fn db.add_document
+
+    ed -&gt; gk
+    gk -&gt; de
+    de -&gt; pt
+    pt -&gt; ad
+  }
+  itc: fn db.increment_transaction_counter
+
+  df -&gt; gt
+  gt -&gt; ced
+  ced -&gt; itc
+}
+
+log -&gt; lm
+
+lm.ced.gk.gkm -&gt; gkm
+
+gkm: fn generate_key_map {
+  ik: fn initialize_kdf
+  dk: fn derive_key_map
+  rk: fn restore_kdf
+  ke: fn kdf.expand
+  es: fn encrypt_secret
+
+  ik -&gt; dk
+  dk -&gt; rk
+  rk -&gt; ke
+  ke -&gt; es
+
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="communication-proposal"><a class="header" href="#communication-proposal">Communication Proposal</a></h1>
+<p>Für den aktuellen Betrieb des MDS würden wir auf die Clearinghouse Specification des IDS RAM 4.0 setzen. 
+Dabie kann das bestehende Clearinghouse angepasst und verbessert werden durch die folgenden Punkte:</p>
+<p>Austausch des Trusted Connectors mittels EDC
+Zusammenführung der MS zur CH-APP
+Austausch des Webservers Rocket durch Axum
+Wartung und Optimierungen
+Stabilität durch Mutex
+Update der Dependencies
+Dadurch ist das Clearinghouse IDS RAM 4.0 complient und rückwärts kompatibel mit EDC MS8</p>
+<h3 id="offene-entscheidungen"><a class="header" href="#offene-entscheidungen">Offene Entscheidungen:</a></h3>
+<p>Blockchain
+Masterkey
+Future
+Im DSP wird es kein Clearinghouse wie es in der IDS RAM 4.0 spezifiziert mehr geben. 
+Das Clearinghouse wird vom DSP ledeglich als Teilnehmer gesehen.
+Dabei werden die Logs der Connectoren dezentral nur im jeweiligen Connector liegen. 
+Das Clearinghouse im bereich Logging könnte somit einen Vertrag mit allen Connectoren schließen um diese Logs anzufragen.</p>
+<h3 id="clearinghouse-und-daps"><a class="header" href="#clearinghouse-und-daps">Clearinghouse und DAPS</a></h3>
+<p>In Hinblick auf die anstehende Migration zu did:web bietet das Clearnghouse einen sinnvollen Ersatz für den DAPS.
+Das Clearinghouse könnte Verifiable Credentials ausstellen, sobald die Teilnehmer den Vertrag mit diesem eingegangen sind und die Grundvorraussetzungen um am Dataspace zu partizipieren erfüllt sind. Jeder Teilnehmer darf nur mit Mitgliedern des Dataspaces interagieren, die dieses Verifiable Credential vorweisen können.
+Dadurch wird sichergestellt das alle Teilnehmer am Datenraum das Clearinghouse akzeptieren.</p>
+<h2 id="aktuelle-implementierung"><a class="header" href="#aktuelle-implementierung">Aktuelle Implementierung</a></h2>
+<p>Der Endpunkt <code>POST /messages/log/:PID</code> wird mit einer zufällig generierten PID aufgerufen. Das hat einige Nachteile:</p>
+<ul>
+<li>Es wird für jede Transaktion ein neuer Prozess angelegt.</li>
+<li>Transaktionen können nicht gruppiert (einem Vertrag zugeordnet) werden.</li>
+<li>Transaktionen von anderen Connectoren können nicht zur gleichen Transaktion gefiltert werden.</li>
+</ul>
+<h2 id="optimierter-ansatz"><a class="header" href="#optimierter-ansatz">Optimierter Ansatz</a></h2>
+<p>Bevor eine Transaktion stattfindet, wird ein Vertrag geschlossen. In diesem Schritt könnte der Prozess im Clearinghouse bereits angelegt werden. Hierbei ist es auch möglich, mehrere Connector IDs anzugeben, um festzulegen, wer Lese- und Schreibrechte besitzt.</p>
+<ul>
+<li>Die erstellte PID muss mit allen Connectoren geteilt werden.</li>
+<li>Die Connectoren können auf die gleiche PID loggen, um die Transaktionen nach Verträgen zu gruppieren.</li>
+<li>Der MDS kann seinen eigenen Connector als Standard festlegen, um Zugriff auf alle Transaktionen zu erhalten.</li>
+</ul>
+<h2 id="ablauf"><a class="header" href="#ablauf">Ablauf</a></h2>
+<h3 id="createlogmessage"><a class="header" href="#createlogmessage">CreateLogMessage</a></h3>
+<p><img src="./images/CreateLogMessage.png" alt="" /></p>
+<h3 id="createpid"><a class="header" href="#createpid">CreatePID</a></h3>
+<p><img src="./images/CreatePid.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>
