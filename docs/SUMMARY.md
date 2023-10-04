@@ -8,5 +8,6 @@
 - [Architecture](content/internals/architecture.md)
   - [Communication](content/internals/communication.md)
   - [Functionality](content/internals/functionality.md)
+- [Proposal](Proposal.md)
 
 
