@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2022 Microsoft Corporation
+#  Copyright (c) 2023 Microsoft Corporation
 #
 #  This program and the accompanying materials are made available under the
 #  terms of the Apache License, Version 2.0 which is available at
@@ -9,7 +9,7 @@
 #
 #  Contributors:
 #       Microsoft Corporation - initial implementation
-#
+#       truzzt GmbH - EDC extension implementation
 #
 
 de.truzzt.clearinghouse.edc.multipart.MultipartExtension

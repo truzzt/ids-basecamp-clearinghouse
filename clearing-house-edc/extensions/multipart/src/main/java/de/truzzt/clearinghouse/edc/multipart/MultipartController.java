@@ -1,3 +1,17 @@
+/*
+ *  Copyright (c) 2023 Microsoft Corporation
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Microsoft Corporation - Initial implementation
+ *       truzzt GmbH - EDC extension implementation
+ *
+ */
 package de.truzzt.clearinghouse.edc.multipart;
 
 import de.fraunhofer.iais.eis.DynamicAttributeTokenBuilder;
@@ -7,7 +21,6 @@ import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.ids.Message;
 
-import de.truzzt.clearinghouse.edc.types.ids.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.ids.TokenFormat;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
