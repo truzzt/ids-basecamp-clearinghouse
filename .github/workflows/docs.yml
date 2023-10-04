@@ -17,10 +17,17 @@ jobs:
       
       - name: mdBook Action
         uses: peaceiris/actions-mdbook@v1
+
+      - name: Install D2 (Diagram generator)
+        run: curl -fsSL https://d2lang.com/install.sh | sh -s --
+
+      - name: Install mdbook-d2 integration
+        run: cargo install mdbook-d2 --locked
         
-      - run: mdbook build
+      - name: Build book
+        run: mdbook build
       
-      - name: Deploy
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
