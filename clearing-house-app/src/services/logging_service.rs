@@ -52,12 +52,34 @@ impl axum::response::IntoResponse for LoggingServiceError {
     fn into_response(self) -> axum::response::Response {
         use axum::http::StatusCode;
         match self {
-            LoggingServiceError::EmptyPayloadReceived => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
-            LoggingServiceError::AttemptedLogToDefaultPid => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
-            LoggingServiceError::DatabaseError { source, description } => (StatusCode::INTERNAL_SERVER_ERROR, format!("{}: {}", description, source)).into_response(),
-            LoggingServiceError::UserNotAuthorized => (StatusCode::FORBIDDEN, self.to_string()).into_response(),
-            LoggingServiceError::AuthorizationFailed { source, description } => (StatusCode::INTERNAL_SERVER_ERROR, format!("{}: {}", description, source)).into_response(),
-            LoggingServiceError::DocumentAlreadyExists => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            LoggingServiceError::EmptyPayloadReceived => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
+            LoggingServiceError::AttemptedLogToDefaultPid => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
+            LoggingServiceError::DatabaseError {
+                source,
+                description,
+            } => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("{}: {}", description, source),
+            )
+                .into_response(),
+            LoggingServiceError::UserNotAuthorized => {
+                (StatusCode::FORBIDDEN, self.to_string()).into_response()
+            }
+            LoggingServiceError::AuthorizationFailed {
+                source,
+                description,
+            } => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("{}: {}", description, source),
+            )
+                .into_response(),
+            LoggingServiceError::DocumentAlreadyExists => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
         }
     }
 }
@@ -113,12 +135,18 @@ impl LoggingService {
 
                         if let Err(e) = self.db.store_process(new_process).await {
                             error!("Error while creating process '{}'", &pid);
-                            return Err(LoggingServiceError::DatabaseError { source: e, description: "Creating process failed".to_string() }); // InternalError
+                            return Err(LoggingServiceError::DatabaseError {
+                                source: e,
+                                description: "Creating process failed".to_string(),
+                            }); // InternalError
                         }
                     }
                     Err(e) => {
                         error!("Error while getting process '{}'", &pid);
-                        return Err(LoggingServiceError::DatabaseError { source: e, description: "Getting process failed".to_string() }); // InternalError
+                        return Err(LoggingServiceError::DatabaseError {
+                            source: e,
+                            description: "Getting process failed".to_string(),
+                        }); // InternalError
                     }
                 }
 
@@ -136,8 +164,10 @@ impl LoggingService {
                         );
                         return Err(LoggingServiceError::AuthorizationFailed {
                             source: e,
-                            description: format!("Error while checking authorization of user '{}' for '{}'",
-                                                 &user, &pid),
+                            description: format!(
+                                "Error while checking authorization of user '{}' for '{}'",
+                                &user, &pid
+                            ),
                         });
                     }
                 }
@@ -258,10 +288,16 @@ impl LoggingService {
                                 debug!("...done. Signing receipt...");
                                 Ok(transaction.sign(key_path))
                             }
-                            Ok(None) => unreachable!("increment_transaction_counter never returns None!"),
+                            Ok(None) => {
+                                unreachable!("increment_transaction_counter never returns None!")
+                            }
                             Err(e) => {
                                 error!("Error while incrementing transaction id!");
-                                Err(LoggingServiceError::DatabaseError { source: e, description: "Error while incrementing transaction id!".to_string() }) // InternalError
+                                Err(LoggingServiceError::DatabaseError {
+                                    source: e,
+                                    description: "Error while incrementing transaction id!"
+                                        .to_string(),
+                                }) // InternalError
                             }
                         }
                     }
@@ -274,7 +310,10 @@ impl LoggingService {
             Ok(None) => unreachable!("get_transaction_counter never returns None!"),
             Err(e) => {
                 error!("Error while getting transaction id!");
-                Err(LoggingServiceError::DatabaseError { source: e, description: "Error while getting transaction id".to_string()}) // InternalError
+                Err(LoggingServiceError::DatabaseError {
+                    source: e,
+                    description: "Error while getting transaction id".to_string(),
+                }) // InternalError
             }
         }
     }
@@ -282,8 +321,8 @@ impl LoggingService {
     pub(crate) async fn query_pid(
         &self,
         ch_claims: ChClaims,
-        page: Option<i32>,
-        size: Option<i32>,
+        page: Option<u64>,
+        size: Option<u64>,
         sort: Option<SortingOrder>,
         date_to: Option<String>,
         date_from: Option<String>,
@@ -326,22 +365,10 @@ impl LoggingService {
             }
         }
 
-        // sanity check for pagination
-        let sanitized_page = match page {
-            Some(p) => {
-                if p >= 0 {
-                    p
-                } else {
-                    warn!("...invalid page requested. Falling back to 0.");
-                    1
-                }
-            }
-            None => 1,
-        };
-
+        let sanitized_page = page.unwrap_or(1);
         let sanitized_size = match size {
             Some(s) => {
-                let converted_max = i32::try_from(MAX_NUM_RESPONSE_ENTRIES).unwrap();
+                let converted_max = MAX_NUM_RESPONSE_ENTRIES;
                 if s > converted_max {
                     warn!("...invalid size requested. Falling back to default.");
                     converted_max
@@ -349,10 +376,10 @@ impl LoggingService {
                     s
                 } else {
                     warn!("...invalid size requested. Falling back to default.");
-                    i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap()
+                    DEFAULT_NUM_RESPONSE_ENTRIES
                 }
             }
-            None => i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap(),
+            None => DEFAULT_NUM_RESPONSE_ENTRIES,
         };
 
         let sanitized_sort = sort.unwrap_or(SortingOrder::Descending);

@@ -29,7 +29,7 @@ impl MasterKey {
     }
 }
 
-#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug, PartialEq)]
 pub struct KeyEntry {
     pub id: String,
     pub key: Vec<u8>,
@@ -42,20 +42,15 @@ impl KeyEntry {
     }
 }
 
-#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug, PartialEq)]
 pub struct KeyMap {
-    pub enc: bool,
     pub keys: HashMap<String, KeyEntry>,
     pub keys_enc: Option<Vec<u8>>,
 }
 
 impl KeyMap {
-    pub fn new(enc: bool, keys: HashMap<String, KeyEntry>, keys_enc: Option<Vec<u8>>) -> KeyMap {
-        KeyMap {
-            enc,
-            keys,
-            keys_enc,
-        }
+    pub fn new(keys: HashMap<String, KeyEntry>, keys_enc: Option<Vec<u8>>) -> KeyMap {
+        KeyMap { keys, keys_enc }
     }
 }
 

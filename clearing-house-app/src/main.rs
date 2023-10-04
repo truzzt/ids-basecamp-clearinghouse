@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![warn(clippy::unwrap_used)]
 
 #[macro_use]
 extern crate tracing;

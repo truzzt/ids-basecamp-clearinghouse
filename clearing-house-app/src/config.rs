@@ -86,7 +86,8 @@ pub(crate) fn configure_logging(config: &CHConfig) {
 
     // Add performance tracing
     if let Some(true) = config.performance_tracing {
-        subscriber_builder = subscriber_builder.with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE);
+        subscriber_builder =
+            subscriber_builder.with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE);
     }
 
     subscriber_builder.init();

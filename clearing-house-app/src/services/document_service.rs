@@ -126,8 +126,8 @@ impl DocumentService {
         &self,
         ch_claims: ChClaims,
         doc_type: Option<String>,
-        page: Option<i32>, // TODO: Why i32? This should be and unsigned int
-        size: Option<i32>, // TODO: Why i32? This should be and unsigned int
+        page: Option<u64>,
+        size: Option<u64>,
         sort: Option<SortingOrder>,
         date_from: Option<String>,
         date_to: Option<String>,
@@ -146,7 +146,7 @@ impl DocumentService {
         let sanitized_page = match page {
             Some(p) => {
                 if p > 0 {
-                    u64::try_from(p).unwrap()
+                    p
                 } else {
                     warn!("...invalid page requested. Falling back to 1.");
                     1
@@ -158,8 +158,8 @@ impl DocumentService {
         // Valid sizes are between 1 and MAX_NUM_RESPONSE_ENTRIES (1000)
         let sanitized_size = match size {
             Some(s) => {
-                if s > 0 && s <= i32::try_from(MAX_NUM_RESPONSE_ENTRIES).unwrap() {
-                    u64::try_from(s).unwrap()
+                if s > 0 && s <= MAX_NUM_RESPONSE_ENTRIES {
+                    s
                 } else {
                     warn!("...invalid size requested. Falling back to default.");
                     DEFAULT_NUM_RESPONSE_ENTRIES

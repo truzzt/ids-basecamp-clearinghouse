@@ -47,8 +47,8 @@ async fn create_process(
 
 #[derive(serde::Deserialize)]
 struct QueryParams {
-    pub page: Option<i32>,
-    pub size: Option<i32>,
+    pub page: Option<u64>,
+    pub size: Option<u64>,
     pub sort: Option<SortingOrder>,
     pub date_to: Option<String>,
     pub date_from: Option<String>,

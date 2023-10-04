@@ -140,6 +140,7 @@ impl DataStore {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn add_document(&self, doc: EncryptedDocument) -> anyhow::Result<bool> {
         debug!("add_document to bucket");
         let coll = self
@@ -178,6 +179,7 @@ impl DataStore {
 
     /// checks if the document exists
     /// document ids are globally unique
+    #[tracing::instrument(skip_all)]
     pub async fn exists_document(&self, id: &String) -> anyhow::Result<bool> {
         debug!("Check if document with id '{}' exists...", id);
         let query = doc! {format!("{}.{}", MONGO_DOC_ARRAY, MONGO_ID): id.clone()};
@@ -198,6 +200,7 @@ impl DataStore {
     }
 
     /// gets the model from the db
+    #[tracing::instrument(skip_all)]
     pub async fn get_document(
         &self,
         id: &str,
@@ -230,6 +233,7 @@ impl DataStore {
     }
 
     /// gets documents for a single process from the db
+    #[tracing::instrument(skip_all)]
     pub async fn get_document_with_previous_tc(
         &self,
         tc: i64,
@@ -268,6 +272,7 @@ impl DataStore {
     }
 
     /// gets a page of documents of a specific document type for a single process from the db defined by parameters page, size and sort
+    #[tracing::instrument(skip_all)]
     pub async fn get_documents_for_pid(
         &self,
         dt_id: &String,
@@ -356,6 +361,7 @@ impl DataStore {
     }
 
     /// offset is necessary for duration queries. There, start_entries of bucket depend on timestamps which usually creates an offset in the bucket
+    #[tracing::instrument(skip_all)]
     async fn get_start_bucket_size(
         &self,
         dt_id: &String,
@@ -418,10 +424,12 @@ impl DataStore {
         Ok(bucket_size)
     }
 
+    #[tracing::instrument(skip_all)]
     fn get_offset(bucket_size: &DocumentBucketSize) -> u64 {
         (bucket_size.capacity - bucket_size.size) as u64 % MAX_NUM_RESPONSE_ENTRIES
     }
 
+    #[tracing::instrument(skip_all)]
     fn get_start_bucket(
         page: u64,
         size: u64,
@@ -433,6 +441,7 @@ impl DataStore {
         (docs_to_skip / MAX_NUM_RESPONSE_ENTRIES) + 1
     }
 
+    #[tracing::instrument(skip_all)]
     fn get_start_entry(
         page: u64,
         size: u64,

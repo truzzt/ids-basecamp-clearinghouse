@@ -104,6 +104,7 @@ impl KeyStore {
     }
 
     /// Only one master key may exist in the database.
+    #[tracing::instrument(skip_all)]
     pub async fn store_master_key(&self, key: MasterKey) -> anyhow::Result<bool> {
         tracing::debug!("Storing new master key...");
         let coll = self.database.collection::<MasterKey>(MONGO_COLL_MASTER_KEY);
@@ -137,6 +138,7 @@ impl KeyStore {
     }
 
     /// Only one master key may exist in the database.
+    #[tracing::instrument(skip_all)]
     pub async fn get_msk(&self) -> anyhow::Result<MasterKey> {
         let coll = self.database.collection::<MasterKey>(MONGO_COLL_MASTER_KEY);
         let result = coll
