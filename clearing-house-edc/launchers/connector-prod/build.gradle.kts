@@ -27,6 +27,9 @@ dependencies {
 
     runtimeOnly(edc.bundles.connector)
     runtimeOnly(edc.oauth2.core)
+
+    // Vault
+    runtimeOnly(edc.vault.filesystem)
 }
 
 application {

@@ -1,13 +1,19 @@
-use anyhow::anyhow;
 use crate::db::doc_store::bucket::{restore_from_bucket, DocumentBucketSize, DocumentBucketUpdate};
-use crate::db::{DataStoreApi, init_database_client};
-use crate::model::constants::{DOCUMENT_DB, DOCUMENT_DB_CLIENT, MAX_NUM_RESPONSE_ENTRIES, MONGO_COLL_DOCUMENT_BUCKET, MONGO_COUNTER, MONGO_DOC_ARRAY, MONGO_DT_ID, MONGO_FROM_TS, MONGO_ID, MONGO_PID, MONGO_TC, MONGO_TO_TS, MONGO_TS};
+use crate::db::{init_database_client, DataStoreApi};
+use crate::model::constants::{
+    DOCUMENT_DB, DOCUMENT_DB_CLIENT, MAX_NUM_RESPONSE_ENTRIES, MONGO_COLL_DOCUMENT_BUCKET,
+    MONGO_COUNTER, MONGO_DOC_ARRAY, MONGO_DT_ID, MONGO_FROM_TS, MONGO_ID, MONGO_PID, MONGO_TC,
+    MONGO_TO_TS, MONGO_TS,
+};
 use crate::model::document::{Document, EncryptedDocument};
 use crate::model::SortingOrder;
+use anyhow::anyhow;
+use futures::StreamExt;
 use mongodb::bson::doc;
-use mongodb::options::{AggregateOptions, CreateCollectionOptions, IndexOptions, UpdateOptions, WriteConcern};
+use mongodb::options::{
+    AggregateOptions, CreateCollectionOptions, IndexOptions, UpdateOptions, WriteConcern,
+};
 use mongodb::{bson, Client, IndexModel};
-use rocket::futures::StreamExt;
 
 #[derive(Clone)]
 pub struct DataStore {
@@ -25,13 +31,9 @@ impl DataStoreApi for DataStore {
 }
 
 impl DataStore {
-    pub async fn init_datastore(db_url: String, clear_db: bool) -> anyhow::Result<Self> {
+    pub async fn init_datastore(db_url: &str, clear_db: bool) -> anyhow::Result<Self> {
         debug!("Using mongodb url: '{:#?}'", &db_url);
-        match init_database_client::<DataStore>(
-            db_url.as_str(),
-            Some(DOCUMENT_DB_CLIENT.to_string()),
-        )
-            .await
+        match init_database_client::<DataStore>(db_url, Some(DOCUMENT_DB_CLIENT.to_string())).await
         {
             Ok(datastore) => {
                 debug!("Check if database is empty...");

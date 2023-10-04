@@ -3,27 +3,46 @@
 //! This module contains the ports of the logging service. Ports are used to communicate with other
 //! services. In this case, the logging service implements REST-API endpoints to provide access to
 //! the logging service.
+use axum::response::Response;
+
 pub(crate) mod doc_type_api;
 pub(crate) mod logging_api;
 
-#[derive(rocket::Responder, Debug)]
-pub enum ApiResponse {
-    #[response(status = 200)]
+#[derive(Debug)]
+pub(crate) enum ApiResponse<T: serde::Serialize> {
     PreFlight(()),
-    #[response(status = 400, content_type = "text/plain")]
     BadRequest(String),
-    #[response(status = 201, content_type = "json")]
-    SuccessCreate(rocket::serde::json::Value),
-    #[response(status = 200, content_type = "json")]
-    SuccessOk(rocket::serde::json::Value),
-    #[response(status = 204, content_type = "text/plain")]
+    SuccessCreate(T),
+    SuccessOk(T),
     SuccessNoContent(String),
-    #[response(status = 401, content_type = "text/plain")]
     Unauthorized(String),
-    #[response(status = 403, content_type = "text/plain")]
     Forbidden(String),
-    #[response(status = 404, content_type = "text/plain")]
     NotFound(String),
-    #[response(status = 500, content_type = "text/plain")]
     InternalError(String),
+}
+
+impl<T: serde::Serialize> axum::response::IntoResponse for ApiResponse<T> {
+    fn into_response(self) -> Response {
+        match self {
+            ApiResponse::PreFlight(_) => (axum::http::StatusCode::OK, "").into_response(),
+            ApiResponse::BadRequest(s) => (axum::http::StatusCode::BAD_REQUEST, s).into_response(),
+            ApiResponse::SuccessCreate(v) => {
+                (axum::http::StatusCode::CREATED, axum::response::Json(v)).into_response()
+            }
+            ApiResponse::SuccessOk(v) => {
+                (axum::http::StatusCode::OK, axum::response::Json(v)).into_response()
+            }
+            ApiResponse::SuccessNoContent(s) => {
+                (axum::http::StatusCode::NO_CONTENT, s).into_response()
+            }
+            ApiResponse::Unauthorized(s) => {
+                (axum::http::StatusCode::UNAUTHORIZED, s).into_response()
+            }
+            ApiResponse::Forbidden(s) => (axum::http::StatusCode::FORBIDDEN, s).into_response(),
+            ApiResponse::NotFound(s) => (axum::http::StatusCode::NOT_FOUND, s).into_response(),
+            ApiResponse::InternalError(s) => {
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, s).into_response()
+            }
+        }
+    }
 }

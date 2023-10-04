@@ -4,9 +4,8 @@ use crate::model::{
     {document::Document, process::Process, SortingOrder},
 };
 use anyhow::anyhow;
-use rocket::form::validate::Contains;
-use rocket::State;
 use std::convert::TryFrom;
+use std::sync::Arc;
 
 use crate::db::process_store::ProcessStore;
 use crate::model::{
@@ -18,19 +17,23 @@ use crate::services::document_service::DocumentService;
 #[derive(Clone)]
 pub struct LoggingService {
     db: ProcessStore,
-    doc_api: DocumentService,
-    write_lock: std::sync::Arc<rocket::tokio::sync::Mutex<()>>,
+    doc_api: Arc<DocumentService>,
+    write_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl LoggingService {
-    pub fn new(db: ProcessStore, doc_api: DocumentService) -> LoggingService {
-      LoggingService { db, doc_api, write_lock: std::sync::Arc::new(rocket::tokio::sync::Mutex::new(())) }
+    pub fn new(db: ProcessStore, doc_api: Arc<DocumentService>) -> LoggingService {
+        LoggingService {
+            db,
+            doc_api,
+            write_lock: Arc::new(tokio::sync::Mutex::new(())),
+        }
     }
 
     pub async fn log(
         &self,
         ch_claims: ChClaims,
-        key_path: &State<String>,
+        key_path: &str,
         msg: ClearingHouseMessage,
         pid: String,
     ) -> anyhow::Result<Receipt> {
@@ -69,7 +72,8 @@ impl LoggingService {
 
                         if self.db.store_process(new_process).await.is_err() {
                             error!("Error while creating process '{}'", &pid);
-                            return Err(anyhow!("Error while creating process")); // InternalError
+                            return Err(anyhow!("Error while creating process"));
+                            // InternalError
                         }
                     }
                     Err(_) => {
@@ -96,8 +100,7 @@ impl LoggingService {
                 }
 
                 debug!("logging message for pid {}", &pid);
-                self.log_message(user, key_path.inner().as_str(), m.clone())
-                    .await
+                self.log_message(user, key_path, m.clone()).await
             }
         }
     }

@@ -1,12 +1,15 @@
 use super::DataStoreApi;
-use crate::model::constants::{FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT, MONGO_COLL_DOC_TYPES, MONGO_COLL_MASTER_KEY, MONGO_ID, MONGO_PID};
+use crate::db::init_database_client;
+use crate::model::constants::{
+    FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT, MONGO_COLL_DOC_TYPES,
+    MONGO_COLL_MASTER_KEY, MONGO_ID, MONGO_PID,
+};
 use crate::model::crypto::MasterKey;
 use crate::model::doc_type::DocumentType;
-use mongodb::bson::doc;
-use rocket::futures::TryStreamExt;
-use std::process::exit;
 use anyhow::anyhow;
-use crate::db::init_database_client;
+use futures::TryStreamExt;
+use mongodb::bson::doc;
+use std::process::exit;
 
 #[derive(Clone, Debug)]
 pub struct KeyStore {
@@ -24,15 +27,10 @@ impl DataStoreApi for KeyStore {
 }
 
 impl KeyStore {
-    pub async fn init_keystore(db_url: String, clear_db: bool) -> anyhow::Result<Self> {
+    pub async fn init_keystore(db_url: &str, clear_db: bool) -> anyhow::Result<Self> {
         debug!("Using database url: '{:#?}'", &db_url);
 
-        match init_database_client::<KeyStore>(
-            db_url.as_str(),
-            Some(KEYRING_DB_CLIENT.to_string()),
-        )
-            .await
-        {
+        match init_database_client::<KeyStore>(db_url, Some(KEYRING_DB_CLIENT.to_string())).await {
             Ok(keystore) => {
                 debug!("Check if database is empty...");
                 match keystore
@@ -59,7 +57,8 @@ impl KeyStore {
                             debug!("Database empty. Need to initialize...");
                             debug!("Adding initial document type...");
                             match serde_json::from_str::<DocumentType>(
-                                &crate::util::read_file(FILE_DEFAULT_DOC_TYPE).unwrap_or(String::new()),
+                                &crate::util::read_file(FILE_DEFAULT_DOC_TYPE)
+                                    .unwrap_or(String::new()),
                             ) {
                                 Ok(dt) => match keystore.add_document_type(dt).await {
                                     Ok(_) => {
