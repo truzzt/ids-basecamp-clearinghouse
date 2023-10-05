@@ -11,7 +11,6 @@ impl std::fmt::Display for AppError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             AppError::Generic(e) => write!(f, "{}", e),
-            _ => unreachable!(),
         }
     }
 }

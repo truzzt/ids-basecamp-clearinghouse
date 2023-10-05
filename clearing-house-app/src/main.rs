@@ -33,17 +33,21 @@ pub(crate) struct AppState {
 impl AppState {
     /// Initialize the application state from config
     async fn init(conf: &config::CHConfig) -> anyhow::Result<Self> {
+        trace!("Initializing Process store");
         let process_store =
             ProcessStore::init_process_store(&conf.process_database_url, conf.clear_db)
                 .await
                 .expect("Failure to initialize process store! Exiting...");
+        trace!("Initializing Keyring store");
         let keyring_store = KeyStore::init_keystore(&conf.keyring_database_url, conf.clear_db)
             .await
             .expect("Failure to initialize keyring store! Exiting...");
+        trace!("Initializing Document store");
         let doc_store = DataStore::init_datastore(&conf.document_database_url, conf.clear_db)
             .await
             .expect("Failure to initialize document store! Exiting...");
 
+        trace!("Initializing services");
         let keyring_service = Arc::new(services::keyring_service::KeyringService::new(
             keyring_store,
         ));
@@ -77,6 +81,8 @@ async fn main() -> Result<(), anyhow::Error> {
     let conf = config::read_config(None);
     config::configure_logging(&conf);
 
+    info!("Config read successfully! Initializing application ...");
+
     // Initialize application state
     let app_state = AppState::init(&conf).await?;
 
@@ -88,7 +94,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Bind port and start server
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
-    tracing::debug!("listening on {}", addr);
+    tracing::info!("Starting server: Listening on {}", addr);
     Ok(axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(util::shutdown_signal())

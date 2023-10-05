@@ -8,6 +8,10 @@ impl Process {
     pub fn new(id: String, owners: Vec<String>) -> Self {
         Self { id, owners }
     }
+
+    pub fn is_authorized(&self, owner: &str) -> bool {
+        self.owners.contains(&owner.to_string())
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
