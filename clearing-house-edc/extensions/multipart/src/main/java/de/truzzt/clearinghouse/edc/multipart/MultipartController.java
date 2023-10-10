@@ -33,14 +33,13 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.protocol.ids.spi.service.DynamicAttributeTokenService;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.monitor.Monitor;
-import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
 import java.util.List;
 
+import static de.truzzt.clearinghouse.edc.util.ResponseUtil.createFormDataMultiPart;
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.internalRecipientError;
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.malformedMessage;
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.messageTypeNotSupported;
@@ -88,7 +87,7 @@ public class MultipartController {
         if (headerInputStream == null) {
             monitor.severe(LOG_ID + ": Header is missing");
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
                     .build();
         }
 
@@ -99,7 +98,7 @@ public class MultipartController {
         } catch (Exception e) {
             monitor.severe(format(LOG_ID + ": Header parsing failed: %s", e.getMessage()));
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
                     .build();
         }
 
@@ -111,7 +110,7 @@ public class MultipartController {
                 || header.getIssuerConnector() == null
                 || header.getSenderAgent() == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(malformedMessage(header, connectorId)))
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(header, connectorId)))
                     .build();
         }
 
@@ -120,7 +119,7 @@ public class MultipartController {
         if (securityToken == null || securityToken.getTokenValue() == null) {
             monitor.severe(LOG_ID + ": Token is missing in header");
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(notAuthenticated(header, connectorId)))
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, notAuthenticated(header, connectorId)))
                     .build();
         }
 
@@ -129,7 +128,7 @@ public class MultipartController {
         if (!tokenFormat.equals(TokenFormat.JWT_TOKEN_FORMAT)) {
             monitor.severe(LOG_ID + ": Invalid security token type: " + tokenFormat);
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
                     .build();
         }
 
@@ -137,14 +136,14 @@ public class MultipartController {
         if (payload == null) {
             monitor.severe(LOG_ID + ": Payload is missing");
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
                     .build();
         }
 
         // Validate DAT
         if (!validateToken(header)) {
             return Response.status(Response.Status.FORBIDDEN)
-                    .entity(createFormDataMultiPart(notAuthenticated(header, connectorId)))
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, notAuthenticated(header, connectorId)))
                     .build();
         }
 
@@ -168,20 +167,20 @@ public class MultipartController {
         } catch (Exception e) {
             monitor.severe(LOG_ID + ": Error in message handler processing", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(createFormDataMultiPart(internalRecipientError(header, connectorId)))
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, internalRecipientError(header, connectorId)))
                     .build();
         }
 
         // Get the response token
         if (!getResponseToken(header, handlerResponse)) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(createFormDataMultiPart(internalRecipientError(header, connectorId)))
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, internalRecipientError(header, connectorId)))
                     .build();
         }
 
         // Build the response
         return Response.status(Response.Status.CREATED)
-                .entity(createFormDataMultiPart(handlerResponse.getHeader(), handlerResponse.getPayload()))
+                .entity(createFormDataMultiPart(typeManagerUtil, HEADER, handlerResponse.getHeader(), PAYLOAD, handlerResponse.getPayload()))
                 .build();
     }
 
@@ -230,24 +229,6 @@ public class MultipartController {
             monitor.severe(LOG_ID + ": Failed to get response token: " + tokenResult.getFailureDetail());
             return false;
         }*/
-    }
-
-    private FormDataMultiPart createFormDataMultiPart(Message header, Object payload) {
-        var multiPart = createFormDataMultiPart(header);
-
-        if (payload != null) {
-            multiPart.bodyPart(new FormDataBodyPart(PAYLOAD, typeManagerUtil.toJson(payload), MediaType.APPLICATION_JSON_TYPE));
-        }
-
-        return multiPart;
-    }
-
-    private FormDataMultiPart createFormDataMultiPart(Message header) {
-        var multiPart = new FormDataMultiPart();
-        if (header != null) {
-            multiPart.bodyPart(new FormDataBodyPart(HEADER, typeManagerUtil.toJson(header), MediaType.APPLICATION_JSON_TYPE));
-        }
-        return multiPart;
     }
 
 }

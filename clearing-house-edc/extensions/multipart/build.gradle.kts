@@ -15,6 +15,7 @@
 
 plugins {
     `java-library`
+    `jacoco-report-aggregation`
 }
 
 dependencies {
@@ -27,4 +28,18 @@ dependencies {
     implementation(edc.api.management.config)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jersey.multipart)
+
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.mockito.inline)
+    testImplementation(libs.mockito.inline)
+
+    testRuntimeOnly(libs.junit.jupiter.engine)
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+tasks.check {
+    dependsOn(tasks.named<JacocoReport>("testCodeCoverageReport"))
 }

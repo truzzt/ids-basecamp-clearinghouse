@@ -15,14 +15,19 @@
 package de.truzzt.clearinghouse.edc.util;
 
 import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
+import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.ids.Message;
 import de.truzzt.clearinghouse.edc.types.ids.RejectionMessage;
 import de.truzzt.clearinghouse.edc.types.ids.RejectionReason;
+import jakarta.ws.rs.core.MediaType;
 import org.eclipse.edc.protocol.ids.spi.domain.IdsConstants;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.protocol.ids.spi.types.IdsType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -35,6 +40,29 @@ import java.util.UUID;
 public class ResponseUtil {
 
     private static final String PROCESSED_NOTIFICATION_TYPE = "ids:MessageProcessedNotificationMessage";
+
+    public static FormDataMultiPart createFormDataMultiPart(TypeManagerUtil typeManagerUtil,
+                                                            String headerName,
+                                                            Message headerValue,
+                                                            String payloadName,
+                                                            Object payloadValue) {
+        var multiPart = createFormDataMultiPart(typeManagerUtil, headerName, headerValue);
+
+        if (payloadValue != null) {
+            multiPart.bodyPart(new FormDataBodyPart(payloadName, typeManagerUtil.toJson(payloadValue), MediaType.APPLICATION_JSON_TYPE));
+        }
+
+        return multiPart;
+    }
+
+    public static FormDataMultiPart createFormDataMultiPart(TypeManagerUtil typeManagerUtil, String headerName, Message headerValue) {
+        var multiPart = new FormDataMultiPart();
+
+        if (headerValue != null) {
+            multiPart.bodyPart(new FormDataBodyPart(headerName, typeManagerUtil.toJson(headerValue), MediaType.APPLICATION_JSON_TYPE));
+        }
+        return multiPart;
+    }
 
     public static HandlerResponse createMultipartResponse(@NotNull Message header, @NotNull Object payload) {
         return HandlerResponse.Builder.newInstance()
@@ -114,7 +142,7 @@ public class ResponseUtil {
         return IdsId.Builder.newInstance().value(UUID.randomUUID().toString()).type(IdsType.MESSAGE).build().toUri();
     }
 
-    public static XMLGregorianCalendar gregorianNow() {
+    private static XMLGregorianCalendar gregorianNow() {
         try {
             GregorianCalendar gregorianCalendar = GregorianCalendar.from(ZonedDateTime.now());
             return DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);

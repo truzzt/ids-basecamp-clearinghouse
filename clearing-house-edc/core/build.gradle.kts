@@ -25,6 +25,7 @@ dependencies {
     implementation(edc.ids)
     implementation(edc.ids.jsonld.serdes)
     implementation(edc.api.management.config)
+    implementation(libs.jersey.multipart)
 
     implementation("com.auth0:java-jwt:${auth0JWTVersion}")
 }
