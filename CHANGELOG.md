@@ -1,3 +1,10 @@
+# [1.0.0-alpha.3](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.2...v1.0.0-alpha.3) (2023-10-11)
+
+
+### Features
+
+* **release:** add more release types ([cd59461](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/cd59461fb2dfa5b8c95c80fbaa3bafd511e036c0))
+
 # [1.0.0-alpha.2](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2023-10-04)
 
 
