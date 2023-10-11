@@ -76,7 +76,7 @@ jobs:
       - name: Build Docker image
         env:
           DOCKER_IMAGE_TAG: ${{ needs.release.outputs.new_tag_version }}
-        run: cd clearing-house-edc && docker build -t ghcr.io/truzzt/ids-basecamp-clearing/ch-edc:$DOCKER_IMAGE_TAG .
+        run: cd clearing-house-edc && docker build -t ghcr.io/truzzt/ids-basecamp-clearing/ch-edc:$DOCKER_IMAGE_TAG -f launchers/connector-prod/Dockerfile .
 
       - name: Push Docker image
         env:
