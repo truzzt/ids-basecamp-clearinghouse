@@ -23,7 +23,7 @@ public class AppSenderRequest<B> {
     private final String token;
     private final B body;
 
-    private AppSenderRequest(@NotNull  String url, @NotNull String token, @NotNull B body) {
+    public AppSenderRequest(@NotNull  String url, @NotNull String token, @NotNull B body) {
         this.url = url;
         this.token = token;
         this.body = body;
