@@ -70,55 +70,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v2
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+      - name: Login to GitHub Container Registry
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build project extensions
-        run: ./gradlew clean build
-
-      - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@v2.6.0
-        with:
-          cosign-release: 'v1.13.1'
-
-      - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-      - name: Build and push Docker image
-        id: build-and-push
-        uses: docker/build-push-action@v4
-        with:
-          context: ./clearing-house-edc/launchers/connector-prod
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ needs.release.outputs.new_tag_version }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-          secrets: |
-            "gpc=gpr.user=${{ github.actor }}
-            gpr.key=${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' }}
+      - name: Build Docker image
         env:
-          COSIGN_EXPERIMENTAL: "true"
-        run: echo "${{ needs.release.outputs.new_tag_version }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
+          DOCKER_IMAGE_TAG: ${{ needs.release.outputs.new_tag_version }}
+        run: cd clearing-house-edc && docker build -t ghcr.io/truzzt/ids-basecamp-clearing/ch-edc:$DOCKER_IMAGE_TAG -f launchers/connector-prod/Dockerfile .
+
+      - name: Push Docker image
+        env:
+          DOCKER_IMAGE_TAG: ${{ needs.release.outputs.new_tag_version }}
+        run: docker push ghcr.io/truzzt/ids-basecamp-clearing/ch-edc:$DOCKER_IMAGE_TAG
