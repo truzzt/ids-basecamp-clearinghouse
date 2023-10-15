@@ -39,7 +39,3 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
-
-tasks.check {
-    dependsOn(tasks.named<JacocoReport>("testCodeCoverageReport"))
-}

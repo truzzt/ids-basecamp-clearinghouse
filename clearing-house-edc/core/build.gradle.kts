@@ -15,6 +15,7 @@
 
 plugins {
     `java-library`
+    `jacoco-report-aggregation`
 }
 
 val auth0JWTVersion: String by project
@@ -28,4 +29,14 @@ dependencies {
     implementation(libs.jersey.multipart)
 
     implementation("com.auth0:java-jwt:${auth0JWTVersion}")
+
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.mockito.inline)
+    testImplementation(libs.mockito.inline)
+
+    testRuntimeOnly(libs.junit.jupiter.engine)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
