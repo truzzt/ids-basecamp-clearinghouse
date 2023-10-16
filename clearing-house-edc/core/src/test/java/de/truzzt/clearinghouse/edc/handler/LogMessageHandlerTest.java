@@ -107,11 +107,9 @@ class LogMessageHandlerTest {
 
         assertEquals("JWT Token subject is missing",exception.getMessage());
     }
-
     @Test
     public void successfulBuildJwtToken() {
         doReturn("1").when(context).getSetting(anyString(), anyString());
-
         var response = logMessageHandler.buildJWTToken(
                 TestUtils.getValidHandlerRequest(mapper)
                         .getHeader()

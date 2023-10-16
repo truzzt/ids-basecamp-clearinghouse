@@ -25,6 +25,7 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,6 +38,7 @@ public class TestUtils {
     public static final String TEST_BASE_URL = "http://localhost:8000";
     private static final String TEST_PAYLOAD = "Hello World";
     private static final String VALID_HEADER_JSON = "messages/valid-header.json";
+    private static final String INVALID_LOG_MESSAGE_HEADER_JSON = "messages/invalid-log-message-header.json";
 
     private static <T> T readJsonFile(ObjectMapper mapper, Class<T> type, String path) {
 
@@ -71,6 +73,29 @@ public class TestUtils {
         return object;
     }
 
+    private static File returnJonFile(String path) {
+
+        ClassLoader classLoader = TestUtils.class.getClassLoader();
+        var jsonResource = classLoader.getResource(path);
+
+        if (jsonResource == null) {
+            throw new EdcException("Header json file not found: " + path);
+        }
+
+        URI jsonUrl;
+        try {
+            jsonUrl = jsonResource.toURI();
+        } catch (URISyntaxException e) {
+            throw new EdcException("Error finding json file on classpath", e);
+        }
+
+        Path filePath = Path.of(jsonUrl);
+        if (!Files.exists(filePath)) {
+            throw new EdcException("Header json file not found: " + path);
+        }
+
+        return filePath.toFile();
+    }
 
     public static Message getValidHeader(ObjectMapper mapper) {
         return readJsonFile(mapper, Message.class, VALID_HEADER_JSON);
@@ -224,4 +249,16 @@ public class TestUtils {
                 getValidHandlerRequest(mapper)
         );
     }
+
+    public static File getValidHeaderFile() {
+
+        return returnJonFile(VALID_HEADER_JSON);
+    }
+
+    public static File getInvalidHeaderFile() {
+
+        return returnJonFile(INVALID_LOG_MESSAGE_HEADER_JSON);
+    }
+
+
 }

@@ -1,8 +1,10 @@
 package de.truzzt.clearinghouse.edc.types;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.TestUtils;
+import de.fraunhofer.iais.eis.LogMessage;
+import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import de.truzzt.clearinghouse.edc.types.ids.Message;
+import org.eclipse.edc.spi.EdcException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -11,16 +13,16 @@ import org.mockito.Spy;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TypeManagerUtilTest {
+
+    private static final String VALID_HEADER_JSON = "messages/valid-header.json";
 
     @Spy
     private ObjectMapper objectMapper;
@@ -36,21 +38,31 @@ class TypeManagerUtilTest {
     @Test
     void successfulParse() throws IOException {
 
-        File file = new File(TestUtils.LOG_MESSAGE_JSON_PATH);
-        file.createNewFile();
-
-        InputStream is = new FileInputStream(file);
+        InputStream is = new FileInputStream(TestUtils.getValidHeaderFile());
         Message msg = typeManagerUtil.parse(is, Message.class);
         assertNotNull(msg);
         assertEquals("ids:LogMessage", msg.getType());
     }
 
     @Test
-    void successfulToJson() throws IOException {
-        File file = new File(TestUtils.LOG_MESSAGE_JSON_PATH);
-        file.createNewFile();
+    void typeErrorParse() {
 
-        Message msgBefore = objectMapper.readValue(file, Message.class);
+        EdcException exception =
+                assertThrows(EdcException.class,
+                        () -> typeManagerUtil.parse(
+                                new FileInputStream(TestUtils.getInvalidHeaderFile()),
+                                Message.class)
+                );
+                assertEquals(
+                        "Error parsing to type class de.truzzt.clearinghouse.edc.types.ids.Message",
+                        exception.getMessage()
+                );
+
+    }
+
+    void successfulToJson() throws IOException {
+
+        Message msgBefore = objectMapper.readValue(TestUtils.getValidHeaderFile(), Message.class);
 
         byte[] json  = typeManagerUtil.toJson(msgBefore);
         assertNotNull(json);
