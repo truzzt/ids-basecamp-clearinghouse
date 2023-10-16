@@ -64,5 +64,6 @@ serial_test = "2.0.0"
 tempfile = "3.8.0"
 
 [features]
+default = []
 # Enables the doc_type API
 doc_type = []

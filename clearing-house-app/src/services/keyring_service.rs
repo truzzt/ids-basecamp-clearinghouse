@@ -19,6 +19,9 @@ pub enum KeyringServiceError {
     },
     #[error("Error while decrypting keys")]
     DecryptionError,
+    #[cfg_attr(not(doc_type), allow(dead_code))]
+    #[error("Document type already exists")]
+    DocumentTypeAlreadyExists,
 }
 
 impl axum::response::IntoResponse for KeyringServiceError {
@@ -31,6 +34,7 @@ impl axum::response::IntoResponse for KeyringServiceError {
             Self::DatabaseError { source, description } =>
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("{}: {}", description, source)).into_response(),
             Self::DecryptionError => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
+            Self::DocumentTypeAlreadyExists => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
         }
     }
 }
@@ -77,13 +81,13 @@ impl KeyringService {
                     }
                     Err(e) => {
                         warn!("Error while retrieving document type: {}", e);
-                        Err(KeyringServiceError::DatabaseError {source: e, description: "Error while retrieving document type".to_string()})
+                        Err(KeyringServiceError::DatabaseError { source: e, description: "Error while retrieving document type".to_string() })
                     }
                 }
             }
             Err(e) => {
                 error!("Error while retrieving master key: {}", e);
-                Err(KeyringServiceError::DatabaseError {source: e, description: "Error while retrieving master key".to_string()})
+                Err(KeyringServiceError::DatabaseError { source: e, description: "Error while retrieving master key".to_string() })
             }
         }
     }
@@ -146,7 +150,7 @@ impl KeyringService {
                     }
                     Err(e) => {
                         warn!("Error while retrieving document type: {}", e);
-                        Err(KeyringServiceError::DatabaseError {source: e, description: "Error while retrieving document type".to_string()})
+                        Err(KeyringServiceError::DatabaseError { source: e, description: "Error while retrieving document type".to_string() })
                     }
                 }
             }
@@ -194,7 +198,7 @@ impl KeyringService {
                     }
                     Err(e) => {
                         warn!("Error while retrieving document type: {}", e);
-                        Err(KeyringServiceError::DatabaseError {source: e, description: "Error while retrieving document type".to_string()})
+                        Err(KeyringServiceError::DatabaseError { source: e, description: "Error while retrieving document type".to_string() })
                     }
                 }
             }
@@ -218,27 +222,27 @@ impl KeyringService {
     #[cfg(doc_type)]
     pub(crate) async fn create_doc_type(
         &self,
-        doc_type: DocumentType,
-    ) -> anyhow::Result<DocumentType> {
+        doc_type: crate::model::doc_type::DocumentType,
+    ) -> Result<crate::model::doc_type::DocumentType, KeyringServiceError> {
         debug!("adding doctype: {:?}", &doc_type);
         match self
             .db
             .exists_document_type(&doc_type.pid, &doc_type.id)
             .await
         {
-            Ok(true) => Err(anyhow!("doctype already exists!")), // BadRequest
+            Ok(true) => Err(KeyringServiceError::DocumentTypeAlreadyExists), // BadRequest
             Ok(false) => {
                 match self.db.add_document_type(doc_type.clone()).await {
                     Ok(()) => Ok(doc_type),
                     Err(e) => {
                         error!("Error while adding doctype: {:?}", e);
-                        Err(anyhow!("Error while adding document type!")) // InternalError
+                        Err(KeyringServiceError::DatabaseError { source: e, description: "Error while adding doctype".to_string() })
                     }
                 }
             }
             Err(e) => {
                 error!("Error while adding document type: {:?}", e);
-                Err(anyhow!("Error while checking database!")) // InternalError
+                Err(KeyringServiceError::DatabaseError { source: e, description: "Error while checking doctype".to_string() })
             }
         }
     }
@@ -247,41 +251,42 @@ impl KeyringService {
     pub(crate) async fn update_doc_type(
         &self,
         id: String,
-        doc_type: DocumentType,
-    ) -> anyhow::Result<bool> {
+        doc_type: crate::model::doc_type::DocumentType,
+    ) -> Result<bool, KeyringServiceError> {
         match self
             .db
             .exists_document_type(&doc_type.pid, &doc_type.id)
             .await
         {
-            Ok(true) => Err(anyhow!("Doctype already exists!")), // BadRequest
+            Ok(true) => Err(KeyringServiceError::DocumentTypeAlreadyExists),
             Ok(false) => {
                 match self.db.update_document_type(doc_type, &id).await {
                     Ok(id) => Ok(id),
                     Err(e) => {
                         error!("Error while adding doctype: {:?}", e);
-                        Err(anyhow!("Error while storing document type!")) // InternalError
+                        Err(KeyringServiceError::DatabaseError { source: e, description: "Error while storing document type!".to_string() })
                     }
                 }
             }
             Err(e) => {
                 error!("Error while adding document type: {:?}", e);
-                Err(anyhow!("Error while checking database!")) // InternalError
+                Err(KeyringServiceError::DatabaseError { source: e, description: "Error while checking doctype".to_string() })
             }
         }
     }
 
     #[cfg(doc_type)]
-    pub(crate) async fn delete_doc_type(&self, id: String, pid: String) -> anyhow::Result<String> {
+    pub(crate) async fn delete_doc_type(&self, id: String, pid: String) -> Result<String, KeyringServiceError> {
         match self.db.delete_document_type(&id, &pid).await {
             Ok(true) => Ok(String::from("Document type deleted!")), // NoContent
-            Ok(false) => Err(anyhow!("Document type does not exist!")), // NotFound
+            Ok(false) => Err(KeyringServiceError::DocumentTypeNotFound),
             Err(e) => {
                 error!("Error while deleting doctype: {:?}", e);
-                Err(anyhow!(
-                    "Error while deleting document type with id {}!",
-                    id
-                )) // InternalError
+                Err(KeyringServiceError::DatabaseError {
+                    source: e,
+                    description: format!("Error while deleting document type with id {}!",
+                                         id),
+                })
             }
         }
     }
@@ -291,30 +296,28 @@ impl KeyringService {
         &self,
         id: String,
         pid: String,
-    ) -> anyhow::Result<Option<DocumentType>> {
+    ) -> Result<Option<crate::model::doc_type::DocumentType>, KeyringServiceError> {
         match self.db.get_document_type(&id).await {
             //TODO: would like to send "{}" instead of "null" when dt is not found
             Ok(dt) => Ok(dt),
             Err(e) => {
                 error!("Error while retrieving doctype: {:?}", e);
-                Err(anyhow!(
-                    "Error while retrieving document type with id {} and pid {}!",
-                    id,
-                    pid
-                )) // InternalError
+                Err(KeyringServiceError::DatabaseError { source: e, description: format!("Error while retrieving document type with id {} and pid {}!", id, pid) })
             }
         }
     }
 
     #[cfg(doc_type)]
-
-    pub(crate) async fn get_doc_types(&self) -> anyhow::Result<Vec<DocumentType>> {
+    pub(crate) async fn get_doc_types(&self) -> Result<Vec<crate::model::doc_type::DocumentType>, KeyringServiceError> {
         match self.db.get_all_document_types().await {
             //TODO: would like to send "{}" instead of "null" when dt is not found
             Ok(dt) => Ok(dt),
             Err(e) => {
                 error!("Error while retrieving default doc_types: {:?}", e);
-                Err(anyhow!("Error while retrieving all document types")) // InternalError
+                Err(KeyringServiceError::DatabaseError {
+                    source: e,
+                    description: "Error while retrieving all document types".to_string(),
+                })
             }
         }
     }

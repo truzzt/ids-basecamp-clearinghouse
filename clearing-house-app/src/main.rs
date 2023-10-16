@@ -15,7 +15,6 @@ use std::sync::Arc;
 mod config;
 mod crypto;
 mod db;
-mod errors;
 mod model;
 mod ports;
 mod services;
@@ -24,6 +23,7 @@ mod util;
 /// Contains the application state
 #[derive(Clone)]
 pub(crate) struct AppState {
+    #[cfg_attr(not(doc_type), allow(dead_code))]
     pub keyring_service: Arc<services::keyring_service::KeyringService>,
     pub logging_service: Arc<services::logging_service::LoggingService>,
     pub service_config: Arc<ServiceConfig>,
@@ -92,7 +92,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Bind port and start server
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
-    tracing::info!("Starting server: Listening on {}", addr);
+    info!("Starting server: Listening on {}", addr);
     Ok(axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(util::shutdown_signal())

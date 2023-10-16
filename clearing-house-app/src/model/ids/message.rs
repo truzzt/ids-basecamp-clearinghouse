@@ -16,10 +16,6 @@ const SENDER_AGENT: &str = "sender_agent";
 const PAYLOAD: &str = "payload";
 const PAYLOAD_TYPE: &str = "payload_type";
 
-pub const RESULT_MESSAGE: &str = "ResultMessage";
-pub const REJECTION_MESSAGE: &str = "RejectionMessage";
-pub const MESSAGE_PROC_NOTIFICATION_MESSAGE: &str = "MessageProcessedNotificationMessage";
-
 /// Metadata describing payload exchanged by interacting Connectors.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct IdsMessage {
@@ -143,48 +139,6 @@ impl Default for IdsMessage {
 }
 
 impl IdsMessage {
-    pub fn processed(msg: IdsMessage) -> IdsMessage {
-        let mut message = IdsMessage::clone(msg);
-        message.id = Some(autogen(MESSAGE_PROC_NOTIFICATION_MESSAGE));
-        message.type_message = MessageType::MessageProcessedNotificationMessage;
-        message
-    }
-
-    pub fn return_result(msg: IdsMessage) -> IdsMessage {
-        let mut message = IdsMessage::clone(msg);
-        message.id = Some(autogen(RESULT_MESSAGE));
-        message.type_message = MessageType::ResultMessage;
-        message
-    }
-
-    pub fn error(msg: IdsMessage) -> IdsMessage {
-        let mut message = IdsMessage::clone(msg);
-        message.id = Some(autogen(REJECTION_MESSAGE));
-        message.type_message = MessageType::RejectionMessage;
-        message
-    }
-
-    fn clone(msg: IdsMessage) -> IdsMessage {
-        IdsMessage {
-            context: msg.context.clone(),
-            type_message: msg.type_message.clone(),
-            id: msg.id.clone(),
-            pid: msg.pid.clone(),
-            model_version: msg.model_version.clone(),
-            correlation_message: msg.correlation_message.clone(),
-            issued: msg.issued.clone(),
-            issuer_connector: msg.issuer_connector.clone(),
-            sender_agent: msg.sender_agent.clone(),
-            recipient_connector: msg.recipient_connector.clone(),
-            recipient_agent: msg.recipient_agent.clone(),
-            transfer_contract: msg.transfer_contract.clone(),
-            security_token: msg.security_token.clone(),
-            authorization_token: msg.authorization_token.clone(),
-            payload: msg.payload.clone(),
-            content_version: msg.content_version.clone(),
-            payload_type: msg.payload.clone(),
-        }
-    }
 
     pub fn restore() -> IdsMessage {
         IdsMessage {

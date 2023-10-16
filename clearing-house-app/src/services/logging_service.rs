@@ -26,13 +26,6 @@ pub enum LoggingServiceError {
     },
     #[error("User not authorized!")]
     UserNotAuthorized,
-    #[error("Authorization failed!")]
-    AuthorizationFailed {
-        source: anyhow::Error,
-        description: String,
-    },
-    #[error("Document already exists!")]
-    DocumentAlreadyExists,
     #[error("Invalid request received!")]
     InvalidRequest,
     #[error("Process already exists!")]
@@ -65,17 +58,6 @@ impl axum::response::IntoResponse for LoggingServiceError {
                 .into_response(),
             Self::UserNotAuthorized => {
                 (StatusCode::FORBIDDEN, self.to_string()).into_response()
-            }
-            Self::AuthorizationFailed {
-                source,
-                description,
-            } => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("{}: {}", description, source),
-            )
-                .into_response(),
-            Self::DocumentAlreadyExists => {
-                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
             }
             Self::InvalidRequest => {
                 (StatusCode::BAD_REQUEST, self.to_string()).into_response()
@@ -238,7 +220,7 @@ impl LoggingService {
         match m.payload {
             Some(ref payload) if !payload.is_empty() => {
                 trace!("OwnerList: '{:#?}'", &payload);
-                match serde_json::from_str::<OwnerList>(&payload) {
+                match serde_json::from_str::<OwnerList>(payload) {
                     Ok(owner_list) => {
                         for o in owner_list.owners {
                             if !owners.contains(&o) {
@@ -300,7 +282,6 @@ impl LoggingService {
         date_to: Option<String>,
         date_from: Option<String>,
         pid: String,
-        _message: ClearingHouseMessage,
     ) -> Result<IdsQueryResult, LoggingServiceError> {
         debug!("page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
 

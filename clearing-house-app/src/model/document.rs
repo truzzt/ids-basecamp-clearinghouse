@@ -277,20 +277,6 @@ impl EncryptedDocument {
     }
 }
 
-/// companion to format_pt_for_storage
-pub fn restore_pt(pt: &str) -> anyhow::Result<(String, String, String)> {
-    trace!("Trying to restore plain text");
-    let vec: Vec<&str> = pt.split(SPLIT_CT).collect();
-    if vec.len() != 3 {
-        anyhow::bail!("Could not restore plaintext");
-    }
-    Ok((
-        String::from(vec[0]),
-        String::from(vec[1]),
-        String::from(vec[2]),
-    ))
-}
-
 /// companion to format_pt_for_storage_no_dt
 pub fn restore_pt_no_dt(pt: &str) -> anyhow::Result<(String, String)> {
     trace!("Trying to restore plain text");

@@ -2,8 +2,10 @@ use super::DataStoreApi;
 use crate::db::init_database_client;
 use crate::model::constants::{
     FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT, MONGO_COLL_DOC_TYPES,
-    MONGO_COLL_MASTER_KEY, MONGO_ID, MONGO_PID,
+    MONGO_COLL_MASTER_KEY, MONGO_ID
 };
+#[cfg(doc_type)]
+use crate::model::constants::MONGO_PID;
 use crate::model::crypto::MasterKey;
 use crate::model::doc_type::DocumentType;
 use anyhow::anyhow;
@@ -179,6 +181,7 @@ impl KeyStore {
     }
 
     //TODO: Do we need to check that no documents of this type exist before we remove it from the db?
+    #[cfg(doc_type)]
     pub async fn delete_document_type(&self, id: &String, pid: &String) -> anyhow::Result<bool> {
         let coll = self
             .database
@@ -194,6 +197,7 @@ impl KeyStore {
     }
 
     /// checks if the model exits
+    #[cfg(doc_type)]
     pub async fn exists_document_type(&self, pid: &String, dt_id: &String) -> anyhow::Result<bool> {
         let coll = self
             .database
@@ -214,6 +218,7 @@ impl KeyStore {
         }
     }
 
+    #[cfg(doc_type)]
     pub async fn get_all_document_types(&self) -> anyhow::Result<Vec<DocumentType>> {
         let coll = self
             .database
@@ -241,6 +246,7 @@ impl KeyStore {
         }
     }
 
+    #[cfg(doc_type)]
     pub async fn update_document_type(
         &self,
         doc_type: DocumentType,

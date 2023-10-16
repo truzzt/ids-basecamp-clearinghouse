@@ -42,9 +42,6 @@ impl InfoModelId {
     pub fn new(id: String) -> InfoModelId {
         InfoModelId::SimpleId(id)
     }
-    pub fn complex(id: InfoModelComplexId) -> InfoModelId {
-        InfoModelId::ComplexId(id)
-    }
 }
 
 impl std::fmt::Display for InfoModelId {
@@ -72,9 +69,6 @@ pub enum InfoModelDateTime {
 impl InfoModelDateTime {
     pub fn new() -> InfoModelDateTime {
         InfoModelDateTime::Time(chrono::Local::now())
-    }
-    pub fn complex() -> InfoModelDateTime {
-        InfoModelDateTime::ComplexTime(InfoModelTimeStamp::default())
     }
 }
 
@@ -344,17 +338,6 @@ pub struct SecurityToken {
     //IDS name
     #[serde(rename = "ids:tokenValue", alias = "tokenValue")]
     pub token_value: String,
-}
-
-impl SecurityToken {
-    pub fn new() -> SecurityToken {
-        SecurityToken {
-            type_message: MessageType::DAPSToken,
-            id: Some(String::new()),
-            token_format: None,
-            token_value: String::new(),
-        }
-    }
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]

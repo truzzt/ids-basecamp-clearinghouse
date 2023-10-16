@@ -24,12 +24,6 @@ pub struct OwnerList {
     pub owners: Vec<String>,
 }
 
-impl OwnerList {
-    pub fn new(owners: Vec<String>) -> Self {
-        Self { owners }
-    }
-}
-
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Receipt {
     pub data: biscuit::jws::Compact<DataTransaction, biscuit::Empty>,
