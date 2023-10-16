@@ -1,4 +1,4 @@
-package de.truzzt.clearinghouse.edc;
+package de.truzzt.clearinghouse.edc.tests;
 
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,9 +24,7 @@ import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.glassfish.jersey.internal.routing.RequestSpecificConsumesProducesAcceptor;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,7 +36,7 @@ public class TestUtils {
 
     public static final String TEST_BASE_URL = "http://localhost:8000";
     private static final String TEST_PAYLOAD = "Hello World";
-    private static final String VALID_LOG_MESSAGE_HEADER_PATH = "./messages/LogMessage.json";
+    private static final String VALID_HEADER_JSON = "messages/valid-header.json";
 
     private static <T> T readJsonFile(ObjectMapper mapper, Class<T> type, String path) {
 
@@ -75,17 +73,13 @@ public class TestUtils {
 
 
     public static Message getValidHeader(ObjectMapper mapper) {
-        return readJsonFile(mapper, Message.class, VALID_LOG_MESSAGE_HEADER_PATH);
+        return readJsonFile(mapper, Message.class, VALID_HEADER_JSON);
     }
 
-    public static Message getinvalidTokenHeader() {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
+    public static Message getInvalidTokenHeader(ObjectMapper mapper) {
 
-            File file = new File(LOG_MESSAGE_JSON_PATH);
-            file.createNewFile();
+            Message message = readJsonFile(mapper, Message.class, VALID_HEADER_JSON);
 
-            Message message = mapper.readValue(file, Message.class);
             message.getSecurityToken().setTokenValue("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzY29wZXMiOlsiaWRzYz" +
                     "pJRFNfQ09OTkVDVE9SX0FUVFJJQlVURVNfQUxMIl0sImF1ZCI6Imlkc2M6SURTX0NPTk5FQ1RPUlNfQUxMIiwiaXNzIjo" +
                     "iaHR0cHM6Ly9kYXBzLmFpc2VjLmZyYXVuaG9mZXIuZGUiLCJuYmYiOjE2MzQ2NTA3MzksImlhdCI6MTYzNDY1MDczOSw" +
@@ -96,26 +90,14 @@ public class TestUtils {
                     "0ZTYzMjRmMTJmMTA5MTZmNDZiZmRlYjE4YjhkZDZkYTc4Y2M2YTZhMDU2NjAzMWZhNWYxYTM5ZWM4ZTYwMCJ9.hekZoP" +
                     "DjEWaXreQl3l0PUIjBOPQhAl0w2mH4_PdNWuA");
             return message;
-        } catch (IOException ioe){
-            ioe.printStackTrace();
-            return null;
-        }
     }
 
-    public static Message getNotLogMessageValidHeader() {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
+    public static Message getNotLogMessageValidHeader(ObjectMapper mapper) {
 
-            File file = new File(LOG_MESSAGE_JSON_PATH);
-            file.createNewFile();
+        Message message = readJsonFile(mapper, Message.class, VALID_HEADER_JSON);
 
-            Message message = mapper.readValue(file, Message.class);
-            message.setType("ids:otherMessage");
-            return message;
-        } catch (IOException ioe){
-            ioe.printStackTrace();
-            return null;
-        }
+        message.setType("ids:otherMessage");
+        return message;
     }
 
     public static Response getValidResponse(String url) {
@@ -199,8 +181,8 @@ public class TestUtils {
                     .build();
 
             return new LoggingMessageRequest(requestHeader, handlerRequest.getPayload());
-
     }
+
     public static ResponseBody getValidResponseBody(){
         return ResponseBody.create(
                 MediaType.get("application/json; charset=utf-8"),
@@ -208,52 +190,38 @@ public class TestUtils {
         );
     }
 
-
-    public static HandlerRequest getValidHandlerRequest(){
+    public static HandlerRequest getValidHandlerRequest(ObjectMapper mapper){
         return HandlerRequest.Builder.newInstance()
                 .pid(UUID.randomUUID().toString())
-                .header(getValidHeader() )
+                .header(getValidHeader(mapper))
                 .payload(TEST_PAYLOAD).build();
     }
 
-    public static HandlerRequest getInvalidTokenHandlerRequest(){
+    public static HandlerRequest getInvalidTokenHandlerRequest(ObjectMapper mapper){
         return HandlerRequest.Builder.newInstance()
                 .pid(UUID.randomUUID().toString())
-                .header(getinvalidTokenHeader())
+                .header(getInvalidTokenHeader(mapper))
                 .payload(TEST_PAYLOAD).build();
     }
 
-    public static HandlerRequest getInvalidHandlerRequest(){
+    public static HandlerRequest getInvalidHandlerRequest(ObjectMapper mapper){
         return HandlerRequest.Builder.newInstance()
                 .pid(UUID.randomUUID().toString())
-                .header(getNotLogMessageValidHeader() )
+                .header(getNotLogMessageValidHeader(mapper) )
                 .payload(TEST_PAYLOAD).build();
     }
 
-    public static AppSenderRequest getValidAppSenderRequest(){
+    public static AppSenderRequest getValidAppSenderRequest(ObjectMapper mapper){
         return new AppSenderRequest(TEST_BASE_URL+"/messages/log/" + UUID.randomUUID(),
                 JWT.create().toString(),
-                getValidHandlerRequest()
+                getValidHandlerRequest(mapper)
         );
     }
 
-    public static AppSenderRequest getInvalidUrlAppSenderRequest(){
+    public static AppSenderRequest getInvalidUrlAppSenderRequest(ObjectMapper mapper){
         return new AppSenderRequest("" + UUID.randomUUID(),
                 JWT.create().toString(),
-                getValidHandlerRequest()
+                getValidHandlerRequest(mapper)
         );
     }
-
-    public static String getBuildJwtToken(Monitor monitor,
-                                          IdsId connectorId,
-                                          TypeManagerUtil typeManagerUtil,
-                                          AppSender appSender,
-                                          ServiceExtensionContext context,
-                                          HandlerRequest handlerRequest){
-
-        LogMessageHandler handler = new LogMessageHandler(monitor, connectorId, typeManagerUtil, appSender,context);
-        return handler.buildJWTToken(handlerRequest.getHeader().getSecurityToken(), context);
-    }
-
-
 }
