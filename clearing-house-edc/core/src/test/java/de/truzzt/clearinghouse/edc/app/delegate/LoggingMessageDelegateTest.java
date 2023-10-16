@@ -1,6 +1,6 @@
 package de.truzzt.clearinghouse.edc.app.delegate;
 
-import de.truzzt.clearinghouse.edc.app.TestUtils;
+import de.truzzt.clearinghouse.edc.TestUtils;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageRequest;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;

@@ -1,6 +1,7 @@
 package de.truzzt.clearinghouse.edc.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.truzzt.clearinghouse.edc.TestUtils;
 import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
 import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
