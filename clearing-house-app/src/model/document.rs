@@ -13,11 +13,11 @@ use uuid::Uuid;
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct DocumentPart {
     pub name: String,
-    pub content: Option<String>,
+    pub content: String,
 }
 
 impl DocumentPart {
-    pub fn new(name: String, content: Option<String>) -> DocumentPart {
+    pub fn new(name: String, content: String) -> DocumentPart {
         DocumentPart { name, content }
     }
 
@@ -46,18 +46,11 @@ impl DocumentPart {
             let nonce = GenericArray::from_slice(nonce);
             let cipher = Aes256GcmSiv::new(key);
 
-            match &self.content {
-                Some(pt) => {
-                    let pt = format_pt_for_storage(&self.name, pt);
-                    match cipher.encrypt(nonce, pt.as_bytes()) {
-                        Ok(ct) => Ok(ct),
-                        Err(e) => anyhow::bail!("Error while encrypting {}", e),
-                    }
-                }
-                None => {
-                    error!("Tried to encrypt empty document part.");
-                    anyhow::bail!("Nothing to encrypt");
-                }
+
+            let pt = format_pt_for_storage(&self.name, &self.content);
+            match cipher.encrypt(nonce, pt.as_bytes()) {
+                Ok(ct) => Ok(ct),
+                Err(e) => anyhow::bail!("Error while encrypting {}", e),
             }
         }
     }
@@ -71,7 +64,7 @@ impl DocumentPart {
             Ok(pt) => {
                 let pt = String::from_utf8(pt)?;
                 let (name, content) = restore_pt_no_dt(&pt)?;
-                Ok(DocumentPart::new(name, Some(content)))
+                Ok(DocumentPart::new(name, content))
             }
             Err(e) => {
                 anyhow::bail!("Error while decrypting: {}", e)
@@ -112,10 +105,6 @@ impl Document {
         };
 
         for part in self.parts.iter() {
-            if part.content.is_none() {
-                // no content, so we skip this one
-                continue;
-            }
             // check if there's a key for this part
             if !keys.contains_key(&part.name) {
                 error!("Missing key for part '{}'", &part.name);
@@ -150,8 +139,8 @@ impl Document {
         format_tc(self.tc)
     }
 
-    pub fn get_parts_map(&self) -> HashMap<String, Option<String>> {
-        let mut p_map = HashMap::new();
+    pub fn get_parts_map(&self) -> HashMap<String, String> {
+        let mut p_map = HashMap::with_capacity(self.parts.len());
         for part in self.parts.iter() {
             p_map.insert(part.name.clone(), part.content.clone());
         }

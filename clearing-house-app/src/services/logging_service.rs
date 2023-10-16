@@ -12,22 +12,12 @@ use crate::model::{
 };
 use crate::services::document_service::DocumentService;
 
-#[derive(Clone, Debug)]
-pub struct LoggingService {
-    db: ProcessStore,
-    doc_api: Arc<DocumentService>,
-    write_lock: Arc<tokio::sync::Mutex<()>>,
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum LoggingServiceError {
-    // BadRequest
     #[error("Received empty payload, which cannot be logged!")]
     EmptyPayloadReceived,
-    // BadRequest
     #[error("Accessing default PID is not allowed!")]
     AttemptedAccessToDefaultPid,
-    // InternalError
     #[error("Error during database operation: {description}: {source}")]
     DatabaseError {
         source: anyhow::Error,
@@ -35,13 +25,11 @@ pub enum LoggingServiceError {
     },
     #[error("User not authorized!")]
     UserNotAuthorized,
-    // Forbidden
     #[error("Authorization failed!")]
     AuthorizationFailed {
         source: anyhow::Error,
         description: String,
     },
-    // BadRequest
     #[error("Document already exists!")]
     DocumentAlreadyExists,
     #[error("Invalid request received!")]
@@ -50,19 +38,23 @@ pub enum LoggingServiceError {
     ProcessAlreadyExists,
     #[error("Process '{0}' does not exist!")]
     ProcessDoesNotExist(String),
+    #[error("Parsing error in {0}")]
+    ParsingError(#[from] serde_json::Error),
+    #[error("DocumentService error in {0}")]
+    DocumentServiceError(#[from] crate::services::document_service::DocumentServiceError),
 }
 
 impl axum::response::IntoResponse for LoggingServiceError {
     fn into_response(self) -> axum::response::Response {
         use axum::http::StatusCode;
         match self {
-            LoggingServiceError::EmptyPayloadReceived => {
+            Self::EmptyPayloadReceived => {
                 (StatusCode::BAD_REQUEST, self.to_string()).into_response()
             }
-            LoggingServiceError::AttemptedAccessToDefaultPid => {
+            Self::AttemptedAccessToDefaultPid => {
                 (StatusCode::BAD_REQUEST, self.to_string()).into_response()
             }
-            LoggingServiceError::DatabaseError {
+            Self::DatabaseError {
                 source,
                 description,
             } => (
@@ -70,10 +62,10 @@ impl axum::response::IntoResponse for LoggingServiceError {
                 format!("{}: {}", description, source),
             )
                 .into_response(),
-            LoggingServiceError::UserNotAuthorized => {
+            Self::UserNotAuthorized => {
                 (StatusCode::FORBIDDEN, self.to_string()).into_response()
             }
-            LoggingServiceError::AuthorizationFailed {
+            Self::AuthorizationFailed {
                 source,
                 description,
             } => (
@@ -81,20 +73,31 @@ impl axum::response::IntoResponse for LoggingServiceError {
                 format!("{}: {}", description, source),
             )
                 .into_response(),
-            LoggingServiceError::DocumentAlreadyExists => {
+            Self::DocumentAlreadyExists => {
                 (StatusCode::BAD_REQUEST, self.to_string()).into_response()
             }
-            LoggingServiceError::InvalidRequest => {
+            Self::InvalidRequest => {
                 (StatusCode::BAD_REQUEST, self.to_string()).into_response()
             }
-            LoggingServiceError::ProcessAlreadyExists => {
+            Self::ProcessAlreadyExists => {
                 (StatusCode::BAD_REQUEST, self.to_string()).into_response()
             }
-            LoggingServiceError::ProcessDoesNotExist(_) => {
+            Self::ProcessDoesNotExist(_) => {
                 (StatusCode::NOT_FOUND, self.to_string()).into_response()
             }
+            Self::ParsingError(_) => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
+            Self::DocumentServiceError(e) => e.into_response(),
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct LoggingService {
+    db: ProcessStore,
+    doc_api: Arc<DocumentService>,
+    write_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl LoggingService {
@@ -151,7 +154,7 @@ impl LoggingService {
 
         // transform message to document
         debug!("transforming message to document...");
-        let mut doc = Document::from(m);
+        let mut doc = Document::try_from(m).map_err(LoggingServiceError::ParsingError)?;
 
         // lock write access
         let _x = self.write_lock.lock().await;
@@ -198,7 +201,7 @@ impl LoggingService {
                     }
                     Err(e) => {
                         error!("Error while creating document: {:?}", e);
-                        Err(LoggingServiceError::DocumentAlreadyExists) // BadRequest
+                        Err(LoggingServiceError::DocumentServiceError(e))
                     }
                 }
             }
@@ -340,10 +343,7 @@ impl LoggingService {
             }
             Err(e) => {
                 error!("Error while retrieving message: {:?}", e);
-                Err(LoggingServiceError::DatabaseError {
-                    source: e,
-                    description: format!("Error while retrieving messages for pid '{pid}'"),
-                })
+                Err(LoggingServiceError::DocumentServiceError(e))
             }
         }
     }
@@ -422,6 +422,7 @@ impl LoggingService {
 mod test {
     use super::LoggingService;
     use crate::model::constants::DEFAULT_PROCESS_ID;
+
     #[test]
     fn check_for_default_pid() {
         assert!(LoggingService::check_for_default_pid(DEFAULT_PROCESS_ID).is_err());

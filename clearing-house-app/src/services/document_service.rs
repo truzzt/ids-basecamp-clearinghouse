@@ -12,6 +12,52 @@ use anyhow::anyhow;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
+#[derive(thiserror::Error, Debug)]
+pub enum DocumentServiceError {
+    #[error("Document already exists!")]
+    DocumentAlreadyExists,
+    #[error("Document contains no payload!")]
+    MissingPayload,
+    #[error("Error during database operation: {description}: {source}")]
+    DatabaseError {
+        source: anyhow::Error,
+        description: String,
+    },
+    #[error("Error while creating the chain hash!")]
+    ChainHashError,
+    #[error("Error while retrieving keys from keyring!")]
+    KeyringServiceError(#[from] anyhow::Error),
+    #[error("Invalid dates in query!")]
+    InvalidDates,
+    #[error("Document not found!")]
+    NotFound,
+    #[error("Key Ciphertext corrupted!")]
+    CorruptedCiphertext(#[from] hex::FromHexError),
+}
+
+impl axum::response::IntoResponse for DocumentServiceError {
+    fn into_response(self) -> axum::response::Response {
+        use axum::http::StatusCode;
+        match self {
+            Self::DocumentAlreadyExists => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            Self::MissingPayload => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            Self::DatabaseError {
+                source,
+                description,
+            } => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("{}: {}", description, source),
+            )
+                .into_response(),
+            Self::ChainHashError => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
+            Self::KeyringServiceError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            Self::InvalidDates => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            Self::NotFound => (StatusCode::NOT_FOUND, self.to_string()).into_response(),
+            Self::CorruptedCiphertext(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct DocumentService {
     db: DataStore,
@@ -28,30 +74,30 @@ impl DocumentService {
         &self,
         ch_claims: ChClaims,
         doc: Document,
-    ) -> anyhow::Result<DocumentReceipt> {
+    ) -> Result<DocumentReceipt, DocumentServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         // data validation
         let payload: Vec<String> = doc
             .parts
             .iter()
             .filter(|p| *PAYLOAD_PART == p.name)
-            .map(|p| p.content.as_ref().unwrap().clone())
+            .map(|p| p.content.clone())
             .collect();
-        if payload.len() > 1 {
-            return Err(anyhow!("Document contains two or more payloads!")); // BadRequest
-        } else if payload.is_empty() {
-            return Err(anyhow!("Document contains no payload!")); // BadRequest
+
+        // If the document contains more than 1 payload we panic. This should never happen!
+        assert!(payload.len() <= 1, "Document contains two or more payloads!");
+        if payload.is_empty() {
+            return Err(DocumentServiceError::MissingPayload);
         }
 
         // check if doc id already exists
         match self.db.exists_document(&doc.id).await {
             Ok(true) => {
                 warn!("Document exists already!");
-                Err(anyhow!("Document exists already!")) // BadRequest
+                Err(DocumentServiceError::DocumentAlreadyExists)
             }
             _ => {
-                debug!("Document does not exists!");
-                debug!("getting keys");
+                trace!("getting keys");
 
                 // TODO: This needs some attention, because keyring api called `create_service_token` on `ch_claims`
                 let keys = match self
@@ -93,13 +139,12 @@ impl DocumentService {
                             info!("No entries found for pid {}. Beginning new chain!", doc.pid);
                         } else {
                             // If this happens, db didn't find a tc entry that should exist.
-                            return Err(anyhow!("Error while creating the chain hash!"));
-                            // InternalError
+                            return Err(DocumentServiceError::ChainHashError);
                         }
                     }
                     Err(e) => {
                         error!("Error while creating the chain hash: {:?}", e);
-                        return Err(anyhow!("Error while creating the chain hash!"));
+                        return Err(DocumentServiceError::ChainHashError);
                     }
                 }
 
@@ -108,13 +153,13 @@ impl DocumentService {
                 let receipt =
                     DocumentReceipt::new(enc_doc.ts, &enc_doc.pid, &enc_doc.id, &enc_doc.hash);
 
-                debug!("storing document ....");
+                trace!("storing document ....");
                 // store document
                 match self.db.add_document(enc_doc).await {
                     Ok(_b) => Ok(receipt),
                     Err(e) => {
                         error!("Error while adding: {:?}", e);
-                        Err(anyhow!("Error while storing document!"))
+                        Err(DocumentServiceError::DatabaseError { source: e, description: "Error while adding document".to_string() })
                     }
                 }
             }
@@ -132,7 +177,7 @@ impl DocumentService {
         date_from: Option<String>,
         date_to: Option<String>,
         pid: String,
-    ) -> anyhow::Result<QueryResult> {
+    ) -> Result<QueryResult, DocumentServiceError> {
         debug!("Trying to retrieve documents for pid '{}'...", &pid);
         trace!("...user '{:?}'", &ch_claims.client_id);
         debug!(
@@ -140,33 +185,8 @@ impl DocumentService {
             page, size, sort
         );
 
-        // Parameter validation for pagination:
-        // Valid pages start from 1
-        // Max page number as of yet unknown
-        let sanitized_page = match page {
-            Some(p) => {
-                if p > 0 {
-                    p
-                } else {
-                    warn!("...invalid page requested. Falling back to 1.");
-                    1
-                }
-            }
-            None => 1,
-        };
-
-        // Valid sizes are between 1 and MAX_NUM_RESPONSE_ENTRIES (1000)
-        let sanitized_size = match size {
-            Some(s) => {
-                if s > 0 && s <= MAX_NUM_RESPONSE_ENTRIES {
-                    s
-                } else {
-                    warn!("...invalid size requested. Falling back to default.");
-                    DEFAULT_NUM_RESPONSE_ENTRIES
-                }
-            }
-            None => DEFAULT_NUM_RESPONSE_ENTRIES,
-        };
+        let sanitized_page = Self::sanitize_page(page);
+        let sanitized_size = Self::sanitize_size(size);
 
         // Sorting order is already validated and defaults to descending
         let sanitized_sort = sort.unwrap_or(SortingOrder::Descending);
@@ -178,14 +198,13 @@ impl DocumentService {
         // Validation of dates with various checks. If none given dates default to date_now (date_to) and (date_now - 2 weeks) (date_from)
         let Ok((sanitized_date_from, sanitized_date_to)) =
             validate_and_sanitize_dates(parsed_date_from, parsed_date_to, None)
-        else {
-            debug!("date validation failed!");
-            return Err(anyhow!("Invalid date parameter!")); // BadRequest
-        };
+            else {
+                debug!("date validation failed!");
+                return Err(DocumentServiceError::InvalidDates);
+            };
 
         //new behavior: if pages are "invalid" return {}. Do not adjust page
         //either call db with type filter or without to get cts
-        let start = chrono::Local::now();
         debug!(
             "... using pagination with page: {}, size:{} and sort:{:#?}",
             sanitized_page, sanitized_size, &sanitized_sort
@@ -211,7 +230,7 @@ impl DocumentService {
             Ok(cts) => cts,
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
-                return Err(anyhow!("Error while retrieving document for {}", &pid));
+                return Err(DocumentServiceError::DatabaseError { source: e, description: "Error while retrieving document".to_string() });
             }
         };
 
@@ -257,8 +276,7 @@ impl DocumentService {
                 Ok(key_map) => key_map,
                 Err(e) => {
                     error!("Error while retrieving keys from keyring: {:?}", e);
-                    return Err(anyhow!("Error while retrieving keys from keyring"));
-                    // InternalError
+                    return Err(DocumentServiceError::KeyringServiceError(e));
                 }
             };
             debug!("... keys received. Starting decryption...");
@@ -279,9 +297,7 @@ impl DocumentService {
                 })
                 .collect();
             debug!("...done.");
-            let end = chrono::Local::now();
-            let diff = end - start;
-            info!("Total time taken to run in ms: {}", diff.num_milliseconds());
+
             result.documents = pts_bulk;
             Ok(result)
         }
@@ -294,7 +310,7 @@ impl DocumentService {
         pid: String,
         id: String,
         hash: Option<String>,
-    ) -> anyhow::Result<Document> {
+    ) -> Result<Document, DocumentServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         trace!(
             "trying to retrieve document with id '{}' for pid '{}'",
@@ -327,32 +343,63 @@ impl DocumentService {
                                     Ok(d) => Ok(d),
                                     Err(e) => {
                                         warn!("Got empty document from decryption! {:?}", e);
-                                        Err(anyhow!("Document {} not found!", &id))
-                                        // NotFound
+                                        Err(DocumentServiceError::NotFound)
                                     }
                                 }
                             }
                             Err(e) => {
                                 error!("Error while retrieving keys from keyring: {:?}", e);
-                                Err(anyhow!("Error while retrieving keys"))
-                                // InternalError
+                                Err(DocumentServiceError::KeyringServiceError(e))
                             }
                         }
                     }
                     Err(e) => {
                         error!("Error while decoding ciphertext: {:?}", e);
-                        Err(anyhow!("Key Ciphertext corrupted")) // InternalError
+                        Err(DocumentServiceError::CorruptedCiphertext(e)) // InternalError
                     }
                 }
             }
             Ok(None) => {
                 debug!("Nothing found in db!");
-                Err(anyhow!("Document {} not found!", &id)) // NotFound
+                Err(DocumentServiceError::NotFound) // NotFound
             }
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
-                Err(anyhow!("Error while retrieving document {}", &id)) // InternalError
+                Err(DocumentServiceError::DatabaseError {source: e, description: "Error while retrieving document".to_string()})
             }
+        }
+    }
+
+    #[inline]
+    fn sanitize_page(page: Option<u64>) -> u64 {
+        // Parameter validation for pagination:
+        // Valid pages start from 1
+        match page {
+            Some(p) => {
+                if p > 0 {
+                    p
+                } else {
+                    warn!("...invalid page requested. Falling back to 1.");
+                    1
+                }
+            }
+            None => 1,
+        }
+    }
+
+    #[inline]
+    fn sanitize_size(size: Option<u64>) -> u64 {
+        // Valid sizes are between 1 and MAX_NUM_RESPONSE_ENTRIES (1000)
+        match size {
+            Some(s) => {
+                if s > 0 && s <= MAX_NUM_RESPONSE_ENTRIES {
+                    s
+                } else {
+                    warn!("...invalid size requested. Falling back to default.");
+                    DEFAULT_NUM_RESPONSE_ENTRIES
+                }
+            }
+            None => DEFAULT_NUM_RESPONSE_ENTRIES,
         }
     }
 }
