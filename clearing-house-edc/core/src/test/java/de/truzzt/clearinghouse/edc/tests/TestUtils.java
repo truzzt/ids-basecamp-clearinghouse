@@ -21,34 +21,61 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.glassfish.jersey.internal.routing.RequestSpecificConsumesProducesAcceptor;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 
 public class TestUtils {
 
-    public static final String TEST_PAYLOAD = "Hello World";
     public static final String TEST_BASE_URL = "http://localhost:8000";
+    private static final String TEST_PAYLOAD = "Hello World";
+    private static final String VALID_LOG_MESSAGE_HEADER_PATH = "./messages/LogMessage.json";
 
-    public static final String LOG_MESSAGE_JSON_PATH = "src/test/java/de/truzzt/clearinghouse/edc/logMessage.json";
+    private static <T> T readJsonFile(ObjectMapper mapper, Class<T> type, String path) {
 
-    public static Message getValidHeader() {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
+        ClassLoader classLoader = TestUtils.class.getClassLoader();
+        var jsonResource = classLoader.getResource(path);
 
-            File file = new File(LOG_MESSAGE_JSON_PATH);
-            file.createNewFile();
-
-            Message message = mapper.readValue(file, Message.class);
-
-            return message;
-        } catch (IOException ioe){
-            ioe.printStackTrace();
-            return null;
+        if (jsonResource == null) {
+            throw new EdcException("Header json file not found: " + path);
         }
+
+        URI jsonUrl;
+        try {
+            jsonUrl = jsonResource.toURI();
+        } catch (URISyntaxException e) {
+            throw new EdcException("Error finding json file on classpath", e);
+        }
+
+        Path filePath = Path.of(jsonUrl);
+        if (!Files.exists(filePath)) {
+            throw new EdcException("Header json file not found: " + path);
+        }
+
+        T object = null;
+        try {
+            var jsonContents = Files.readAllBytes(filePath);
+            object = mapper.readValue(jsonContents, type);
+
+        } catch (IOException e){
+            throw new EdcException("Error parsing json file", e);
+        }
+
+        return object;
+    }
+
+
+    public static Message getValidHeader(ObjectMapper mapper) {
+        return readJsonFile(mapper, Message.class, VALID_LOG_MESSAGE_HEADER_PATH);
     }
 
     public static Message getinvalidTokenHeader() {
