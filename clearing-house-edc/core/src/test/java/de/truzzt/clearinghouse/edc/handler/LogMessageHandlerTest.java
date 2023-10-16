@@ -23,6 +23,7 @@ import org.mockito.MockitoAnnotations;
 import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_DEFAULT_VALUE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
@@ -107,7 +108,10 @@ class LogMessageHandlerTest {
         assertEquals("JWT Token subject is missing",exception.getMessage());
     }
 
+    @Test
     public void successfulBuildJwtToken() {
+        doReturn("1").when(context).getSetting(anyString(), anyString());
+
         var response = logMessageHandler.buildJWTToken(
                 TestUtils.getValidHandlerRequest(mapper)
                         .getHeader()
