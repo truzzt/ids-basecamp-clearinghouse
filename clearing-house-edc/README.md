@@ -25,7 +25,20 @@ Local execution:
 
     java -Dedc.fs.config=launchers/connector-local/resources/config.properties -Dedc.keystore=launchers/connector-local/resources/keystore.jks -Dedc.keystore.password=password -Dedc.vault=launchers/connector-local/resources/vault.properties -jar launchers/connector-local/build/libs/clearing-house-edc.jar
 
+## Tests
 
-## Operate
+### Running Tests
+To run the unit-tests execute the following command:
+
+    ./gradlew test
 
 
+### Test Coverage
+To generate the tests coverage execute the following command:
+
+    ./gradlew jacocoTestReport
+
+The coverage reports will be available in the following folders:
+
+- [core/build/reports/jacoco/test/html/index.html](./core/build/reports/jacoco/test/html/index.html)
+- [extensions/multipart/build/reports/jacoco/test/html/index.html](./extensions/multipart/build/reports/jacoco/test/html/index.html)
