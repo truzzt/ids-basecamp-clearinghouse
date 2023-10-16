@@ -1,7 +1,7 @@
 package de.truzzt.clearinghouse.edc.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.TestUtils;
+import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
 import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
@@ -42,6 +42,8 @@ public class AppSenderTest {
     @Mock
     private EdcHttpClient httpClient;
 
+    private ObjectMapper mapper = new ObjectMapper();
+
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -52,21 +54,26 @@ public class AppSenderTest {
     @Test
     public void sendSuccessful() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest().toString().getBytes()).when(typeManagerUtil).toJson(any(Object.class));
-        doReturn(TestUtils.getValidResponse(TestUtils.getValidAppSenderRequest().getUrl())).when(httpClient).execute(any(Request.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest().getUrl())).when(senderDelegate).parseResponseBody(any(ResponseBody.class));
+        doReturn(TestUtils.getValidHandlerRequest(mapper).toString().getBytes())
+                .when(typeManagerUtil).toJson(any(Object.class));
+        doReturn(TestUtils.getValidResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+                .when(httpClient).execute(any(Request.class));
+        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+                .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
 
-        var response = sender.send(TestUtils.getValidAppSenderRequest(), senderDelegate);
+        var response = sender.send(TestUtils.getValidAppSenderRequest(mapper), senderDelegate);
 
         assertNotNull(response);
     }
 
     @Test
-    public void sendWithHttpResquestError() throws IOException {
+    public void sendWithHttpRequestError() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest().toString().getBytes()).when(typeManagerUtil).toJson(any(Object.class));
+        doReturn(TestUtils.getValidHandlerRequest(mapper).toString().getBytes())
+                .when(typeManagerUtil).toJson(any(Object.class));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> sender.send(TestUtils.getInvalidUrlAppSenderRequest(), senderDelegate));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                sender.send(TestUtils.getInvalidUrlAppSenderRequest(mapper), senderDelegate));
 
         assertEquals("Expected URL scheme 'http' or 'https'", exception.getMessage().substring(0,37));
     }
@@ -74,11 +81,15 @@ public class AppSenderTest {
     @Test
     public void sendWithUnsuccessfulResponseBodyError() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest().toString().getBytes()).when(typeManagerUtil).toJson(any(Object.class));
-        doReturn(TestUtils.getUnsuccessfulResponse(TestUtils.getValidAppSenderRequest().getUrl())).when(httpClient).execute(any(Request.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest().getUrl())).when(senderDelegate).parseResponseBody(any(ResponseBody.class));
+        doReturn(TestUtils.getValidHandlerRequest(mapper).toString().getBytes())
+                .when(typeManagerUtil).toJson(any(Object.class));
+        doReturn(TestUtils.getUnsuccessfulResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+                .when(httpClient).execute(any(Request.class));
+        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+                .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
 
-        EdcException exception = assertThrows(EdcException.class, () -> sender.send(TestUtils.getValidAppSenderRequest(), senderDelegate));
+        EdcException exception = assertThrows(EdcException.class, () ->
+                sender.send(TestUtils.getValidAppSenderRequest(mapper), senderDelegate));
 
         assertEquals("Received an error from Clearing House App. Status: 401, message: Unauthorized", exception.getMessage());
     }
@@ -86,16 +97,16 @@ public class AppSenderTest {
     @Test
     public void sendWithNullResponseBodyError() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest().toString().getBytes()).when(typeManagerUtil).toJson(any(Object.class));
-        doReturn(TestUtils.getResponseWithoutBody(TestUtils.getValidAppSenderRequest().getUrl())).when(httpClient).execute(any(Request.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest().getUrl())).when(senderDelegate).parseResponseBody(any(ResponseBody.class));
+        doReturn(TestUtils.getValidHandlerRequest(mapper).toString().getBytes())
+                .when(typeManagerUtil).toJson(any(Object.class));
+        doReturn(TestUtils.getResponseWithoutBody(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+                .when(httpClient).execute(any(Request.class));
+        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+                .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
 
-        EdcException exception = assertThrows(EdcException.class, () -> sender.send(TestUtils.getValidAppSenderRequest(), senderDelegate));
+        EdcException exception = assertThrows(EdcException.class, () ->
+                sender.send(TestUtils.getValidAppSenderRequest(mapper), senderDelegate));
 
         assertEquals("Error reading Clearing House App response body", exception.getMessage());
     }
-
-
-
-
 }

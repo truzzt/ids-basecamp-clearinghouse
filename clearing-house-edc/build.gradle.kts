@@ -15,7 +15,6 @@
 
 plugins {
     `java-library`
-    `jacoco-report-aggregation`
 }
 
 val javaVersion: String by project
@@ -24,8 +23,4 @@ java {
    toolchain {
       languageVersion = JavaLanguageVersion.of(javaVersion)
    }
-}
-
-tasks.check {
-   dependsOn(tasks.named<JacocoReport>("testCodeCoverageReport"))
 }
