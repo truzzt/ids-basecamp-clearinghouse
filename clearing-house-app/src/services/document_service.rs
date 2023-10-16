@@ -8,10 +8,10 @@ use crate::model::document::Document;
 use crate::model::{parse_date, validate_and_sanitize_dates, SortingOrder};
 use crate::services::keyring_service::KeyringService;
 use crate::services::{DocumentReceipt, QueryResult};
-use anyhow::anyhow;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
+/// Error type for DocumentService
 #[derive(thiserror::Error, Debug)]
 pub enum DocumentServiceError {
     #[error("Document already exists!")]
@@ -26,13 +26,15 @@ pub enum DocumentServiceError {
     #[error("Error while creating the chain hash!")]
     ChainHashError,
     #[error("Error while retrieving keys from keyring!")]
-    KeyringServiceError(#[from] anyhow::Error),
+    KeyringServiceError(#[from] crate::services::keyring_service::KeyringServiceError),
     #[error("Invalid dates in query!")]
     InvalidDates,
     #[error("Document not found!")]
     NotFound,
     #[error("Key Ciphertext corrupted!")]
     CorruptedCiphertext(#[from] hex::FromHexError),
+    #[error("Error while encrypting!")]
+    EncryptionError,
 }
 
 impl axum::response::IntoResponse for DocumentServiceError {
@@ -50,10 +52,11 @@ impl axum::response::IntoResponse for DocumentServiceError {
             )
                 .into_response(),
             Self::ChainHashError => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
-            Self::KeyringServiceError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            Self::KeyringServiceError(e) => e.into_response(),
             Self::InvalidDates => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::NotFound => (StatusCode::NOT_FOUND, self.to_string()).into_response(),
             Self::CorruptedCiphertext(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            Self::EncryptionError => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
         }
     }
 }
@@ -111,7 +114,7 @@ impl DocumentService {
                     }
                     Err(e) => {
                         error!("Error while retrieving keys: {:?}", e);
-                        Err(anyhow!("Error while retrieving keys!")) // InternalError
+                        Err(DocumentServiceError::KeyringServiceError(e))
                     }
                 }?;
 
@@ -123,7 +126,7 @@ impl DocumentService {
                     }
                     Err(e) => {
                         error!("Error while encrypting: {:?}", e);
-                        Err(anyhow!("Error while encrypting!")) // InternalError
+                        Err(DocumentServiceError::EncryptionError)
                     }
                 }?;
 

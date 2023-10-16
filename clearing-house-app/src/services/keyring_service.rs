@@ -3,8 +3,37 @@ use crate::crypto::restore_key_map;
 use crate::db::key_store::KeyStore;
 use crate::model::claims::ChClaims;
 use crate::model::crypto::{KeyCtList, KeyMap, KeyMapListItem};
-use crate::model::doc_type::DocumentType;
-use anyhow::anyhow;
+
+#[derive(Debug, thiserror::Error)]
+pub enum KeyringServiceError {
+    #[error("Keymap generation error")]
+    KeymapGenerationFailed,
+    #[error("Keymap restoration error")]
+    KeymapRestorationFailed,
+    #[error("Document type not found")]
+    DocumentTypeNotFound,
+    #[error("Error during database operation: {description}: {source}")]
+    DatabaseError {
+        source: anyhow::Error,
+        description: String,
+    },
+    #[error("Error while decrypting keys")]
+    DecryptionError,
+}
+
+impl axum::response::IntoResponse for KeyringServiceError {
+    fn into_response(self) -> axum::response::Response {
+        use axum::http::StatusCode;
+        match self {
+            Self::KeymapGenerationFailed => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
+            Self::KeymapRestorationFailed => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
+            Self::DocumentTypeNotFound => (StatusCode::NOT_FOUND, self.to_string()).into_response(),
+            Self::DatabaseError { source, description } =>
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("{}: {}", description, source)).into_response(),
+            Self::DecryptionError => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct KeyringService {
@@ -22,7 +51,7 @@ impl KeyringService {
         ch_claims: ChClaims,
         _pid: String,
         dt_id: String,
-    ) -> anyhow::Result<KeyMap> {
+    ) -> Result<KeyMap, KeyringServiceError> {
         trace!("generate_keys");
         trace!("...user '{:?}'", &ch_claims.client_id);
         match self.db.get_msk().await {
@@ -38,23 +67,23 @@ impl KeyringService {
                             }
                             Err(e) => {
                                 error!("Error while generating key map: {}", e);
-                                Err(anyhow!("Error while generating keys")) // InternalError
+                                Err(KeyringServiceError::KeymapGenerationFailed)
                             }
                         }
                     }
                     Ok(None) => {
                         warn!("document type {} not found", &dt_id);
-                        Err(anyhow!("Document type not found!")) // BadRequest
+                        Err(KeyringServiceError::DocumentTypeNotFound)
                     }
                     Err(e) => {
                         warn!("Error while retrieving document type: {}", e);
-                        Err(anyhow!("Error while retrieving document type")) // InternalError
+                        Err(KeyringServiceError::DatabaseError {source: e, description: "Error while retrieving document type".to_string()})
                     }
                 }
             }
             Err(e) => {
                 error!("Error while retrieving master key: {}", e);
-                Err(anyhow!("Error while generating keys")) // InternalError
+                Err(KeyringServiceError::DatabaseError {source: e, description: "Error while retrieving master key".to_string()})
             }
         }
     }
@@ -65,7 +94,7 @@ impl KeyringService {
         ch_claims: ChClaims,
         _pid: Option<String>,
         key_cts: &KeyCtList,
-    ) -> anyhow::Result<Vec<KeyMapListItem>> {
+    ) -> Result<Vec<KeyMapListItem>, KeyringServiceError> {
         trace!("decrypt_keys");
         trace!("...user '{:?}'", &ch_claims.client_id);
         debug!("number of cts to decrypt: {}", &key_cts.cts.len());
@@ -106,24 +135,24 @@ impl KeyringService {
 
                         // Currently, we don't tolerate errors while decrypting keys
                         if error_count > 0 {
-                            Err(anyhow!("Error while decrypting keys")) // InternalError
+                            Err(KeyringServiceError::DecryptionError)
                         } else {
                             Ok(key_maps)
                         }
                     }
                     Ok(None) => {
                         warn!("document type {} not found", &key_cts.dt);
-                        Err(anyhow!("Document type not found!")) // BadRequest
+                        Err(KeyringServiceError::DocumentTypeNotFound)
                     }
                     Err(e) => {
                         warn!("Error while retrieving document type: {}", e);
-                        Err(anyhow!("Document type not found!")) // NotFound
+                        Err(KeyringServiceError::DatabaseError {source: e, description: "Error while retrieving document type".to_string()})
                     }
                 }
             }
             Err(e) => {
                 error!("Error while retrieving master key: {}", e);
-                Err(anyhow!("Error while decrypting keys")) // InternalError
+                Err(KeyringServiceError::DecryptionError)
             }
         }
     }
@@ -135,7 +164,7 @@ impl KeyringService {
         keys_ct: String,
         _pid: Option<String>,
         dt_id: String,
-    ) -> anyhow::Result<KeyMap> {
+    ) -> Result<KeyMap, KeyringServiceError> {
         trace!("decrypt_key_map");
         trace!("...user '{:?}'", &ch_claims.client_id);
         trace!("ct: {}", &keys_ct);
@@ -148,30 +177,30 @@ impl KeyringService {
                         // validate keys_ct input
                         let keys_ct = hex::decode(keys_ct).map_err(|e| {
                             error!("Error while decoding key ciphertext: {}", e);
-                            anyhow!("Error while decrypting keys") // InternalError
+                            KeyringServiceError::DecryptionError
                         })?;
 
                         match restore_key_map(key, dt, keys_ct) {
                             Ok(key_map) => Ok(key_map),
                             Err(e) => {
                                 error!("Error while generating key map: {}", e);
-                                Err(anyhow!("Error while restoring keys")) // InternalError
+                                Err(KeyringServiceError::KeymapRestorationFailed)
                             }
                         }
                     }
                     Ok(None) => {
                         warn!("document type {} not found", &dt_id);
-                        Err(anyhow!("Document type not found!")) // BadRequest
+                        Err(KeyringServiceError::DocumentTypeNotFound)
                     }
                     Err(e) => {
                         warn!("Error while retrieving document type: {}", e);
-                        Err(anyhow!("Document type not found!")) // NotFound
+                        Err(KeyringServiceError::DatabaseError {source: e, description: "Error while retrieving document type".to_string()})
                     }
                 }
             }
             Err(e) => {
                 error!("Error while retrieving master key: {}", e);
-                Err(anyhow!("Error while decrypting keys")) // InternalError
+                Err(KeyringServiceError::DecryptionError)
             }
         }
     }
@@ -182,10 +211,11 @@ impl KeyringService {
         ch_claims: ChClaims,
         pid: Option<String>,
         cts: &KeyCtList,
-    ) -> anyhow::Result<Vec<KeyMapListItem>> {
+    ) -> Result<Vec<KeyMapListItem>, KeyringServiceError> {
         self.decrypt_keys(ch_claims, pid, cts).await
     }
 
+    #[cfg(doc_type)]
     pub(crate) async fn create_doc_type(
         &self,
         doc_type: DocumentType,
@@ -213,6 +243,7 @@ impl KeyringService {
         }
     }
 
+    #[cfg(doc_type)]
     pub(crate) async fn update_doc_type(
         &self,
         id: String,
@@ -240,6 +271,7 @@ impl KeyringService {
         }
     }
 
+    #[cfg(doc_type)]
     pub(crate) async fn delete_doc_type(&self, id: String, pid: String) -> anyhow::Result<String> {
         match self.db.delete_document_type(&id, &pid).await {
             Ok(true) => Ok(String::from("Document type deleted!")), // NoContent
@@ -254,6 +286,7 @@ impl KeyringService {
         }
     }
 
+    #[cfg(doc_type)]
     pub(crate) async fn get_doc_type(
         &self,
         id: String,
@@ -273,12 +306,14 @@ impl KeyringService {
         }
     }
 
+    #[cfg(doc_type)]
+
     pub(crate) async fn get_doc_types(&self) -> anyhow::Result<Vec<DocumentType>> {
         match self.db.get_all_document_types().await {
             //TODO: would like to send "{}" instead of "null" when dt is not found
             Ok(dt) => Ok(dt),
             Err(e) => {
-                error!("Error while retrieving default doctypes: {:?}", e);
+                error!("Error while retrieving default doc_types: {:?}", e);
                 Err(anyhow!("Error while retrieving all document types")) // InternalError
             }
         }

@@ -12,6 +12,7 @@ use crate::model::{
 };
 use crate::services::document_service::DocumentService;
 
+/// Error type for LoggingService
 #[derive(Debug, thiserror::Error)]
 pub enum LoggingServiceError {
     #[error("Received empty payload, which cannot be logged!")]
@@ -373,10 +374,7 @@ impl LoggingService {
             }
             Err(e) => {
                 error!("Error while retrieving message: {:?}", e);
-                Err(LoggingServiceError::DatabaseError {
-                    source: e,
-                    description: format!("Error while retrieving messages for pid '{pid}'"),
-                })
+                Err(LoggingServiceError::DocumentServiceError(e))
             }
         }
     }

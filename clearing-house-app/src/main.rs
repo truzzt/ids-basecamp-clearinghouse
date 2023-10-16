@@ -87,9 +87,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let app_state = AppState::init(&conf).await?;
 
     // Setup router
-    let app = axum::Router::new()
-        .merge(ports::logging_api::router())
-        .nest("/doctype", ports::doc_type_api::router())
+    let app = ports::router()
         .with_state(app_state);
 
     // Bind port and start server

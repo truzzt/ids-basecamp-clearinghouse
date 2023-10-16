@@ -62,3 +62,7 @@ thiserror = "1.0.48"
 serial_test = "2.0.0"
 # Tempfile creation for testing
 tempfile = "3.8.0"
+
+[features]
+# Enables the doc_type API
+doc_type = []
