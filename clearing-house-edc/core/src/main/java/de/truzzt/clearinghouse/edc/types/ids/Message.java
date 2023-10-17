@@ -53,7 +53,7 @@ public class Message {
     String modelVersion;
 
     @JsonProperty("ids:issued")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSzzz")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     @NotNull
     XMLGregorianCalendar issued;
 
