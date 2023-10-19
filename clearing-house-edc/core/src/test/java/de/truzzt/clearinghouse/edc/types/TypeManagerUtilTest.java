@@ -72,7 +72,7 @@ class TypeManagerUtilTest {
 
     @Test
     void errorConvertingToJson() throws IOException {
-        doThrow(new EdcException("Error converting to JSON")).when(objectMapper).writeValueAsBytes(anyString());
+        doThrow(new EdcException("Error converting to JSON")).when(objectMapper).writeValueAsString(anyString());
 
         EdcException exception =
                 assertThrows(EdcException.class,
