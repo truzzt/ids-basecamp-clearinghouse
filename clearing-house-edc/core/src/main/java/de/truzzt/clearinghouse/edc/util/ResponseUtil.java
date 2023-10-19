@@ -138,6 +138,16 @@ public class ResponseUtil {
         return rejectionMessage;
     }
 
+    @NotNull
+    public static RejectionMessage createRejectionMessage(@NotNull RejectionReason reason,
+                                                          @Nullable Message correlationMessage,
+                                                          @NotNull IdsId connectorId) {
+        RejectionMessage rejectionMessage =  createRejectionMessage(correlationMessage, connectorId);
+        rejectionMessage.setRejectionReason(reason);
+
+        return rejectionMessage;
+    }
+
     private static URI getMessageId() {
         return IdsId.Builder.newInstance().value(UUID.randomUUID().toString()).type(IdsType.MESSAGE).build().toUri();
     }

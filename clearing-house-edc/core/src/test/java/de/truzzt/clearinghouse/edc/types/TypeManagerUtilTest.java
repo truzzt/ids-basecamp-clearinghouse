@@ -52,11 +52,7 @@ class TypeManagerUtilTest {
                                 new FileInputStream(TestUtils.getInvalidHeaderFile()),
                                 Message.class)
                 );
-                assertEquals(
-                        "Error parsing to type class de.truzzt.clearinghouse.edc.types.ids.Message",
-                        exception.getMessage()
-                );
-
+        assertEquals("Error parsing to type class de.truzzt.clearinghouse.edc.types.ids.Message", exception.getMessage());
     }
 
     @Test
@@ -65,14 +61,13 @@ class TypeManagerUtilTest {
         typeManagerUtil = new TypeManagerUtil(objectMapper);
         Message msgBefore = objectMapper.readValue(TestUtils.getValidHeaderFile(), Message.class);
 
-        byte[] json  = typeManagerUtil.toJson(msgBefore);
+        var json  = typeManagerUtil.toJson(msgBefore);
         assertNotNull(json);
 
-        InputStream is = new ByteArrayInputStream(json);
+        InputStream is = new ByteArrayInputStream(json.getBytes());
         Message msgAfter = typeManagerUtil.parse(is, Message.class);
 
         assertEquals(msgBefore.getType(), msgAfter.getType());
-
     }
 
     @Test
@@ -81,7 +76,7 @@ class TypeManagerUtilTest {
 
         EdcException exception =
                 assertThrows(EdcException.class,
-                        () -> typeManagerUtil.toJson("")
+                        () -> typeManagerUtil.toJson("fadsfsdafd")
                 );
 
         assertEquals("Error converting to JSON",exception.getMessage() );

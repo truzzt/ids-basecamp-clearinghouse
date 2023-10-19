@@ -54,7 +54,7 @@ public class AppSenderTest {
     @Test
     public void sendSuccessful() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest(mapper).toString().getBytes())
+        doReturn(TestUtils.getValidHandlerRequest(mapper).toString())
                 .when(typeManagerUtil).toJson(any(Object.class));
         doReturn(TestUtils.getValidResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
@@ -69,7 +69,7 @@ public class AppSenderTest {
     @Test
     public void sendWithHttpRequestError() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest(mapper).toString().getBytes())
+        doReturn(TestUtils.getValidHandlerRequest(mapper).toString())
                 .when(typeManagerUtil).toJson(any(Object.class));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
@@ -81,7 +81,7 @@ public class AppSenderTest {
     @Test
     public void sendWithUnsuccessfulResponseBodyError() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest(mapper).toString().getBytes())
+        doReturn(TestUtils.getValidHandlerRequest(mapper).toString())
                 .when(typeManagerUtil).toJson(any(Object.class));
         doReturn(TestUtils.getUnsuccessfulResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
@@ -97,7 +97,7 @@ public class AppSenderTest {
     @Test
     public void sendWithNullResponseBodyError() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest(mapper).toString().getBytes())
+        doReturn(TestUtils.getValidHandlerRequest(mapper).toString())
                 .when(typeManagerUtil).toJson(any(Object.class));
         doReturn(TestUtils.getResponseWithoutBody(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));

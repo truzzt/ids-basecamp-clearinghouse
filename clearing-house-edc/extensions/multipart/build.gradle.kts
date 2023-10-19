@@ -8,14 +8,14 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Microsoft Corporation - Initial implementation
- *       truzzt GmbH - EDC extension implementation
+ *       truzzt GmbH - Initial implementation
  *
  */
 
 plugins {
     `java-library`
-    `jacoco-report-aggregation`
+    `java-test-fixtures`
+    jacoco
 }
 
 dependencies {
@@ -33,9 +33,15 @@ dependencies {
     testImplementation(libs.mockito.inline)
     testImplementation(libs.mockito.inline)
 
+    testImplementation(testFixtures(project(":core")))
+
     testRuntimeOnly(libs.junit.jupiter.engine)
 }
 
 tasks.test {
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
+}
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
 }

@@ -86,7 +86,7 @@ class LogMessageHandlerTest {
                 .when(logMessageHandler).buildJWTToken(any(SecurityToken.class), any(ServiceExtensionContext.class));
         doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
-        doReturn(APP_BASE_URL_DEFAULT_VALUE+"/messages/log/" + request.getPid())
+        doReturn(APP_BASE_URL_DEFAULT_VALUE+ "/headers/log/" + request.getPid())
                 .when(senderDelegate)
                 .buildRequestUrl(any(String.class), any(HandlerRequest.class));
         doReturn(TestUtils.getValidLoggingMessageRequest(request))

@@ -25,6 +25,8 @@ public class RejectionMessage extends Message {
     @NotNull
     RejectionReason rejectionReason;
 
+    public RejectionMessage() {
+    }
     public RejectionMessage(@NotNull URI id) {
         super(id);
     }

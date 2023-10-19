@@ -21,6 +21,7 @@ import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.ids.Message;
 
+import de.truzzt.clearinghouse.edc.types.ids.RejectionMessage;
 import de.truzzt.clearinghouse.edc.types.ids.TokenFormat;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -33,6 +34,7 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.protocol.ids.spi.service.DynamicAttributeTokenService;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.util.string.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,6 +42,7 @@ import java.io.InputStream;
 import java.util.List;
 
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.createFormDataMultiPart;
+import static de.truzzt.clearinghouse.edc.util.ResponseUtil.createRejectionMessage;
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.internalRecipientError;
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.malformedMessage;
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.messageTypeNotSupported;
@@ -83,6 +86,14 @@ public class MultipartController {
                             @FormDataParam(HEADER) InputStream headerInputStream,
                             @FormDataParam(PAYLOAD) String payload) {
 
+        // Check if pid is missing
+        if (pid == null) {
+            monitor.severe(LOG_ID + ": PID is missing");
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                    .build();
+        }
+
         // Check if header is missing
         if (headerInputStream == null) {
             monitor.severe(LOG_ID + ": Header is missing");
@@ -104,11 +115,15 @@ public class MultipartController {
 
         // Check if any required header field missing
         if (header.getId() == null
-                || header.getType() == null
-                || header.getModelVersion() == null
+                || (header.getId() != null && StringUtils.isNullOrBlank(header.getId().toString()))
+                || StringUtils.isNullOrBlank(header.getType())
+                || StringUtils.isNullOrBlank(header.getModelVersion())
                 || header.getIssued() == null
                 || header.getIssuerConnector() == null
-                || header.getSenderAgent() == null) {
+                || (header.getIssuerConnector() != null && StringUtils.isNullOrBlank(header.getIssuerConnector().toString()))
+                || header.getSenderAgent() == null
+                || (header.getSenderAgent() != null && StringUtils.isNullOrBlank(header.getSenderAgent().toString()))
+        ) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(header, connectorId)))
                     .build();
@@ -179,9 +194,19 @@ public class MultipartController {
         }
 
         // Build the response
-        return Response.status(Response.Status.CREATED)
-                .entity(createFormDataMultiPart(typeManagerUtil, HEADER, handlerResponse.getHeader(), PAYLOAD, handlerResponse.getPayload()))
-                .build();
+        if (handlerResponse.getHeader() instanceof RejectionMessage) {
+            var rejectionMessage = (RejectionMessage) handlerResponse.getHeader();
+
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER,
+                            createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId))
+                    ).build();
+        }
+        else {
+            return Response.status(Response.Status.CREATED)
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, handlerResponse.getHeader(), PAYLOAD, handlerResponse.getPayload()))
+                    .build();
+        }
     }
 
     private boolean validateToken(Message header) {

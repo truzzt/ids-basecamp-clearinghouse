@@ -2,13 +2,10 @@ package de.truzzt.clearinghouse.edc.tests;
 
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageRequest;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
-import de.truzzt.clearinghouse.edc.handler.LogMessageHandler;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
@@ -20,10 +17,7 @@ import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.spi.monitor.Monitor;
-import org.eclipse.edc.spi.system.ServiceExtensionContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,11 +30,17 @@ import java.util.UUID;
 public class TestUtils {
 
     public static final String TEST_BASE_URL = "http://localhost:8000";
-    private static final String TEST_PAYLOAD = "Hello World";
-    private static final String VALID_HEADER_JSON = "messages/valid-header.json";
-    private static final String INVALID_LOG_MESSAGE_HEADER_JSON = "messages/invalid-log-message-header.json";
 
-    private static <T> T readJsonFile(ObjectMapper mapper, Class<T> type, String path) {
+    private static final String TEST_PAYLOAD = "Hello World";
+    public static final String VALID_HEADER_JSON = "headers/valid-header.json";
+    public static final String INVALID_HEADER_JSON = "headers/invalid-header.json";
+    public static final String INVALID_TYPE_HEADER_JSON = "headers/invalid-type.json";
+    public static final String INVALID_TOKEN_HEADER_JSON = "headers/invalid-token.json";
+    public static final String MISSING_FIELDS_HEADER_JSON = "headers/missing-fields.json";
+    public static final String MISSING_TOKEN_HEADER_JSON = "headers/missing-token.json";
+    public static final String VALID_RESPONSE_JSON = "headers/valid-response.json";
+
+    private static <T> T parseFile(ObjectMapper mapper, Class<T> type, String path) {
 
         ClassLoader classLoader = TestUtils.class.getClassLoader();
         var jsonResource = classLoader.getResource(path);
@@ -73,7 +73,7 @@ public class TestUtils {
         return object;
     }
 
-    private static File returnJonFile(String path) {
+    private static Path getFile(String path) {
 
         ClassLoader classLoader = TestUtils.class.getClassLoader();
         var jsonResource = classLoader.getResource(path);
@@ -94,35 +94,33 @@ public class TestUtils {
             throw new EdcException("Header json file not found: " + path);
         }
 
-        return filePath.toFile();
+        return filePath;
+    }
+
+    public static String readFile(String path) {
+        var file = getFile(path);
+
+        try {
+            return Files.readString(file);
+        } catch (IOException e) {
+            throw new EdcException("Error reading file contents", e);
+        }
     }
 
     public static Message getValidHeader(ObjectMapper mapper) {
-        return readJsonFile(mapper, Message.class, VALID_HEADER_JSON);
+        return parseFile(mapper, Message.class, VALID_HEADER_JSON);
     }
 
     public static Message getInvalidTokenHeader(ObjectMapper mapper) {
-
-            Message message = readJsonFile(mapper, Message.class, VALID_HEADER_JSON);
-
-            message.getSecurityToken().setTokenValue("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzY29wZXMiOlsiaWRzYz" +
-                    "pJRFNfQ09OTkVDVE9SX0FUVFJJQlVURVNfQUxMIl0sImF1ZCI6Imlkc2M6SURTX0NPTk5FQ1RPUlNfQUxMIiwiaXNzIjo" +
-                    "iaHR0cHM6Ly9kYXBzLmFpc2VjLmZyYXVuaG9mZXIuZGUiLCJuYmYiOjE2MzQ2NTA3MzksImlhdCI6MTYzNDY1MDczOSw" +
-                    "ianRpIjoiTVRneE9EUXdPVFF6TXpZd05qWXlOVFExTUE9PSIsImV4cCI6MTYzNDY1NDMzOSwic2VjdXJpdHlQcm9maWx" +
-                    "lIjoiaWRzYzpCQVNFX1NFQ1VSSVRZX1BST0ZJTEUiLCJyZWZlcnJpbmdDb25uZWN0b3IiOiJodHRwOi8vYnJva2VyLml" +
-                    "kcy5pc3N0LmZyYXVuaG9mZXIuZGUuZGVtbyIsIkB0eXBlIjoiaWRzOkRhdFBheWxvYWQiLCJAY29udGV4dCI6Imh0dHB" +
-                    "zOi8vdzNpZC5vcmcvaWRzYS9jb250ZXh0cy9jb250ZXh0Lmpzb25sZCIsInRyYW5zcG9ydENlcnRzU2hhMjU2IjoiOTc" +
-                    "0ZTYzMjRmMTJmMTA5MTZmNDZiZmRlYjE4YjhkZDZkYTc4Y2M2YTZhMDU2NjAzMWZhNWYxYTM5ZWM4ZTYwMCJ9.hekZoP" +
-                    "DjEWaXreQl3l0PUIjBOPQhAl0w2mH4_PdNWuA");
-            return message;
+        return parseFile(mapper, Message.class, INVALID_TOKEN_HEADER_JSON);
     }
 
     public static Message getNotLogMessageValidHeader(ObjectMapper mapper) {
+        return parseFile(mapper, Message.class, INVALID_TYPE_HEADER_JSON);
+    }
 
-        Message message = readJsonFile(mapper, Message.class, VALID_HEADER_JSON);
-
-        message.setType("ids:otherMessage");
-        return message;
+    public static Message getValidResponseHeader(ObjectMapper mapper) {
+        return parseFile(mapper, Message.class, VALID_RESPONSE_JSON);
     }
 
     public static Response getValidResponse(String url) {
@@ -172,40 +170,39 @@ public class TestUtils {
 
             return mapper.readValue(getValidResponse(url).body().byteStream(), LoggingMessageResponse.class);
 
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-            return null;
+        } catch (IOException e) {
+            throw new EdcException("Error parsing response", e);
         }
     }
 
     public static LoggingMessageRequest getValidLoggingMessageRequest(HandlerRequest handlerRequest) {
 
-            var header = handlerRequest.getHeader();
+        var header = handlerRequest.getHeader();
 
-            var multipartContext = header.getContext();
-            var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
+        var multipartContext = header.getContext();
+        var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
 
-            var multipartSecurityToken = header.getSecurityToken();
-            var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
-            var securityToken = SecurityToken.Builder.newInstance().
-                    type(multipartSecurityToken.getType()).
-                    id(multipartSecurityToken.getId()).
-                    tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
-                    tokenValue(multipartSecurityToken.getTokenValue()).
-                    build();
+        var multipartSecurityToken = header.getSecurityToken();
+        var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
+        var securityToken = SecurityToken.Builder.newInstance().
+                type(multipartSecurityToken.getType()).
+                id(multipartSecurityToken.getId()).
+                tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
+                tokenValue(multipartSecurityToken.getTokenValue()).
+                build();
 
-            var requestHeader = Header.Builder.newInstance()
-                    .context(context)
-                    .id(header.getId())
-                    .type(header.getType())
-                    .securityToken(securityToken)
-                    .issuerConnector(header.getIssuerConnector())
-                    .modelVersion(header.getModelVersion())
-                    .issued(header.getIssued())
-                    .senderAgent(header.getSenderAgent())
-                    .build();
+        var requestHeader = Header.Builder.newInstance()
+                .context(context)
+                .id(header.getId())
+                .type(header.getType())
+                .securityToken(securityToken)
+                .issuerConnector(header.getIssuerConnector())
+                .modelVersion(header.getModelVersion())
+                .issued(header.getIssued())
+                .senderAgent(header.getSenderAgent())
+                .build();
 
-            return new LoggingMessageRequest(requestHeader, handlerRequest.getPayload());
+        return new LoggingMessageRequest(requestHeader, handlerRequest.getPayload());
     }
 
     public static ResponseBody getValidResponseBody(){
@@ -237,28 +234,23 @@ public class TestUtils {
     }
 
     public static AppSenderRequest getValidAppSenderRequest(ObjectMapper mapper){
-        return new AppSenderRequest(TEST_BASE_URL+"/messages/log/" + UUID.randomUUID(),
+        return new AppSenderRequest(TEST_BASE_URL+ "/headers/log/" + UUID.randomUUID(),
                 JWT.create().toString(),
                 getValidHandlerRequest(mapper)
         );
     }
 
     public static AppSenderRequest getInvalidUrlAppSenderRequest(ObjectMapper mapper){
-        return new AppSenderRequest("" + UUID.randomUUID(),
+        return new AppSenderRequest(UUID.randomUUID().toString(),
                 JWT.create().toString(),
                 getValidHandlerRequest(mapper)
         );
     }
 
     public static File getValidHeaderFile() {
-
-        return returnJonFile(VALID_HEADER_JSON);
+        return getFile(VALID_HEADER_JSON).toFile();
     }
-
     public static File getInvalidHeaderFile() {
-
-        return returnJonFile(INVALID_LOG_MESSAGE_HEADER_JSON);
+        return getFile(INVALID_HEADER_JSON).toFile();
     }
-
-
 }

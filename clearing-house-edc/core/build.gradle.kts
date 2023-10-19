@@ -8,14 +8,14 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Microsoft Corporation - Initial implementation
- *       truzzt GmbH - EDC extension implementation
+ *       truzzt GmbH - Initial implementation
  *
  */
 
 plugins {
     `java-library`
-    `jacoco-report-aggregation`
+    `java-test-fixtures`
+    jacoco
 }
 
 val auth0JWTVersion: String by project
@@ -27,16 +27,22 @@ dependencies {
     implementation(edc.ids.jsonld.serdes)
     implementation(edc.api.management.config)
     implementation(libs.jersey.multipart)
-
     implementation("com.auth0:java-jwt:${auth0JWTVersion}")
 
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.mockito.inline)
     testImplementation(libs.mockito.inline)
 
+    testFixturesImplementation(edc.ids)
+    testFixturesImplementation("com.auth0:java-jwt:${auth0JWTVersion}")
+
     testRuntimeOnly(libs.junit.jupiter.engine)
 }
 
 tasks.test {
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
+}
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
 }

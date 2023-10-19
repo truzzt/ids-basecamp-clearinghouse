@@ -37,9 +37,9 @@ public class TypeManagerUtil {
         }
     }
 
-    public byte[] toJson(Object object) {
+    public String toJson(Object object) {
         try {
-            return mapper.writeValueAsBytes(object);
+            return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             throw new EdcException("Error converting to JSON", e);
         }
