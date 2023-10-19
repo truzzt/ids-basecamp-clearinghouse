@@ -42,19 +42,14 @@ class LogMessageHandlerTest {
     private LogMessageHandler logMessageHandler;
     @Mock
     private LoggingMessageDelegate senderDelegate;
-    @Mock
-    private EdcHttpClient httpClient;
 
-    private ObjectMapper mapper = new ObjectMapper();
-
-    private AppSender sender;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         senderDelegate = spy(new LoggingMessageDelegate(typeManagerUtil));
         logMessageHandler = spy(new LogMessageHandler(monitor, connectorId, typeManagerUtil, appSender, context));
-        sender = new AppSender(monitor, httpClient ,typeManagerUtil);
     }
 
     @Test
@@ -84,7 +79,7 @@ class LogMessageHandlerTest {
         HandlerRequest request = TestUtils.getValidHandlerRequest(mapper);
         doReturn(JWT.create().toString())
                 .when(logMessageHandler).buildJWTToken(any(SecurityToken.class), any(ServiceExtensionContext.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
                 .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
         doReturn(APP_BASE_URL_DEFAULT_VALUE+ "/headers/log/" + request.getPid())
                 .when(senderDelegate)

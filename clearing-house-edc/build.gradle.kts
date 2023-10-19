@@ -13,8 +13,7 @@
  */
 
 plugins {
-    `java-library`
-    `jacoco-report-aggregation`
+    `java-base`
 }
 
 val javaVersion: String by project

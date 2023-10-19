@@ -3,7 +3,6 @@ package de.truzzt.clearinghouse.edc.app;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
-import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import okhttp3.Request;
 import okhttp3.ResponseBody;
@@ -26,8 +25,6 @@ import static org.mockito.Mockito.spy;
 
 public class AppSenderTest {
 
-
-
     private AppSender sender;
     @Mock
     private Monitor monitor;
@@ -36,13 +33,9 @@ public class AppSenderTest {
     @Mock
     private LoggingMessageDelegate senderDelegate;
     @Mock
-    private ObjectMapper objectMapper;
-    @Mock
-    private AppSenderRequest appSenderRequest;
-    @Mock
     private EdcHttpClient httpClient;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     public void setUp() {
@@ -58,7 +51,7 @@ public class AppSenderTest {
                 .when(typeManagerUtil).toJson(any(Object.class));
         doReturn(TestUtils.getValidResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
                 .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
 
         var response = sender.send(TestUtils.getValidAppSenderRequest(mapper), senderDelegate);
@@ -85,7 +78,7 @@ public class AppSenderTest {
                 .when(typeManagerUtil).toJson(any(Object.class));
         doReturn(TestUtils.getUnsuccessfulResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
                 .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
 
         EdcException exception = assertThrows(EdcException.class, () ->
@@ -101,7 +94,7 @@ public class AppSenderTest {
                 .when(typeManagerUtil).toJson(any(Object.class));
         doReturn(TestUtils.getResponseWithoutBody(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
                 .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
 
         EdcException exception = assertThrows(EdcException.class, () ->

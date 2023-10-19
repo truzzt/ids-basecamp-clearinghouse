@@ -25,7 +25,7 @@ class LoggingMessageDelegateTest {
     @Mock
     private LoggingMessageDelegate senderDelegate;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     public void setUp() {
@@ -58,7 +58,7 @@ class LoggingMessageDelegateTest {
     public void successfulParseResponseBody() {
 
         ResponseBody body = TestUtils.getValidResponseBody();
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
+        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
                 .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
 
         LoggingMessageResponse response = senderDelegate.parseResponseBody(body);

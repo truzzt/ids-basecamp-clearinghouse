@@ -4,9 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iais.eis.DynamicAttributeToken;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
+import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
 import de.truzzt.clearinghouse.edc.handler.Handler;
 import de.truzzt.clearinghouse.edc.handler.LogMessageHandler;
-import de.truzzt.clearinghouse.edc.tests.TestUtils;
+import de.truzzt.clearinghouse.edc.multipart.tests.TestUtils;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.ids.Message;
 import de.truzzt.clearinghouse.edc.types.ids.RejectionMessage;
@@ -37,8 +38,7 @@ import static org.mockito.Mockito.doReturn;
 public class MultipartControllerTest {
 
     private static final String IDS_WEBHOOK_ADDRESS = "http://localhost/callback";
-    private static final String REQUEST_PAYLOAD = "Hello World";
-    private static final String RESPONSE_PAYLOAD = "";
+    private static final String PAYLOAD = "Hello World";
 
     private MultipartController controller;
 
@@ -52,7 +52,7 @@ public class MultipartControllerTest {
     @Mock
     private LogMessageHandler logMessageHandler;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     public void setUp() {
@@ -78,7 +78,7 @@ public class MultipartControllerTest {
         return typeManagerUtil.parse(new ByteArrayInputStream(entity.getBytes()), type);
     }
 
-    private String extractPayload(Response response) {
+    private <T> T extractPayload(Response response, Class<T> type) {
 
         assertInstanceOf(FormDataMultiPart.class, response.getEntity());
         FormDataMultiPart multiPartResponse = (FormDataMultiPart) response.getEntity();
@@ -87,29 +87,26 @@ public class MultipartControllerTest {
         assertNotNull(payload);
 
         assertInstanceOf(String.class, payload.getEntity());
-        return (String) payload.getEntity();
-    }
-
-    private InputStream getInputStream(String path) {
-        var json = TestUtils.readFile(path);
-        return new ByteArrayInputStream(json.getBytes());
+        var entity = (String) payload.getEntity();
+        return typeManagerUtil.parse(new ByteArrayInputStream(entity.getBytes()), type);
     }
 
     @Test
     public void success() {
         var responseHeader = TestUtils.getValidResponseHeader(mapper);
+        var responsePayload = TestUtils.getValidResponsePayload(mapper);
 
         doReturn(Result.success())
                 .when(tokenService).verifyDynamicAttributeToken(any(DynamicAttributeToken.class), any(URI.class), any(String.class));
         doReturn(true)
                 .when(logMessageHandler).canHandle(any(HandlerRequest.class));
-        doReturn(HandlerResponse.Builder.newInstance().header(responseHeader).payload(REQUEST_PAYLOAD).build())
+        doReturn(HandlerResponse.Builder.newInstance().header(responseHeader).payload(responsePayload).build())
                 .when(logMessageHandler).handleRequest(any(HandlerRequest.class));
 
         var pid = UUID.randomUUID().toString();
-        var header = getInputStream(TestUtils.VALID_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
 
-        var response = controller.request(pid, header, REQUEST_PAYLOAD);
+        var response = controller.request(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
@@ -117,15 +114,15 @@ public class MultipartControllerTest {
         var message = extractHeader(response, Message.class);
         assertEquals("ids:LogMessage", message.getType());
 
-        var payload = extractPayload(response);
-        assertNotNull(payload);
+        var payload = extractPayload(response, LoggingMessageResponse.class);
+        assertNotNull(payload.getData());
     }
 
     @Test
     public void missingPIDError() {
-        var header = getInputStream(TestUtils.VALID_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
 
-        var response = controller.request(null, header, REQUEST_PAYLOAD);
+        var response = controller.request(null, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -140,7 +137,7 @@ public class MultipartControllerTest {
     public void missingHeaderError() {
         var pid = UUID.randomUUID().toString();
 
-        var response = controller.request(pid, null, REQUEST_PAYLOAD);
+        var response = controller.request(pid, null, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -154,9 +151,9 @@ public class MultipartControllerTest {
     @Test
     public void invalidHeaderError() {
         var pid = UUID.randomUUID().toString();
-        var header = getInputStream(TestUtils.INVALID_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.INVALID_HEADER_JSON);
 
-        var response = controller.request(pid, header, REQUEST_PAYLOAD);
+        var response = controller.request(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -170,9 +167,9 @@ public class MultipartControllerTest {
     @Test
     public void missingHeaderFieldsError() {
         var pid = UUID.randomUUID().toString();
-        var header = getInputStream(TestUtils.MISSING_FIELDS_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.MISSING_FIELDS_HEADER_JSON);
 
-        var response = controller.request(pid, header, REQUEST_PAYLOAD);
+        var response = controller.request(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -189,9 +186,9 @@ public class MultipartControllerTest {
                 .when(tokenService).verifyDynamicAttributeToken(any(DynamicAttributeToken.class), any(URI.class), any(String.class));
 
         var pid = UUID.randomUUID().toString();
-        var header = getInputStream(TestUtils.INVALID_TOKEN_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.INVALID_TOKEN_HEADER_JSON);
 
-        var response = controller.request(pid, header, REQUEST_PAYLOAD);
+        var response = controller.request(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.FORBIDDEN.getStatusCode(), response.getStatus());
@@ -205,9 +202,9 @@ public class MultipartControllerTest {
     @Test
     public void missingSecurityTokenError() {
         var pid = UUID.randomUUID().toString();
-        var header = getInputStream(TestUtils.MISSING_TOKEN_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.MISSING_TOKEN_HEADER_JSON);
 
-        var response = controller.request(pid, header, REQUEST_PAYLOAD);
+        var response = controller.request(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -221,7 +218,7 @@ public class MultipartControllerTest {
     @Test
     public void missingPayloadError() {
         var pid = UUID.randomUUID().toString();
-        var header = getInputStream(TestUtils.VALID_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
 
         var response = controller.request(pid, header, null);
 
@@ -242,9 +239,9 @@ public class MultipartControllerTest {
                 .when(logMessageHandler).canHandle(any(HandlerRequest.class));
 
         var pid = UUID.randomUUID().toString();
-        var header = getInputStream(TestUtils.INVALID_TYPE_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.INVALID_TYPE_HEADER_JSON);
 
-        var response = controller.request(pid, header, REQUEST_PAYLOAD);
+        var response = controller.request(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), response.getStatus());

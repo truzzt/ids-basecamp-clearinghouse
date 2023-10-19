@@ -14,25 +14,22 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class ResponseUtilTest {
 
     @Mock
-    private ResponseUtil responseUtil;
-    @Mock
     private TypeManagerUtil typeManagerUtil;
     @Mock
     private IdsId connectorId;
 
-    private ObjectMapper objectMapper;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         typeManagerUtil = new TypeManagerUtil(new ObjectMapper());
-        objectMapper = new ObjectMapper();
     }
 
     @Test
     public void createFormDataMultiPart() {
 
-        var response = responseUtil.createFormDataMultiPart(typeManagerUtil,
+        var response = ResponseUtil.createFormDataMultiPart(typeManagerUtil,
                 "Header Name",
                 TestUtils.getValidHeader(new ObjectMapper()),
                 "Payload",
@@ -44,9 +41,9 @@ class ResponseUtilTest {
 
     @Test
     public void testCreateFormDataMultiPart() {
-        var response = responseUtil.createFormDataMultiPart(typeManagerUtil,
+        var response = ResponseUtil.createFormDataMultiPart(typeManagerUtil,
                 "Header Name",
-                TestUtils.getValidHeader(objectMapper)
+                TestUtils.getValidHeader(mapper)
         );
 
         assertNotNull(response);
@@ -54,7 +51,7 @@ class ResponseUtilTest {
 
     @Test
     public void createMultipartResponse() {
-        var response = responseUtil.createMultipartResponse(TestUtils.getValidHeader(objectMapper),
+        var response = ResponseUtil.createMultipartResponse(TestUtils.getValidHeader(mapper),
                 "Payload Value");
 
         assertNotNull(response);
@@ -62,35 +59,35 @@ class ResponseUtilTest {
 
     @Test
     public void messageProcessedNotification() {
-        var response = responseUtil.messageProcessedNotification(TestUtils.getValidHeader(objectMapper), connectorId);
+        var response = ResponseUtil.messageProcessedNotification(TestUtils.getValidHeader(mapper), connectorId);
 
         assertNotNull(response);
     }
 
     @Test
     public void notAuthenticated() {
-        var response = responseUtil.notAuthenticated(TestUtils.getValidHeader(objectMapper), connectorId);
+        var response = ResponseUtil.notAuthenticated(TestUtils.getValidHeader(mapper), connectorId);
 
         assertNotNull(response);
     }
 
     @Test
     public void malformedMessage() {
-        var response = responseUtil.malformedMessage(TestUtils.getValidHeader(objectMapper), connectorId);
+        var response = ResponseUtil.malformedMessage(TestUtils.getValidHeader(mapper), connectorId);
 
         assertNotNull(response);
     }
 
     @Test
     public void messageTypeNotSupported() {
-        var response = responseUtil.messageTypeNotSupported(TestUtils.getValidHeader(objectMapper), connectorId);
+        var response = ResponseUtil.messageTypeNotSupported(TestUtils.getValidHeader(mapper), connectorId);
 
         assertNotNull(response);
     }
 
     @Test
     public void internalRecipientError() {
-        var response = responseUtil.internalRecipientError(TestUtils.getValidHeader(objectMapper), connectorId);
+        var response = ResponseUtil.internalRecipientError(TestUtils.getValidHeader(mapper), connectorId);
 
         assertNotNull(response);
     }

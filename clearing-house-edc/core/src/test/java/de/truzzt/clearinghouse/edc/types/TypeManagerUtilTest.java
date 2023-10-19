@@ -19,23 +19,23 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 class TypeManagerUtilTest {
 
     @Mock
-    private ObjectMapper objectMapper;
-    @Mock
     private TypeManagerUtil typeManagerUtil;
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        typeManagerUtil = new TypeManagerUtil(objectMapper);
+        typeManagerUtil = new TypeManagerUtil(mapper);
     }
 
     @Test
-    void successfulParse() throws IOException, InstantiationException, IllegalAccessException {
-        typeManagerUtil = new TypeManagerUtil(new ObjectMapper());
+    void successfulParse() throws IOException {
         InputStream is = new FileInputStream(TestUtils.getValidHeaderFile());
 
         Message msg = typeManagerUtil.parse(is, Message.class);
@@ -45,7 +45,6 @@ class TypeManagerUtilTest {
 
     @Test
     void typeErrorParse() {
-        typeManagerUtil = new TypeManagerUtil(new ObjectMapper());
         EdcException exception =
                 assertThrows(EdcException.class,
                         () -> typeManagerUtil.parse(
@@ -57,9 +56,7 @@ class TypeManagerUtilTest {
 
     @Test
     void successfulToJson() throws IOException {
-        objectMapper = new ObjectMapper();
-        typeManagerUtil = new TypeManagerUtil(objectMapper);
-        Message msgBefore = objectMapper.readValue(TestUtils.getValidHeaderFile(), Message.class);
+        Message msgBefore = mapper.readValue(TestUtils.getValidHeaderFile(), Message.class);
 
         var json  = typeManagerUtil.toJson(msgBefore);
         assertNotNull(json);
@@ -72,7 +69,12 @@ class TypeManagerUtilTest {
 
     @Test
     void errorConvertingToJson() throws IOException {
-        doThrow(new EdcException("Error converting to JSON")).when(objectMapper).writeValueAsString(anyString());
+
+        var mockedMapper = mock(ObjectMapper.class);
+        doThrow(new EdcException("Error converting to JSON"))
+                .when(mockedMapper).writeValueAsString(anyString());
+
+        typeManagerUtil = new TypeManagerUtil(mockedMapper);
 
         EdcException exception =
                 assertThrows(EdcException.class,

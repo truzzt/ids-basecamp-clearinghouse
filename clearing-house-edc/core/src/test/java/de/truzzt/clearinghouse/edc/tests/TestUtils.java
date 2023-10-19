@@ -11,101 +11,22 @@ import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
 import de.truzzt.clearinghouse.edc.types.ids.Message;
-import okhttp3.Headers;
-import okhttp3.MediaType;
-import okhttp3.Protocol;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import okhttp3.*;
 import org.eclipse.edc.spi.EdcException;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.UUID;
 
-public class TestUtils {
+public class TestUtils extends BaseTestUtils {
 
     public static final String TEST_BASE_URL = "http://localhost:8000";
 
     private static final String TEST_PAYLOAD = "Hello World";
-    public static final String VALID_HEADER_JSON = "headers/valid-header.json";
-    public static final String INVALID_HEADER_JSON = "headers/invalid-header.json";
-    public static final String INVALID_TYPE_HEADER_JSON = "headers/invalid-type.json";
-    public static final String INVALID_TOKEN_HEADER_JSON = "headers/invalid-token.json";
-    public static final String MISSING_FIELDS_HEADER_JSON = "headers/missing-fields.json";
-    public static final String MISSING_TOKEN_HEADER_JSON = "headers/missing-token.json";
-    public static final String VALID_RESPONSE_JSON = "headers/valid-response.json";
-
-    private static <T> T parseFile(ObjectMapper mapper, Class<T> type, String path) {
-
-        ClassLoader classLoader = TestUtils.class.getClassLoader();
-        var jsonResource = classLoader.getResource(path);
-
-        if (jsonResource == null) {
-            throw new EdcException("Header json file not found: " + path);
-        }
-
-        URI jsonUrl;
-        try {
-            jsonUrl = jsonResource.toURI();
-        } catch (URISyntaxException e) {
-            throw new EdcException("Error finding json file on classpath", e);
-        }
-
-        Path filePath = Path.of(jsonUrl);
-        if (!Files.exists(filePath)) {
-            throw new EdcException("Header json file not found: " + path);
-        }
-
-        T object = null;
-        try {
-            var jsonContents = Files.readAllBytes(filePath);
-            object = mapper.readValue(jsonContents, type);
-
-        } catch (IOException e){
-            throw new EdcException("Error parsing json file", e);
-        }
-
-        return object;
-    }
-
-    private static Path getFile(String path) {
-
-        ClassLoader classLoader = TestUtils.class.getClassLoader();
-        var jsonResource = classLoader.getResource(path);
-
-        if (jsonResource == null) {
-            throw new EdcException("Header json file not found: " + path);
-        }
-
-        URI jsonUrl;
-        try {
-            jsonUrl = jsonResource.toURI();
-        } catch (URISyntaxException e) {
-            throw new EdcException("Error finding json file on classpath", e);
-        }
-
-        Path filePath = Path.of(jsonUrl);
-        if (!Files.exists(filePath)) {
-            throw new EdcException("Header json file not found: " + path);
-        }
-
-        return filePath;
-    }
-
-    public static String readFile(String path) {
-        var file = getFile(path);
-
-        try {
-            return Files.readString(file);
-        } catch (IOException e) {
-            throw new EdcException("Error reading file contents", e);
-        }
-    }
+    private static final String VALID_HEADER_JSON = "headers/valid-header.json";
+    private static final String INVALID_HEADER_JSON = "headers/invalid-header.json";
+    private static final String INVALID_TYPE_HEADER_JSON = "headers/invalid-type.json";
+    private static final String INVALID_TOKEN_HEADER_JSON = "headers/invalid-token.json";
 
     public static Message getValidHeader(ObjectMapper mapper) {
         return parseFile(mapper, Message.class, VALID_HEADER_JSON);
@@ -115,12 +36,8 @@ public class TestUtils {
         return parseFile(mapper, Message.class, INVALID_TOKEN_HEADER_JSON);
     }
 
-    public static Message getNotLogMessageValidHeader(ObjectMapper mapper) {
+    public static Message getInvalidTypeHeader(ObjectMapper mapper) {
         return parseFile(mapper, Message.class, INVALID_TYPE_HEADER_JSON);
-    }
-
-    public static Message getValidResponseHeader(ObjectMapper mapper) {
-        return parseFile(mapper, Message.class, VALID_RESPONSE_JSON);
     }
 
     public static Response getValidResponse(String url) {
@@ -164,10 +81,8 @@ public class TestUtils {
                 null, 1000L, 1000L, null);
     }
 
-    public static LoggingMessageResponse getValidLoggingMessageResponse(String url) {
+    public static LoggingMessageResponse getValidLoggingMessageResponse(String url, ObjectMapper mapper) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-
             return mapper.readValue(getValidResponse(url).body().byteStream(), LoggingMessageResponse.class);
 
         } catch (IOException e) {
@@ -229,7 +144,7 @@ public class TestUtils {
     public static HandlerRequest getInvalidHandlerRequest(ObjectMapper mapper){
         return HandlerRequest.Builder.newInstance()
                 .pid(UUID.randomUUID().toString())
-                .header(getNotLogMessageValidHeader(mapper) )
+                .header(getInvalidTypeHeader(mapper) )
                 .payload(TEST_PAYLOAD).build();
     }
 
