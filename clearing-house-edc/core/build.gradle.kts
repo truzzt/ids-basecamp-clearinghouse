@@ -43,5 +43,8 @@ tasks.test {
     useJUnitPlatform()
 }
 tasks.jacocoTestReport {
+    reports {
+        xml.required = true
+    }
     dependsOn(tasks.test)
 }
