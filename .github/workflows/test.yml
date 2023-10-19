@@ -32,6 +32,8 @@ jobs:
 
   edc-unit-tests:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write    
 
     steps:
     - name: Checkout code
@@ -43,12 +45,12 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Rn Unit Tests
+    - name: Run Unit Tests
       run: |
         cd clearing-house-edc
         ./gradlew test jacocoTestReport
 
-    - name: Add Coverage Report Comment
+    - name: Add Coverage Report
       id: jacoco
       uses: madrapps/jacoco-report@v1.6.1
       with:
