@@ -1,16 +1,16 @@
-FROM openjdk:17-slim-buster
+FROM gradle:7-jdk17 AS build
 
-RUN apt update \
-  && apt install -y curl \
-  && rm -rf /var/cache/apt/archives /var/lib/apt/lists
+COPY --chown=gradle:gradle . /home/gradle/project/
+WORKDIR /home/gradle/project/
+RUN ./gradlew clean build
+
+FROM openjdk:17-slim-buster
 
 WORKDIR /app
 
-COPY ./build/libs/clearing-house-edc.jar /app
+COPY --from=build /home/gradle/project/launchers/connector-prod/build/libs/clearing-house-edc.jar /app
 
 ENV WEB_HTTP_PORT="8181"
 ENV WEB_HTTP_PATH="/api"
-
-HEALTHCHECK --interval=5s --timeout=5s --retries=10 CMD curl --fail http://localhost:8111/api/check/health
 
 ENTRYPOINT [ "sh", "-c", "exec java $ENV_JVM_ARGS -jar clearing-house-edc.jar"]
