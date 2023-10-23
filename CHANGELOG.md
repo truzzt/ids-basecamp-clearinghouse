@@ -1,3 +1,19 @@
+# [1.0.0-alpha.4](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.3...v1.0.0-alpha.4) (2023-10-23)
+
+
+### Bug Fixes
+
+* **ch-edc:** add multistage dockerfile ([8e8026e](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/8e8026e39059debc5df27f24b58829c081c58da0))
+* **ci:** simplified ch-edc docker build ([f0cb1e1](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/f0cb1e149160b945e6e03d2426e6b40165c6fb55))
+
+
+### Features
+
+* **ch-app:** Added tests, refactored unwrap ([b3f8ede](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/b3f8edec027aa8168f64fd552ec7bed0e7f4ac30))
+* **ch-app:** Finished error-handling in keyring service and introduces 'doc_type' feature ([387498c](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/387498c15ff2bd8c2890625dd92d8d3be1250b42))
+* **ch-app:** Finished refactoring document-service error-handling ([8965f5e](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/8965f5e8a1ccbfdf8c36040f3736a3dd7fee7929))
+* **ch-app:** Removed ApiResponse, fixed warnings and hid more doc_type related functions ([fc710b7](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/fc710b7afc2f8ff28729ee88315fd74777476c05))
+
 # [1.0.0-alpha.3](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.2...v1.0.0-alpha.3) (2023-10-11)
 
 
