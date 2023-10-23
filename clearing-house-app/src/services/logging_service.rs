@@ -3,8 +3,6 @@ use crate::model::{
     constants::{DEFAULT_NUM_RESPONSE_ENTRIES, DEFAULT_PROCESS_ID, MAX_NUM_RESPONSE_ENTRIES},
     {document::Document, process::Process, SortingOrder},
 };
-use anyhow::anyhow;
-use std::convert::TryFrom;
 use std::sync::Arc;
 
 use crate::db::process_store::ProcessStore;
@@ -14,7 +12,71 @@ use crate::model::{
 };
 use crate::services::document_service::DocumentService;
 
-#[derive(Clone)]
+/// Error type for LoggingService
+#[derive(Debug, thiserror::Error)]
+pub enum LoggingServiceError {
+    #[error("Received empty payload, which cannot be logged!")]
+    EmptyPayloadReceived,
+    #[error("Accessing default PID is not allowed!")]
+    AttemptedAccessToDefaultPid,
+    #[error("Error during database operation: {description}: {source}")]
+    DatabaseError {
+        source: anyhow::Error,
+        description: String,
+    },
+    #[error("User not authorized!")]
+    UserNotAuthorized,
+    #[error("Invalid request received!")]
+    InvalidRequest,
+    #[error("Process already exists!")]
+    ProcessAlreadyExists,
+    #[error("Process '{0}' does not exist!")]
+    ProcessDoesNotExist(String),
+    #[error("Parsing error in {0}")]
+    ParsingError(#[from] serde_json::Error),
+    #[error("DocumentService error in {0}")]
+    DocumentServiceError(#[from] crate::services::document_service::DocumentServiceError),
+}
+
+impl axum::response::IntoResponse for LoggingServiceError {
+    fn into_response(self) -> axum::response::Response {
+        use axum::http::StatusCode;
+        match self {
+            Self::EmptyPayloadReceived => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
+            Self::AttemptedAccessToDefaultPid => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
+            Self::DatabaseError {
+                source,
+                description,
+            } => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("{}: {}", description, source),
+            )
+                .into_response(),
+            Self::UserNotAuthorized => {
+                (StatusCode::FORBIDDEN, self.to_string()).into_response()
+            }
+            Self::InvalidRequest => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
+            Self::ProcessAlreadyExists => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
+            Self::ProcessDoesNotExist(_) => {
+                (StatusCode::NOT_FOUND, self.to_string()).into_response()
+            }
+            Self::ParsingError(_) => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
+            Self::DocumentServiceError(e) => e.into_response(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct LoggingService {
     db: ProcessStore,
     doc_api: Arc<DocumentService>,
@@ -36,7 +98,7 @@ impl LoggingService {
         key_path: &str,
         msg: ClearingHouseMessage,
         pid: String,
-    ) -> anyhow::Result<Receipt> {
+    ) -> Result<Receipt, LoggingServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         let user = &ch_claims.client_id;
         // Add non-InfoModel information to IdsMessage
@@ -45,146 +107,39 @@ impl LoggingService {
         m.payload_type = msg.payload_type;
         m.pid = Some(pid.clone());
 
+        // Check for default process id
+        Self::check_for_default_pid(&pid)?;
+
         // validate that there is a payload
-        if m.payload.is_none()
-            || (m.payload.is_some() && m.payload.as_ref().unwrap().trim().is_empty())
-        {
-            error!("Trying to log an empty payload!");
-            return Err(anyhow!("No payload received for logging!")); // BadRequest
-        }
-
-        // filter out calls for default process id and call application logic
-        match DEFAULT_PROCESS_ID.eq(pid.as_str()) {
-            true => {
-                warn!("Log to default pid '{}' not allowed", DEFAULT_PROCESS_ID);
-                Err(anyhow!("Document already exists")) // BadRequest
-            }
-            false => {
-                // convenience: if process does not exist, we create it but only if no error occurred before
-                match self.db.get_process(&pid).await {
-                    Ok(Some(_p)) => {
-                        debug!("Requested pid '{}' exists. Nothing to create.", &pid);
-                    }
-                    Ok(None) => {
-                        info!("Requested pid '{}' does not exist. Creating...", &pid);
-                        // create a new process
-                        let new_process = Process::new(pid.clone(), vec![user.clone()]);
-
-                        if self.db.store_process(new_process).await.is_err() {
-                            error!("Error while creating process '{}'", &pid);
-                            return Err(anyhow!("Error while creating process"));
-                            // InternalError
-                        }
-                    }
-                    Err(_) => {
-                        error!("Error while getting process '{}'", &pid);
-                        return Err(anyhow!("Error while getting process")); // InternalError
-                    }
-                }
-
-                // now check if user is authorized to write to pid
-                match self.db.is_authorized(user, &pid).await {
-                    Ok(true) => info!("User authorized."),
-                    Ok(false) => {
-                        warn!("User is not authorized to write to pid '{}'", &pid);
-                        warn!("This is the forbidden branch");
-                        return Err(anyhow!("User not authorized!")); // Forbidden
-                    }
-                    Err(_) => {
-                        error!(
-                            "Error while checking authorization of user '{}' for '{}'",
-                            &user, &pid
-                        );
-                        return Err(anyhow!("Error during authorization"));
-                    }
-                }
-
-                debug!("logging message for pid {}", &pid);
-                self.log_message(user, key_path, m.clone()).await
-            }
-        }
-    }
-
-    pub(crate) async fn create_process(
-        &self,
-        ch_claims: ChClaims,
-        msg: ClearingHouseMessage,
-        pid: String,
-    ) -> anyhow::Result<String> {
-        let mut m = msg.header;
-        m.payload = msg.payload;
-        m.payload_type = msg.payload_type;
-
-        trace!("...user '{:?}'", &ch_claims.client_id);
-        let user = &ch_claims.client_id;
-
-        // validate payload
-        let mut owners = vec![user.clone()];
-        let payload = m.payload.clone().unwrap_or(String::new());
-        if !payload.is_empty() {
-            trace!("OwnerList: '{:#?}'", &payload);
-            match serde_json::from_str::<OwnerList>(&payload) {
-                Ok(owner_list) => {
-                    for o in owner_list.owners {
-                        if !owners.contains(&o) {
-                            owners.push(o);
-                        }
-                    }
-                }
-                Err(e) => {
-                    error!("Error while creating process '{}': {}", &pid, e);
-                    return Err(anyhow!("Invalid owner list!")); // BadRequest
-                }
-            };
-        };
-
-        // check if the pid already exists
-        match self.db.get_process(&pid).await {
-            Ok(Some(p)) => {
-                warn!("Requested pid '{}' already exists.", &p.id);
-                if !p.owners.contains(user) {
-                    Err(anyhow!("User not authorized!")) // Forbidden
-                } else {
-                    Err(anyhow!("Process already exists!")) // BadRequest
-                }
-            }
+        let payload = match m.payload.clone() {
+            Some(p) if !p.trim().is_empty() => Ok(p),
             _ => {
-                // filter out calls for default process id
-                match DEFAULT_PROCESS_ID.eq(pid.as_str()) {
-                    true => {
-                        warn!("Log to default pid '{}' not allowed", DEFAULT_PROCESS_ID);
-                        Err(anyhow!("Document already exists")) // BadRequest
-                    }
-                    false => {
-                        info!("Requested pid '{}' will have {} owners", &pid, owners.len());
+                error!("Trying to log an empty payload!");
+                Err(LoggingServiceError::EmptyPayloadReceived) // BadRequest
+            }
+        }?;
 
-                        // create process
-                        info!("Requested pid '{}' does not exist. Creating...", &pid);
-                        let new_process = Process::new(pid.clone(), owners);
+        // Check if process exists and if the user is authorized to access the process
+        if let Err(LoggingServiceError::ProcessDoesNotExist(_)) = self.get_process_and_check_authorized(&pid, user).await {
+            // convenience: if process does not exist, we create it but only if no error occurred before
+            info!("Requested pid '{}' does not exist. Creating...", &pid);
+            // create a new process
+            let new_process = Process::new(pid.clone(), vec![user.clone()]);
 
-                        match self.db.store_process(new_process).await {
-                            Ok(_) => Ok(pid.clone()),
-                            Err(e) => {
-                                error!("Error while creating process '{}': {}", &pid, e);
-                                Err(anyhow!("Error while creating process")) // InternalError
-                            }
-                        }
-                    }
-                }
+            if let Err(e) = self.db.store_process(new_process).await {
+                error!("Error while creating process '{}'", &pid);
+                return Err(LoggingServiceError::DatabaseError {
+                    source: e,
+                    description: "Creating process failed".to_string(),
+                }); // InternalError
             }
         }
-    }
 
-    async fn log_message(
-        &self,
-        user: &str,
-        key_path: &str,
-        message: IdsMessage,
-    ) -> anyhow::Result<Receipt> {
-        debug!("transforming message to document...");
-        let payload = message.payload.as_ref().unwrap().clone();
         // transform message to document
-        let mut doc = Document::from(message);
+        debug!("transforming message to document...");
+        let mut doc = Document::try_from(m).map_err(LoggingServiceError::ParsingError)?;
+
+        // lock write access
         let _x = self.write_lock.lock().await;
         match self.db.get_transaction_counter().await {
             Ok(Some(tid)) => {
@@ -214,105 +169,132 @@ impl LoggingService {
                                 debug!("...done. Signing receipt...");
                                 Ok(transaction.sign(key_path))
                             }
-                            _ => {
+                            Ok(None) => {
+                                unreachable!("increment_transaction_counter never returns None!")
+                            }
+                            Err(e) => {
                                 error!("Error while incrementing transaction id!");
-                                Err(anyhow!("Internal error while preparing transaction data"))
-                                // InternalError
+                                Err(LoggingServiceError::DatabaseError {
+                                    source: e,
+                                    description: "Error while incrementing transaction id!"
+                                        .to_string(),
+                                }) // InternalError
                             }
                         }
                     }
                     Err(e) => {
                         error!("Error while creating document: {:?}", e);
-                        Err(anyhow!("Document already exists")) // BadRequest
+                        Err(LoggingServiceError::DocumentServiceError(e))
                     }
                 }
             }
-            Ok(None) => {
-                println!("None!");
-                Err(anyhow!("Internal error while preparing transaction data")) // InternalError
-            }
+            Ok(None) => unreachable!("get_transaction_counter never returns None!"),
             Err(e) => {
                 error!("Error while getting transaction id!");
-                println!("{}", e);
-                Err(anyhow!("Internal error while preparing transaction data")) // InternalError
+                Err(LoggingServiceError::DatabaseError {
+                    source: e,
+                    description: "Error while getting transaction id".to_string(),
+                }) // InternalError
             }
+        }
+    }
+
+    pub(crate) async fn create_process(
+        &self,
+        ch_claims: ChClaims,
+        msg: ClearingHouseMessage,
+        pid: String,
+    ) -> Result<String, LoggingServiceError> {
+        let mut m = msg.header;
+        m.payload = msg.payload;
+        m.payload_type = msg.payload_type;
+
+        trace!("...user '{:?}'", &ch_claims.client_id);
+        let user = &ch_claims.client_id;
+
+        // Check for default process id
+        Self::check_for_default_pid(&pid)?;
+
+        // validate payload
+        let mut owners = vec![user.clone()];
+        match m.payload {
+            Some(ref payload) if !payload.is_empty() => {
+                trace!("OwnerList: '{:#?}'", &payload);
+                match serde_json::from_str::<OwnerList>(payload) {
+                    Ok(owner_list) => {
+                        for o in owner_list.owners {
+                            if !owners.contains(&o) {
+                                owners.push(o);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error!("Could not parse OwnerList '{payload}' for pid '{pid}': {e}");
+                        return Err(LoggingServiceError::InvalidRequest); // BadRequest
+                    }
+                };
+            }
+            _ => {}
+        };
+
+        // check if the pid already exists
+        match self.db.get_process(&pid).await {
+            Ok(Some(p)) => {
+                warn!("Requested pid '{}' already exists.", &p.id);
+                if !p.owners.contains(user) {
+                    Err(LoggingServiceError::UserNotAuthorized) // Forbidden
+                } else {
+                    Err(LoggingServiceError::ProcessAlreadyExists) // BadRequest
+                }
+            }
+            Ok(None) => {
+                info!("Requested pid '{}' will have {} owners", &pid, owners.len());
+
+                // create process
+                info!("Requested pid '{}' does not exist. Creating...", &pid);
+                let new_process = Process::new(pid.clone(), owners);
+
+                match self.db.store_process(new_process).await {
+                    Ok(_) => Ok(pid.clone()),
+                    Err(e) => {
+                        error!("Error while creating process '{}': {}", &pid, e);
+                        Err(LoggingServiceError::DatabaseError {
+                            source: e,
+                            description: "Creating process failed".to_string(),
+                        }) // InternalError
+                    }
+                }
+            }
+            Err(e) =>
+                Err(LoggingServiceError::DatabaseError {
+                    source: e,
+                    description: "Error while getting process".to_string(),
+                })
         }
     }
 
     pub(crate) async fn query_pid(
         &self,
         ch_claims: ChClaims,
-        page: Option<i32>,
-        size: Option<i32>,
+        page: Option<u64>,
+        size: Option<u64>,
         sort: Option<SortingOrder>,
         date_to: Option<String>,
         date_from: Option<String>,
         pid: String,
-        _message: ClearingHouseMessage,
-    ) -> anyhow::Result<IdsQueryResult> {
+    ) -> Result<IdsQueryResult, LoggingServiceError> {
         debug!("page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
 
         trace!("...user '{:?}'", &ch_claims.client_id);
         let user = &ch_claims.client_id;
 
-        // check if process exists
-        match self.db.exists_process(&pid).await {
-            Ok(true) => info!("User authorized."),
-            Ok(false) => return Err(anyhow!("Process does not exist!")), // NotFound
-            Err(_e) => {
-                error!(
-                    "Error while checking process '{}' for user '{}'",
-                    &pid, &user
-                );
-                return Err(anyhow!("Cannot authorize user!")); // InternalError
-            }
-        };
+        // Check if process exists and if the user is authorized to access the process
+        self.get_process_and_check_authorized(&pid, user).await?;
 
-        // now check if user is authorized to read infos in pid
-        match self.db.is_authorized(user, &pid).await {
-            Ok(true) => {
-                info!("User authorized.");
-            }
-            Ok(false) => {
-                warn!("User is not authorized to write to pid '{}'", &pid);
-                return Err(anyhow!("User not authorized!")); // Forbidden
-            }
-            Err(_) => {
-                error!(
-                    "Error while checking authorization of user '{}' for '{}'",
-                    &user, &pid
-                );
-                return Err(anyhow!("Cannot authorize user!")); // InternalError
-            }
-        }
-
-        // sanity check for pagination
-        let sanitized_page = match page {
-            Some(p) => {
-                if p >= 0 {
-                    p
-                } else {
-                    warn!("...invalid page requested. Falling back to 0.");
-                    1
-                }
-            }
-            None => 1,
-        };
-
+        let sanitized_page = page.unwrap_or(1);
         let sanitized_size = match size {
-            Some(s) => {
-                let converted_max = i32::try_from(MAX_NUM_RESPONSE_ENTRIES).unwrap();
-                if s > converted_max {
-                    warn!("...invalid size requested. Falling back to default.");
-                    converted_max
-                } else if s > 0 {
-                    s
-                } else {
-                    warn!("...invalid size requested. Falling back to default.");
-                    i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap()
-                }
-            }
-            None => i32::try_from(DEFAULT_NUM_RESPONSE_ENTRIES).unwrap(),
+            Some(s) => s.min(MAX_NUM_RESPONSE_ENTRIES),
+            None => DEFAULT_NUM_RESPONSE_ENTRIES,
         };
 
         let sanitized_sort = sort.unwrap_or(SortingOrder::Descending);
@@ -343,8 +325,7 @@ impl LoggingService {
             }
             Err(e) => {
                 error!("Error while retrieving message: {:?}", e);
-                Err(anyhow!("Error while retrieving messages for pid {}!", &pid))
-                // InternalError
+                Err(LoggingServiceError::DocumentServiceError(e))
             }
         }
     }
@@ -355,40 +336,12 @@ impl LoggingService {
         pid: String,
         id: String,
         _message: ClearingHouseMessage,
-    ) -> anyhow::Result<IdsMessage> {
+    ) -> Result<IdsMessage, LoggingServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         let user = &ch_claims.client_id;
 
-        // check if process exists
-        match self.db.exists_process(&pid).await {
-            Ok(true) => info!("User authorized."),
-            Ok(false) => return Err(anyhow!("Process does not exist!")), // NotFound
-            Err(_e) => {
-                error!(
-                    "Error while checking process '{}' for user '{}'",
-                    &pid, &user
-                );
-                return Err(anyhow!("Cannot authorize user!")); // InternalError
-            }
-        };
-
-        // now check if user is authorized to read infos in pid
-        match self.db.is_authorized(user, &pid).await {
-            Ok(true) => {
-                info!("User authorized.");
-            }
-            Ok(false) => {
-                warn!("User is not authorized to write to pid '{}'", &pid);
-                return Err(anyhow!("User not authorized!")); // Forbidden
-            }
-            Err(_) => {
-                error!(
-                    "Error while checking authorization of user '{}' for '{}'",
-                    &user, &pid
-                );
-                return Err(anyhow!("Cannot authorize user!")); // InternalError
-            }
-        }
+        // Check if process exists and if the user is authorized to access the process
+        self.get_process_and_check_authorized(&pid, user).await?;
 
         match self
             .doc_api
@@ -400,14 +353,58 @@ impl LoggingService {
                 let queried_message = IdsMessage::from(doc);
                 Ok(queried_message)
             }
-            /*Result::Ok(None) => {
-                debug!("Queried a non-existing document: {}", &id);
-                ApiResponse::NotFound(format!("No message found with id {}!", &id))
-            }*/
             Err(e) => {
                 error!("Error while retrieving message: {:?}", e);
-                Err(anyhow!("Error while retrieving message with id {}!", &id)) // InternalError
+                Err(LoggingServiceError::DocumentServiceError(e))
             }
         }
+    }
+
+    /// Checks if the given pid is the default pid
+    fn check_for_default_pid(pid: &str) -> Result<(), LoggingServiceError> {
+        // Check for default process id
+        if DEFAULT_PROCESS_ID.eq(pid) {
+            warn!("Log to default pid '{}' not allowed", DEFAULT_PROCESS_ID);
+            Err(LoggingServiceError::AttemptedAccessToDefaultPid)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Checks if a process exists and the user is authorized to access the process
+    async fn get_process_and_check_authorized(&self, pid: &String, user: &str) -> Result<Process, LoggingServiceError> {
+        match self.db.get_process(pid).await {
+            Ok(Some(p)) if !p.is_authorized(user) => {
+                warn!("User is not authorized to read from pid '{}'", &pid);
+                Err(LoggingServiceError::UserNotAuthorized)
+            }
+            Ok(Some(p)) => {
+                info!("User authorized.");
+                Ok(p)
+            }
+            Ok(None) => {
+                Err(LoggingServiceError::ProcessDoesNotExist(pid.clone()))
+            }
+            Err(e) => {
+                error!("Error while getting process '{}': {}", &pid, e);
+                Err(LoggingServiceError::DatabaseError {
+                    source: e,
+                    description: "Getting process failed".to_string(),
+                })
+            }
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::LoggingService;
+    use crate::model::constants::DEFAULT_PROCESS_ID;
+
+    #[test]
+    fn check_for_default_pid() {
+        assert!(LoggingService::check_for_default_pid(DEFAULT_PROCESS_ID).is_err());
+        assert!(LoggingService::check_for_default_pid("not_default").is_ok());
     }
 }

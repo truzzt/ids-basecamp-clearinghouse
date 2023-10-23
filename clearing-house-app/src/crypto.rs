@@ -70,16 +70,14 @@ pub fn generate_key_map(mkey: MasterKey, dt: DocumentType) -> anyhow::Result<Key
     let key_map = derive_key_map(doc_kdf, dt, true);
 
     debug!("encrypting the key seed");
-    let kdf = restore_kdf(&mkey.key)?;
+    let msk_kdf = restore_kdf(&mkey.key)?;
     let mut okm = [0u8; EXP_BUFF_SIZE];
-    if kdf
+    msk_kdf
         .expand(hex::decode(mkey.salt)?.as_slice(), &mut okm)
-        .is_err()
-    {
-        return Err(anyhow!("Error while generating key"));
-    }
+        .map_err(|_| anyhow!("Error while generating key"))?;
+
     match encrypt_secret(&okm[..EXP_KEY_SIZE], &okm[EXP_KEY_SIZE..], secret) {
-        Ok(ct) => Ok(KeyMap::new(true, key_map, Some(ct))),
+        Ok(ct) => Ok(KeyMap::new(key_map, Some(ct))),
         Err(e) => {
             error!("Error while encrypting key seed: {:?}", e);
             Err(anyhow!("Error while encrypting key seed!"))
@@ -105,7 +103,9 @@ pub fn restore_key_map(
     match decrypt_secret(&okm[..EXP_KEY_SIZE], &okm[EXP_KEY_SIZE..], &keys_ct) {
         Ok(key_seed) => {
             // generate new random key map
-            restore_keys(&key_seed, dt)
+            let mut km = restore_keys(&key_seed, dt)?;
+            km.keys_enc = Some(keys_ct);
+            Ok(km)
         }
         Err(e) => {
             error!("Error while decrypting key ciphertext: {}", e);
@@ -119,7 +119,7 @@ pub fn restore_keys(secret: &String, dt: DocumentType) -> anyhow::Result<KeyMap>
     let kdf = restore_kdf(secret)?;
     let key_map = derive_key_map(kdf, dt, false);
 
-    Ok(KeyMap::new(false, key_map, None))
+    Ok(KeyMap::new(key_map, None))
 }
 
 fn restore_kdf(secret: &String) -> anyhow::Result<Hkdf<Sha256>> {
@@ -191,6 +191,9 @@ pub fn decrypt_secret(key: &[u8], nonce: &[u8], ct: &[u8]) -> anyhow::Result<Str
 
 #[cfg(test)]
 mod test {
+    use crate::model::crypto::MasterKey;
+    use crate::model::doc_type::{DocumentType, DocumentTypePart};
+
     #[test]
     fn test_generate_random_seed() {
         for _ in 1..100 {
@@ -200,5 +203,55 @@ mod test {
             // Check that the seed is not all zeros
             assert_ne!(0, seed.iter().map(|b| *b as usize).sum::<usize>());
         }
+    }
+
+    #[test]
+    fn encrypt_decrypt_secret() {
+        let seed = super::generate_random_seed();
+        let key = &seed[..super::EXP_KEY_SIZE];
+        let nonce = &seed[..super::EXP_NONCE_SIZE];
+        let secret = "This is a secret".to_string();
+
+        let ct = super::encrypt_secret(key, nonce, secret.clone()).expect("Encryption failed");
+        let pt = super::decrypt_secret(key, nonce, &ct).expect("Decryption failed");
+
+        assert_eq!(secret, pt);
+    }
+
+    #[test]
+    fn restore_kdf() {
+        let salt = "abcdefghijklmnopqrstuvwx";
+        let (secret, kdf) = super::initialize_kdf();
+        let restored_kdf = super::restore_kdf(&secret).expect("kdf restoration failed");
+
+        let mut okm = [0u8; super::EXP_BUFF_SIZE];
+        let mut restored_okm = [0u8; super::EXP_BUFF_SIZE];
+        kdf
+            .expand(salt.as_bytes(), &mut okm)
+            .expect("kdf expansion failed");
+        restored_kdf
+            .expand(salt.as_bytes(), &mut restored_okm)
+            .expect("restored_kdf expansion failed");
+        assert_eq!(restored_okm, okm);
+    }
+
+    #[test]
+    fn restore_key_map() {
+        let msk: MasterKey = MasterKey::new_random();
+        let dt: DocumentType = DocumentType::new(
+            "test".to_string(),
+            "hello_world".to_string(),
+            vec![
+                DocumentTypePart::new("0".to_string()),
+                DocumentTypePart::new("1".to_string()),
+                DocumentTypePart::new("2".to_string()),
+            ],
+        );
+
+        let key_map = super::generate_key_map(msk.clone(), dt.clone()).expect("key_map generation failed");
+        let restored_key_map =
+            super::restore_key_map(msk, dt, key_map.clone().keys_enc.unwrap()).expect("key_map restoration failed");
+
+        assert_eq!(key_map, restored_key_map);
     }
 }

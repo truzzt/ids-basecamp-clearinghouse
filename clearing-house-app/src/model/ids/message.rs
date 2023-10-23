@@ -16,10 +16,6 @@ const SENDER_AGENT: &str = "sender_agent";
 const PAYLOAD: &str = "payload";
 const PAYLOAD_TYPE: &str = "payload_type";
 
-pub const RESULT_MESSAGE: &str = "ResultMessage";
-pub const REJECTION_MESSAGE: &str = "RejectionMessage";
-pub const MESSAGE_PROC_NOTIFICATION_MESSAGE: &str = "MessageProcessedNotificationMessage";
-
 /// Metadata describing payload exchanged by interacting Connectors.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct IdsMessage {
@@ -143,48 +139,6 @@ impl Default for IdsMessage {
 }
 
 impl IdsMessage {
-    pub fn processed(msg: IdsMessage) -> IdsMessage {
-        let mut message = IdsMessage::clone(msg);
-        message.id = Some(autogen(MESSAGE_PROC_NOTIFICATION_MESSAGE));
-        message.type_message = MessageType::MessageProcessedNotificationMessage;
-        message
-    }
-
-    pub fn return_result(msg: IdsMessage) -> IdsMessage {
-        let mut message = IdsMessage::clone(msg);
-        message.id = Some(autogen(RESULT_MESSAGE));
-        message.type_message = MessageType::ResultMessage;
-        message
-    }
-
-    pub fn error(msg: IdsMessage) -> IdsMessage {
-        let mut message = IdsMessage::clone(msg);
-        message.id = Some(autogen(REJECTION_MESSAGE));
-        message.type_message = MessageType::RejectionMessage;
-        message
-    }
-
-    fn clone(msg: IdsMessage) -> IdsMessage {
-        IdsMessage {
-            context: msg.context.clone(),
-            type_message: msg.type_message.clone(),
-            id: msg.id.clone(),
-            pid: msg.pid.clone(),
-            model_version: msg.model_version.clone(),
-            correlation_message: msg.correlation_message.clone(),
-            issued: msg.issued.clone(),
-            issuer_connector: msg.issuer_connector.clone(),
-            sender_agent: msg.sender_agent.clone(),
-            recipient_connector: msg.recipient_connector.clone(),
-            recipient_agent: msg.recipient_agent.clone(),
-            transfer_contract: msg.transfer_contract.clone(),
-            security_token: msg.security_token.clone(),
-            authorization_token: msg.authorization_token.clone(),
-            payload: msg.payload.clone(),
-            content_version: msg.content_version.clone(),
-            payload_type: msg.payload.clone(),
-        }
-    }
 
     pub fn restore() -> IdsMessage {
         IdsMessage {
@@ -224,26 +178,26 @@ impl From<Document> for IdsMessage {
         // message_id
         let p_map = doc.get_parts_map();
         if let Some(v) = p_map.get(MESSAGE_ID) {
-            m.id = Some(v.as_ref().unwrap().clone());
+            m.id = Some(v.clone());
         }
         // model_version
         if let Some(v) = p_map.get(MODEL_VERSION) {
-            m.model_version = v.as_ref().unwrap().clone();
+            m.model_version = v.clone();
         }
 
         // correlation_message
         if let Some(v) = p_map.get(CORRELATION_MESSAGE) {
-            m.correlation_message = Some(v.as_ref().unwrap().clone());
+            m.correlation_message = Some(v.clone());
         }
 
         // transfer_contract
         if let Some(v) = p_map.get(TRANSFER_CONTRACT) {
-            m.transfer_contract = Some(v.as_ref().unwrap().clone());
+            m.transfer_contract = Some(v.clone());
         }
 
         // issued
         if let Some(v) = p_map.get(ISSUED) {
-            match serde_json::from_str(v.as_ref().unwrap()) {
+            match serde_json::from_str(v) {
                 Ok(date_time) => {
                     m.issued = date_time;
                 }
@@ -258,27 +212,27 @@ impl From<Document> for IdsMessage {
 
         // issuer_connector
         if let Some(v) = p_map.get(ISSUER_CONNECTOR) {
-            m.issuer_connector = InfoModelId::SimpleId(v.as_ref().unwrap().clone());
+            m.issuer_connector = InfoModelId::SimpleId(v.clone());
         }
 
         // content_version
         if let Some(v) = p_map.get(CONTENT_VERSION) {
-            m.content_version = Some(v.as_ref().unwrap().clone());
+            m.content_version = Some(v.clone());
         }
 
         // sender_agent
         if let Some(v) = p_map.get(SENDER_AGENT) {
-            m.sender_agent = v.clone().unwrap();
+            m.sender_agent = v.clone();
         }
 
         // payload
         if let Some(v) = p_map.get(PAYLOAD) {
-            m.payload = Some(v.as_ref().unwrap().clone());
+            m.payload = Some(v.clone());
         }
 
         // payload_type
         if let Some(v) = p_map.get(PAYLOAD_TYPE) {
-            m.payload_type = Some(v.as_ref().unwrap().clone());
+            m.payload_type = Some(v.clone());
         }
 
         //TODO: security_token
@@ -307,8 +261,10 @@ impl From<Document> for IdsMessage {
 /// - authorization_token
 /// - payload
 /// - payload_type
-impl From<IdsMessage> for Document {
-    fn from(m: IdsMessage) -> Self {
+impl TryFrom<IdsMessage> for Document {
+    type Error = serde_json::Error;
+
+    fn try_from(m: IdsMessage) -> Result<Self, Self::Error> {
         let mut doc_parts = vec![];
 
         // message_id
@@ -317,49 +273,55 @@ impl From<IdsMessage> for Document {
             None => autogen("Message"),
         };
 
-        doc_parts.push(DocumentPart::new(MESSAGE_ID.to_string(), Some(id)));
+        doc_parts.push(DocumentPart::new(MESSAGE_ID.to_string(), id));
 
         // model_version
         doc_parts.push(DocumentPart::new(
             MODEL_VERSION.to_string(),
-            Some(m.model_version),
+            m.model_version,
         ));
 
         // correlation_message
-        doc_parts.push(DocumentPart::new(
-            CORRELATION_MESSAGE.to_string(),
-            m.correlation_message,
-        ));
+        if let Some(s) = m.correlation_message {
+            doc_parts.push(DocumentPart::new(
+                CORRELATION_MESSAGE.to_string(),
+                s,
+            ));
+        }
 
         // issued
         doc_parts.push(DocumentPart::new(
             ISSUED.to_string(),
-            serde_json::to_string(&m.issued).ok(),
+            serde_json::to_string(&m.issued)?,
         ));
 
         // issuer_connector
         doc_parts.push(DocumentPart::new(
             ISSUER_CONNECTOR.to_string(),
-            Some(m.issuer_connector.to_string()),
+            m.issuer_connector.to_string(),
         ));
 
         // sender_agent
         doc_parts.push(DocumentPart::new(
             SENDER_AGENT.to_string(),
-            Some(m.sender_agent.to_string()),
+            m.sender_agent.to_string(),
         ));
 
         // transfer_contract
-        doc_parts.push(DocumentPart::new(
-            TRANSFER_CONTRACT.to_string(),
-            m.transfer_contract,
-        ));
+        if let Some(s) = m.transfer_contract {
+            doc_parts.push(DocumentPart::new(
+                TRANSFER_CONTRACT.to_string(),
+                s,
+            ));
+        }
 
         // content_version
-        doc_parts.push(DocumentPart::new(
-            CONTENT_VERSION.to_string(),
-            m.content_version,
-        ));
+        if let Some(s) = m.content_version {
+            doc_parts.push(DocumentPart::new(
+                CONTENT_VERSION.to_string(),
+                s,
+            ));
+        }
 
         // security_token
         //TODO
@@ -368,19 +330,21 @@ impl From<IdsMessage> for Document {
         //TODO
 
         // payload
-        doc_parts.push(DocumentPart::new(PAYLOAD.to_string(), m.payload.clone()));
+        if let Some(s) = m.payload {
+            doc_parts.push(DocumentPart::new(PAYLOAD.to_string(), s));
+        }
 
         // payload_type
-        doc_parts.push(DocumentPart::new(
-            PAYLOAD_TYPE.to_string(),
-            m.payload_type.clone(),
-        ));
+        if let Some(s) = m.payload_type {
+            doc_parts.push(DocumentPart::new(PAYLOAD_TYPE.to_string(), s));
+        }
 
         // pid
-        Document::new(m.pid.unwrap(), DEFAULT_DOC_TYPE.to_string(), -1, doc_parts)
+        Ok(Document::new(m.pid.unwrap(), DEFAULT_DOC_TYPE.to_string(), -1, doc_parts))
     }
 }
 
+#[inline]
 fn autogen(message: &str) -> String {
     format!(
         "https://w3id.org/idsa/autogen/{}/{}",
