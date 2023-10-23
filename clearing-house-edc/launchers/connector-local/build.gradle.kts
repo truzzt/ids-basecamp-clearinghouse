@@ -19,6 +19,10 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
+configurations.all {
+    exclude(group = "de.fraunhofer.iais.eis.ids.infomodel", module = "java")
+}
+
 dependencies {
     runtimeOnly(project(":extensions:multipart"))
 
@@ -26,6 +30,9 @@ dependencies {
     runtimeOnly(edc.config.filesystem)
     runtimeOnly(edc.vault.filesystem)
     runtimeOnly(edc.oauth2.core)
+
+    runtimeOnly(":infomodel-java-4.1.3")
+    runtimeOnly(":infomodel-util-4.0.4")
 }
 
 application {
