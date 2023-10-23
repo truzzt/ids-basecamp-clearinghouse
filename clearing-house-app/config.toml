@@ -4,3 +4,4 @@ process_database_url= "mongodb://localhost:27017"
 keyring_database_url= "mongodb://localhost:27017"
 clear_db = true
 signing_key = "keys/private_key.der" # Optional
+performance_tracing = true

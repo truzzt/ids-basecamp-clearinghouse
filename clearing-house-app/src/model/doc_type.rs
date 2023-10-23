@@ -6,6 +6,7 @@ pub struct DocumentType {
 }
 
 impl DocumentType {
+    #[cfg(test)]
     pub fn new(id: String, pid: String, parts: Vec<DocumentTypePart>) -> DocumentType {
         DocumentType { id, pid, parts }
     }
@@ -17,6 +18,7 @@ pub struct DocumentTypePart {
 }
 
 impl DocumentTypePart {
+    #[cfg(test)]
     pub fn new(name: String) -> DocumentTypePart {
         DocumentTypePart { name }
     }

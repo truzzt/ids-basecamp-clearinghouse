@@ -8,6 +8,10 @@ impl Process {
     pub fn new(id: String, owners: Vec<String>) -> Self {
         Self { id, owners }
     }
+
+    pub fn is_authorized(&self, owner: &str) -> bool {
+        self.owners.contains(&owner.to_string())
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -18,12 +22,6 @@ pub struct TransactionCounter {
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct OwnerList {
     pub owners: Vec<String>,
-}
-
-impl OwnerList {
-    pub fn new(owners: Vec<String>) -> Self {
-        Self { owners }
-    }
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
