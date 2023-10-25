@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 Microsoft Corporation
+ *  Copyright (c) 2023 truzzt GmbH
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,10 +8,9 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Microsoft Corporation - Initial implementation
+ *       truzzt GmbH - Initial implementation
  *
  */
-
 package de.truzzt.clearinghouse.edc.dto;
 
 import org.jetbrains.annotations.NotNull;
@@ -24,7 +23,7 @@ public class AppSenderRequest<B> {
     private final String token;
     private final B body;
 
-    private AppSenderRequest(@NotNull  String url, @NotNull String token, @NotNull B body) {
+    public AppSenderRequest(@NotNull  String url, @NotNull String token, @NotNull B body) {
         this.url = url;
         this.token = token;
         this.body = body;

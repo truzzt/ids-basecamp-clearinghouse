@@ -2,6 +2,7 @@
 
 # Admin Guide
 - [Installation](content/admin-guide/installation.md)
+- [Tests](content/admin-guide/tests.md)
 - [Maintenance](content/admin-guide/maintenance.md)
 
 # References
