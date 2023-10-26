@@ -82,10 +82,23 @@ public class MultipartController {
 
     @POST
     @Path("messages/log/{pid}")
-    public Response request(@PathParam(PID) String pid,
+    public Response messageRequest(@PathParam(PID) String pid,
                             @FormDataParam(HEADER) InputStream headerInputStream,
                             @FormDataParam(PAYLOAD) String payload) {
+        return execute(pid, headerInputStream, payload);
 
+    }
+
+    @POST
+    @Path("process/{pid}")
+    public Response processRequest(@PathParam(PID) String pid,
+                                   @FormDataParam(HEADER) InputStream headerInputStream,
+                                   @FormDataParam(PAYLOAD) String payload){
+        return execute(pid, headerInputStream, payload);
+
+    }
+
+    private Response execute(String pid, InputStream headerInputStream, String payload){
         // Check if pid is missing
         if (pid == null) {
             monitor.severe(LOG_ID + ": PID is missing");
@@ -208,7 +221,6 @@ public class MultipartController {
                     .build();
         }
     }
-
     private boolean validateToken(Message header) {
 
         var dynamicAttributeToken = new DynamicAttributeTokenBuilder().
