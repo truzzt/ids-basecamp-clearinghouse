@@ -106,7 +106,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
 
-        var response = controller.request(pid, header, PAYLOAD);
+        var response = controller.logMessage(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
@@ -122,7 +122,7 @@ public class MultipartControllerTest {
     public void missingPIDError() {
         var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
 
-        var response = controller.request(null, header, PAYLOAD);
+        var response = controller.logMessage(null, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -137,7 +137,7 @@ public class MultipartControllerTest {
     public void missingHeaderError() {
         var pid = UUID.randomUUID().toString();
 
-        var response = controller.request(pid, null, PAYLOAD);
+        var response = controller.logMessage(pid, null, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -153,7 +153,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.INVALID_HEADER_JSON);
 
-        var response = controller.request(pid, header, PAYLOAD);
+        var response = controller.logMessage(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -169,7 +169,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.MISSING_FIELDS_HEADER_JSON);
 
-        var response = controller.request(pid, header, PAYLOAD);
+        var response = controller.logMessage(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -188,7 +188,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.INVALID_TOKEN_HEADER_JSON);
 
-        var response = controller.request(pid, header, PAYLOAD);
+        var response = controller.logMessage(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.FORBIDDEN.getStatusCode(), response.getStatus());
@@ -204,7 +204,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.MISSING_TOKEN_HEADER_JSON);
 
-        var response = controller.request(pid, header, PAYLOAD);
+        var response = controller.logMessage(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -220,7 +220,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
 
-        var response = controller.request(pid, header, null);
+        var response = controller.logMessage(pid, header, null);
 
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -241,7 +241,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.INVALID_TYPE_HEADER_JSON);
 
-        var response = controller.request(pid, header, PAYLOAD);
+        var response = controller.logMessage(pid, header, PAYLOAD);
 
         assertNotNull(response);
         assertEquals(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), response.getStatus());

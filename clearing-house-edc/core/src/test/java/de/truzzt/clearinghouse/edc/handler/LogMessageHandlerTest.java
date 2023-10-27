@@ -12,8 +12,6 @@ import de.truzzt.clearinghouse.edc.types.ids.SecurityToken;
 import okhttp3.ResponseBody;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.spi.http.EdcHttpClient;
-import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,8 +26,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
 class LogMessageHandlerTest {
-    @Mock
-    private Monitor monitor;
     @Mock
     private IdsId connectorId;
     @Mock
@@ -49,7 +45,7 @@ class LogMessageHandlerTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         senderDelegate = spy(new LoggingMessageDelegate(typeManagerUtil));
-        logMessageHandler = spy(new LogMessageHandler(monitor, connectorId, typeManagerUtil, appSender, context));
+        logMessageHandler = spy(new LogMessageHandler(connectorId, typeManagerUtil, appSender, context));
     }
 
     @Test
