@@ -31,18 +31,23 @@ async fn log(
     }
 }
 
+#[derive(serde::Serialize)]
+struct CreateProcessResponse {
+    pub pid: String,
+}
+
 async fn create_process(
     ExtractChClaims(ch_claims): ExtractChClaims,
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Path(pid): axum::extract::Path<String>,
     axum::extract::Json(message): axum::extract::Json<ClearingHouseMessage>,
-) -> LoggingApiResult<String> {
+) -> LoggingApiResult<CreateProcessResponse> {
     match state
         .logging_service
         .create_process(ch_claims, message, pid)
         .await
     {
-        Ok(id) => Ok((StatusCode::CREATED, Json(id))),
+        Ok(id) => Ok((StatusCode::CREATED, Json(CreateProcessResponse { pid: id }))),
         Err(e) => {
             error!("Error while creating process: {:?}", e);
             Err(e)
