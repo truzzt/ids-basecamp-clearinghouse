@@ -113,7 +113,7 @@ public class MultipartController {
         return processRequest(pid, response.getHeader(), payload);
     }
 
-    private RequestValidationResponse validaRequest(String pid, InputStream headerInputStream){
+    RequestValidationResponse validaRequest(String pid, InputStream headerInputStream){
         // Check if pid is missing
         if (pid == null) {
             monitor.severe(LOG_ID + ": PID is missing");
@@ -185,7 +185,7 @@ public class MultipartController {
       return new RequestValidationResponse(header);
     }
 
-    private Response processRequest(String pid, Message header, String payload){
+    Response processRequest(String pid, Message header, String payload){
 
         // Build the multipart request
         var multipartRequest = HandlerRequest.Builder.newInstance()
