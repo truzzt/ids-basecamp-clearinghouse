@@ -1,11 +1,11 @@
 use super::DataStoreApi;
 use crate::db::init_database_client;
-use crate::model::constants::{
-    FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT, MONGO_COLL_DOC_TYPES,
-    MONGO_COLL_MASTER_KEY, MONGO_ID
-};
 #[cfg(doc_type)]
 use crate::model::constants::MONGO_PID;
+use crate::model::constants::{
+    FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT, MONGO_COLL_DOC_TYPES,
+    MONGO_COLL_MASTER_KEY, MONGO_ID,
+};
 use crate::model::crypto::MasterKey;
 use crate::model::doc_type::DocumentType;
 use anyhow::anyhow;

@@ -14,19 +14,22 @@ pub enum SortingOrder {
     Descending,
 }
 
+/// Parses a date string into a `chrono::NaiveDateTime` object. If `to_date` is true, the time will be set to 23:59:59, otherwise it is 00:00:00.
 pub fn parse_date(date: Option<String>, to_date: bool) -> Option<chrono::NaiveDateTime> {
-    let time_format = if to_date { "23:59:59" } else { "00:00:00" };
+    // If it is a to_date, we want to set the time to 23:59:59, otherwise it is 00:00:00
+    let time: chrono::NaiveTime = if to_date {
+        chrono::NaiveTime::from_hms_opt(23, 59, 59).expect("23:59:59 is a valid time")
+    } else {
+        chrono::NaiveTime::from_hms_opt(0, 0, 0).expect("00:00:00 is a valid time")
+    };
 
     match date {
         Some(d) => {
             debug!("Parsing date: {}", &d);
-            match chrono::NaiveDateTime::parse_from_str(
-                format!("{} {}", &d, &time_format).as_str(),
-                "%Y-%m-%d %H:%M:%S",
-            ) {
-                Ok(date) => Some(date),
+            match chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d") {
+                Ok(date) => Some(date.and_time(time)),
                 Err(e) => {
-                    error!("Error occurred: {:#?}", e);
+                    error!("Parsing date '{d}' failed: {:#?}", e);
                     None
                 }
             }
@@ -54,12 +57,6 @@ pub fn validate_and_sanitize_dates(
         .expect("00:00:00 is a valid time")
         - chrono::Duration::weeks(2);
 
-    println!("date_to: {:#?}", date_to);
-    println!("date_from: {:#?}", date_from);
-
-    println!("Default date_to: {:#?}", default_to_date);
-    println!("Default date_from: {:#?}", default_from_date);
-
     match (date_from, date_to) {
         (Some(from), None) if from < now => Ok((from, default_to_date)),
         (Some(from), Some(to)) if from < now && to <= now && from < to => Ok((from, to)),
@@ -70,11 +67,15 @@ pub fn validate_and_sanitize_dates(
 
 #[cfg(test)]
 mod test {
+
     #[test]
     fn validate_and_sanitize_dates() {
         // Setup dates for testing
         let date_now = chrono::Local::now().naive_local();
-        let date_now_midnight = date_now.date().and_hms_opt(0, 0, 0).unwrap();
+        let date_now_midnight = date_now
+            .date()
+            .and_hms_opt(0, 0, 0)
+            .expect("00:00:00 is a valid time");
         let date_from = date_now_midnight - chrono::Duration::weeks(2);
         let date_to = date_now_midnight - chrono::Duration::weeks(1);
 
@@ -124,6 +125,25 @@ mod test {
         assert!(
             super::validate_and_sanitize_dates(Some(date_to), Some(date_now), Some(date_from))
                 .is_err()
+        );
+    }
+
+    #[test]
+    fn parse_date() {
+        let wrong_date = Some("2020-13-01".to_string());
+        let valid_date = Some("2020-01-01".to_string());
+        let valid_date_parsed = chrono::NaiveDate::from_ymd_opt(2020, 1, 1).expect("This is valid");
+        let day_start_time = chrono::NaiveTime::from_hms_opt(0, 0, 0).expect("This is valid");
+        let day_end_time = chrono::NaiveTime::from_hms_opt(23, 59, 59).expect("This is valid");
+
+        assert!(super::parse_date(wrong_date, false).is_none());
+        assert_eq!(
+            super::parse_date(valid_date.clone(), false),
+            Some(valid_date_parsed.and_time(day_start_time))
+        );
+        assert_eq!(
+            super::parse_date(valid_date, true),
+            Some(valid_date_parsed.and_time(day_end_time))
         );
     }
 }

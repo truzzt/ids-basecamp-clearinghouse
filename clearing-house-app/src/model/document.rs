@@ -46,7 +46,6 @@ impl DocumentPart {
             let nonce = GenericArray::from_slice(nonce);
             let cipher = Aes256GcmSiv::new(key);
 
-
             let pt = format_pt_for_storage(&self.name, &self.content);
             match cipher.encrypt(nonce, pt.as_bytes()) {
                 Ok(ct) => Ok(ct),

@@ -226,8 +226,7 @@ mod test {
 
         let mut okm = [0u8; super::EXP_BUFF_SIZE];
         let mut restored_okm = [0u8; super::EXP_BUFF_SIZE];
-        kdf
-            .expand(salt.as_bytes(), &mut okm)
+        kdf.expand(salt.as_bytes(), &mut okm)
             .expect("kdf expansion failed");
         restored_kdf
             .expand(salt.as_bytes(), &mut restored_okm)
@@ -248,9 +247,10 @@ mod test {
             ],
         );
 
-        let key_map = super::generate_key_map(msk.clone(), dt.clone()).expect("key_map generation failed");
-        let restored_key_map =
-            super::restore_key_map(msk, dt, key_map.clone().keys_enc.unwrap()).expect("key_map restoration failed");
+        let key_map =
+            super::generate_key_map(msk.clone(), dt.clone()).expect("key_map generation failed");
+        let restored_key_map = super::restore_key_map(msk, dt, key_map.clone().keys_enc.unwrap())
+            .expect("key_map restoration failed");
 
         assert_eq!(key_map, restored_key_map);
     }

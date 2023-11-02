@@ -1,7 +1,7 @@
-use axum::http::StatusCode;
-use axum::Json;
 use crate::model::claims::ExtractChClaims;
 use crate::{model::claims::get_jwks, model::SortingOrder, AppState};
+use axum::http::StatusCode;
+use axum::Json;
 use biscuit::jwk::JWKSet;
 
 use crate::model::ids::message::IdsMessage;

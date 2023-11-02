@@ -41,7 +41,9 @@ impl axum::response::IntoResponse for DocumentServiceError {
     fn into_response(self) -> axum::response::Response {
         use axum::http::StatusCode;
         match self {
-            Self::DocumentAlreadyExists => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            Self::DocumentAlreadyExists => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
             Self::MissingPayload => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::DatabaseError {
                 source,
@@ -51,12 +53,18 @@ impl axum::response::IntoResponse for DocumentServiceError {
                 format!("{}: {}", description, source),
             )
                 .into_response(),
-            Self::ChainHashError => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
+            Self::ChainHashError => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
+            }
             Self::KeyringServiceError(e) => e.into_response(),
             Self::InvalidDates => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::NotFound => (StatusCode::NOT_FOUND, self.to_string()).into_response(),
-            Self::CorruptedCiphertext(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-            Self::EncryptionError => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
+            Self::CorruptedCiphertext(e) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+            }
+            Self::EncryptionError => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
+            }
         }
     }
 }
@@ -88,7 +96,10 @@ impl DocumentService {
             .collect();
 
         // If the document contains more than 1 payload we panic. This should never happen!
-        assert!(payload.len() <= 1, "Document contains two or more payloads!");
+        assert!(
+            payload.len() <= 1,
+            "Document contains two or more payloads!"
+        );
         if payload.is_empty() {
             return Err(DocumentServiceError::MissingPayload);
         }
@@ -162,7 +173,10 @@ impl DocumentService {
                     Ok(_b) => Ok(receipt),
                     Err(e) => {
                         error!("Error while adding: {:?}", e);
-                        Err(DocumentServiceError::DatabaseError { source: e, description: "Error while adding document".to_string() })
+                        Err(DocumentServiceError::DatabaseError {
+                            source: e,
+                            description: "Error while adding document".to_string(),
+                        })
                     }
                 }
             }
@@ -201,10 +215,10 @@ impl DocumentService {
         // Validation of dates with various checks. If none given dates default to date_now (date_to) and (date_now - 2 weeks) (date_from)
         let Ok((sanitized_date_from, sanitized_date_to)) =
             validate_and_sanitize_dates(parsed_date_from, parsed_date_to, None)
-            else {
-                debug!("date validation failed!");
-                return Err(DocumentServiceError::InvalidDates);
-            };
+        else {
+            debug!("date validation failed!");
+            return Err(DocumentServiceError::InvalidDates);
+        };
 
         //new behavior: if pages are "invalid" return {}. Do not adjust page
         //either call db with type filter or without to get cts
@@ -233,7 +247,10 @@ impl DocumentService {
             Ok(cts) => cts,
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
-                return Err(DocumentServiceError::DatabaseError { source: e, description: "Error while retrieving document".to_string() });
+                return Err(DocumentServiceError::DatabaseError {
+                    source: e,
+                    description: "Error while retrieving document".to_string(),
+                });
             }
         };
 
@@ -368,7 +385,10 @@ impl DocumentService {
             }
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
-                Err(DocumentServiceError::DatabaseError {source: e, description: "Error while retrieving document".to_string()})
+                Err(DocumentServiceError::DatabaseError {
+                    source: e,
+                    description: "Error while retrieving document".to_string(),
+                })
             }
         }
     }

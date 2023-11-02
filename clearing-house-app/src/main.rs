@@ -87,8 +87,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let app_state = AppState::init(&conf).await?;
 
     // Setup router
-    let app = ports::router()
-        .with_state(app_state);
+    let app = ports::router().with_state(app_state);
 
     // Bind port and start server
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));

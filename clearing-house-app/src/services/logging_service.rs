@@ -56,21 +56,15 @@ impl axum::response::IntoResponse for LoggingServiceError {
                 format!("{}: {}", description, source),
             )
                 .into_response(),
-            Self::UserNotAuthorized => {
-                (StatusCode::FORBIDDEN, self.to_string()).into_response()
-            }
-            Self::InvalidRequest => {
-                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
-            }
+            Self::UserNotAuthorized => (StatusCode::FORBIDDEN, self.to_string()).into_response(),
+            Self::InvalidRequest => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::ProcessAlreadyExists => {
                 (StatusCode::BAD_REQUEST, self.to_string()).into_response()
             }
             Self::ProcessDoesNotExist(_) => {
                 (StatusCode::NOT_FOUND, self.to_string()).into_response()
             }
-            Self::ParsingError(_) => {
-                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
-            }
+            Self::ParsingError(_) => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::DocumentServiceError(e) => e.into_response(),
         }
     }
@@ -120,7 +114,9 @@ impl LoggingService {
         }?;
 
         // Check if process exists and if the user is authorized to access the process
-        if let Err(LoggingServiceError::ProcessDoesNotExist(_)) = self.get_process_and_check_authorized(&pid, user).await {
+        if let Err(LoggingServiceError::ProcessDoesNotExist(_)) =
+            self.get_process_and_check_authorized(&pid, user).await
+        {
             // convenience: if process does not exist, we create it but only if no error occurred before
             info!("Requested pid '{}' does not exist. Creating...", &pid);
             // create a new process
@@ -265,11 +261,10 @@ impl LoggingService {
                     }
                 }
             }
-            Err(e) =>
-                Err(LoggingServiceError::DatabaseError {
-                    source: e,
-                    description: "Error while getting process".to_string(),
-                })
+            Err(e) => Err(LoggingServiceError::DatabaseError {
+                source: e,
+                description: "Error while getting process".to_string(),
+            }),
         }
     }
 
@@ -372,7 +367,11 @@ impl LoggingService {
     }
 
     /// Checks if a process exists and the user is authorized to access the process
-    async fn get_process_and_check_authorized(&self, pid: &String, user: &str) -> Result<Process, LoggingServiceError> {
+    async fn get_process_and_check_authorized(
+        &self,
+        pid: &String,
+        user: &str,
+    ) -> Result<Process, LoggingServiceError> {
         match self.db.get_process(pid).await {
             Ok(Some(p)) if !p.is_authorized(user) => {
                 warn!("User is not authorized to read from pid '{}'", &pid);
@@ -382,9 +381,7 @@ impl LoggingService {
                 info!("User authorized.");
                 Ok(p)
             }
-            Ok(None) => {
-                Err(LoggingServiceError::ProcessDoesNotExist(pid.clone()))
-            }
+            Ok(None) => Err(LoggingServiceError::ProcessDoesNotExist(pid.clone())),
             Err(e) => {
                 error!("Error while getting process '{}': {}", &pid, e);
                 Err(LoggingServiceError::DatabaseError {
@@ -395,7 +392,6 @@ impl LoggingService {
         }
     }
 }
-
 
 #[cfg(test)]
 mod test {
