@@ -77,6 +77,11 @@ impl AppState {
 /// Main function: Reading config, initializing application state, starting server
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+    #[cfg(feature = "sentry")]
+    let _guard = sentry::init(("https://347cc3aa30aa0c07d437da8c780838d3@o4506146399322112.ingest.sentry.io/4506155710480384", sentry::ClientOptions {
+      release: sentry::release_name!(),
+      ..Default::default()
+    }));
     // Read configuration
     let conf = config::read_config(None);
     config::configure_logging(&conf);

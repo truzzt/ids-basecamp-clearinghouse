@@ -56,6 +56,7 @@ async-trait = "0.1.73"
 # Helper for working with futures
 futures = "0.3.28"
 thiserror = "1.0.48"
+sentry = { version = "0.31.7", optional = true }
 
 [dev-dependencies]
 # Controlling execution of unit test cases, which could interfere with each other
@@ -67,3 +68,4 @@ tempfile = "3.8.0"
 default = []
 # Enables the doc_type API
 doc_type = []
+sentry = ["dep:sentry"]
