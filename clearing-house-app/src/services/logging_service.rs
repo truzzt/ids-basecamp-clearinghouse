@@ -274,8 +274,7 @@ impl LoggingService {
         page: Option<u64>,
         size: Option<u64>,
         sort: Option<SortingOrder>,
-        date_to: Option<String>,
-        date_from: Option<String>,
+        (date_to, date_from): (Option<String>, Option<String>),
         pid: String,
     ) -> Result<IdsQueryResult, LoggingServiceError> {
         debug!("page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
@@ -298,12 +297,10 @@ impl LoggingService {
             .doc_api
             .get_enc_documents_for_pid(
                 ChClaims::new(user),
-                None,
                 Some(sanitized_page),
                 Some(sanitized_size),
                 Some(sanitized_sort),
-                date_from,
-                date_to,
+                (date_from, date_to),
                 pid.clone(),
             )
             .await

@@ -160,7 +160,7 @@ impl DataStore {
         match coll.update_one(query,
                               doc! {
                             "$push": {
-                                MONGO_DOC_ARRAY: mongodb::bson::to_bson(&bucket_update).unwrap(),
+                                MONGO_DOC_ARRAY: mongodb::bson::to_bson(&bucket_update)?,
                             },
                             "$inc": {"counter": 1},
                             "$setOnInsert": { "_id": format!("{}_{}", doc.pid.clone(), doc.ts), MONGO_DT_ID: doc.dt_id.clone(), MONGO_FROM_TS: doc.ts},
@@ -280,8 +280,7 @@ impl DataStore {
         page: u64,
         size: u64,
         sort: &SortingOrder,
-        date_from: &chrono::NaiveDateTime,
-        date_to: &chrono::NaiveDateTime,
+        (date_from, date_to): (&chrono::NaiveDateTime, &chrono::NaiveDateTime),
     ) -> anyhow::Result<Vec<EncryptedDocument>> {
         debug!(
             "...trying to get page {} of size {} of documents for pid {} of dt {}...",
@@ -289,7 +288,7 @@ impl DataStore {
         );
 
         match self
-            .get_start_bucket_size(dt_id, pid, page, size, sort, date_from, date_to)
+            .get_start_bucket_size(dt_id, pid, page, size, sort, (date_from, date_to))
             .await
         {
             Ok(bucket_size) => {
@@ -318,22 +317,22 @@ impl DataStore {
 
                 let pipeline = vec![
                     doc! {"$match":{
-                        MONGO_PID: pid.clone(),
-                        MONGO_DT_ID: dt_id.clone(),
-                        MONGO_FROM_TS: {"$lte": date_to.timestamp()},
-                        MONGO_TO_TS: {"$gte": date_from.timestamp()}
+                    MONGO_PID: pid.clone(),
+                    MONGO_DT_ID: dt_id.clone(),
+                    MONGO_FROM_TS: {"$lte": date_to.timestamp()},
+                    MONGO_TO_TS: {"$gte": date_from.timestamp()}
                     }},
-                    doc! {"$sort" : {MONGO_FROM_TS: sort_order}},
-                    doc! {"$skip" : skip_buckets},
+                    doc! {"$sort": {MONGO_FROM_TS: sort_order}},
+                    doc! {"$skip": skip_buckets},
                     // worst case: overlap between two buckets.
-                    doc! {"$limit" : 2},
-                    doc! {"$unwind": format!("${}", MONGO_DOC_ARRAY)},
+                    doc! {"$limit": 2},
+                    doc! {"$unwind": format ! ("${}", MONGO_DOC_ARRAY)},
                     doc! {"$replaceRoot": { "newRoot": "$documents"}},
                     doc! {"$match":{
-                        MONGO_TS: {"$gte": date_from.timestamp(), "$lte": date_to.timestamp()}
+                    MONGO_TS: {"$gte": date_from.timestamp(), "$lte": date_to.timestamp()}
                     }},
-                    doc! {"$sort" : {MONGO_TS: sort_order}},
-                    doc! {"$skip" : start_entry as i32},
+                    doc! {"$sort": {MONGO_TS: sort_order}},
+                    doc! {"$skip": start_entry as i32},
                     doc! { "$limit": size as i32},
                 ];
 
@@ -369,8 +368,7 @@ impl DataStore {
         page: u64,
         size: u64,
         sort: &SortingOrder,
-        date_from: &chrono::NaiveDateTime,
-        date_to: &chrono::NaiveDateTime,
+        (date_from, date_to): (&chrono::NaiveDateTime, &chrono::NaiveDateTime),
     ) -> anyhow::Result<DocumentBucketSize> {
         debug!("...trying to get the offset for page {} of size {} of documents for pid {} of dt {}...", pid, dt_id, page, size);
         let sort_order = match sort {

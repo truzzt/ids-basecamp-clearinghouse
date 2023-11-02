@@ -105,18 +105,22 @@ impl Document {
 
         for part in self.parts.iter() {
             // check if there's a key for this part
-            if !keys.contains_key(&part.name) {
-                error!("Missing key for part '{}'", &part.name);
-                anyhow::bail!("Missing key for part '{}'", &part.name);
-            }
-            // get the key for this part
-            let key_entry = keys.get(&part.name).unwrap();
-            let ct = part.encrypt(key_entry.key.as_slice(), key_entry.nonce.as_slice());
-            if ct.is_err() {
-                warn!("Encryption error. No ct received!");
-                anyhow::bail!("Encryption error. No ct received!");
-            }
-            let ct_string = hex::encode_upper(ct.unwrap());
+            let key_entry = match keys.get(&part.name) {
+                Some(key_entry) => key_entry,
+                None => {
+                    error!("Missing key for part '{}'", &part.name);
+                    anyhow::bail!("Missing key for part '{}'", &part.name);
+                }
+            };
+            // Encrypt part
+            let ct_string = match part.encrypt(key_entry.key.as_slice(), key_entry.nonce.as_slice())
+            {
+                Ok(ct) => hex::encode_upper(ct),
+                Err(e) => {
+                    error!("Error while encrypting: {}", e);
+                    anyhow::bail!("Error while encrypting: {}", e);
+                }
+            };
 
             // key entry id is needed for decryption
             cts.push(format!("{}::{}", key_entry.id, ct_string));
@@ -200,22 +204,23 @@ impl EncryptedDocument {
             }
             // get key and nonce
             let key_entry = keys.get(ct_parts[0]);
-            if key_entry.is_none() {
-                anyhow::bail!("Key for id '{}' does not exist!", ct_parts[0]);
-            }
-            let key = key_entry.unwrap().key.as_slice();
-            let nonce = key_entry.unwrap().nonce.as_slice();
+            if let Some(key_entry) = key_entry {
+                let key = key_entry.key.as_slice();
+                let nonce = key_entry.nonce.as_slice();
 
-            // get ciphertext
-            //TODO: use error_chain?
-            let ct = hex::decode(ct_parts[1]).unwrap();
+                // get ciphertext
+                //TODO: use error_chain?
+                let ct = hex::decode(ct_parts[1])?;
 
-            // decrypt
-            match DocumentPart::decrypt(key, nonce, ct.as_slice()) {
-                Ok(part) => pts.push(part),
-                Err(e) => {
-                    anyhow::bail!("Error while decrypting: {}", e);
+                // decrypt
+                match DocumentPart::decrypt(key, nonce, ct.as_slice()) {
+                    Ok(part) => pts.push(part),
+                    Err(e) => {
+                        anyhow::bail!("Error while decrypting: {}", e);
+                    }
                 }
+            } else {
+                anyhow::bail!("Key for id '{}' does not exist!", ct_parts[0]);
             }
         }
 

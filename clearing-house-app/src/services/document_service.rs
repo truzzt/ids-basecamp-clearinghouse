@@ -187,12 +187,10 @@ impl DocumentService {
     pub(crate) async fn get_enc_documents_for_pid(
         &self,
         ch_claims: ChClaims,
-        doc_type: Option<String>,
         page: Option<u64>,
         size: Option<u64>,
         sort: Option<SortingOrder>,
-        date_from: Option<String>,
-        date_to: Option<String>,
+        (date_from, date_to): (Option<String>, Option<String>),
         pid: String,
     ) -> Result<QueryResult, DocumentServiceError> {
         debug!("Trying to retrieve documents for pid '{}'...", &pid);
@@ -202,6 +200,7 @@ impl DocumentService {
             page, size, sort
         );
 
+        let dt_id = String::from(DEFAULT_DOC_TYPE);
         let sanitized_page = Self::sanitize_page(page);
         let sanitized_size = Self::sanitize_size(size);
 
@@ -227,10 +226,6 @@ impl DocumentService {
             sanitized_page, sanitized_size, &sanitized_sort
         );
 
-        let dt_id = match doc_type {
-            Some(dt) => dt,
-            None => String::from(DEFAULT_DOC_TYPE),
-        };
         let cts = match self
             .db
             .get_documents_for_pid(
@@ -239,8 +234,7 @@ impl DocumentService {
                 sanitized_page,
                 sanitized_size,
                 &sanitized_sort,
-                &sanitized_date_from,
-                &sanitized_date_to,
+                (&sanitized_date_from, &sanitized_date_to),
             )
             .await
         {
@@ -337,8 +331,8 @@ impl DocumentService {
             &id,
             &pid
         );
-        if hash.is_some() {
-            debug!("integrity check with hash: {}", hash.as_ref().unwrap());
+        if let Some(hash) = hash {
+            debug!("integrity check with hash: {}", hash);
         }
 
         match self.db.get_document(&id, &pid).await {

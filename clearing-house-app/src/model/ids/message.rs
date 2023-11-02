@@ -264,6 +264,7 @@ impl TryFrom<IdsMessage> for Document {
     type Error = serde_json::Error;
 
     fn try_from(m: IdsMessage) -> Result<Self, Self::Error> {
+        use serde::ser::Error;
         let mut doc_parts = vec![];
 
         // message_id
@@ -331,7 +332,7 @@ impl TryFrom<IdsMessage> for Document {
 
         // pid
         Ok(Document::new(
-            m.pid.unwrap(),
+            m.pid.ok_or(serde_json::Error::custom("PID missing"))?,
             DEFAULT_DOC_TYPE.to_string(),
             -1,
             doc_parts,

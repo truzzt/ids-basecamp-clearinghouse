@@ -13,8 +13,16 @@ pub struct InfoModelComplexId {
 
 impl std::fmt::Display for InfoModelComplexId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use serde::ser::Error;
+
         match &self.id {
-            Some(id) => write!(f, "{}", serde_json::to_string(id).unwrap()),
+            Some(id) => write!(
+                f,
+                "{}",
+                serde_json::to_string(id).map_err(|e| std::fmt::Error::custom(format!(
+                    "JSON serialization failed: {e}"
+                )))?
+            ),
             None => write!(f, ""),
         }
     }

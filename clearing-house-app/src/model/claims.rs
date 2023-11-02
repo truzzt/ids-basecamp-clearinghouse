@@ -45,7 +45,13 @@ where
                 .await
                 .map_err(|err| err.into_response())?;
         if let Some(token) = parts.headers.get(SERVICE_HEADER) {
-            let token = token.to_str().unwrap();
+            let token = token.to_str().map_err(|_| {
+                (
+                    axum::http::StatusCode::BAD_REQUEST,
+                    format!("Invalid token in {SERVICE_HEADER}"),
+                )
+                    .into_response()
+            })?;
             debug!("...received service header: {:?}", token);
 
             match decode_token::<ChClaims>(token, app_state.service_config.service_id.as_str()) {
@@ -106,7 +112,8 @@ pub fn get_jwks(key_path: &str) -> Option<biscuit::jwk::JWKSet<biscuit::Empty>> 
 }
 
 pub fn get_fingerprint(key_path: &str) -> Option<String> {
-    let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path).unwrap();
+    let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path)
+        .unwrap_or_else(|_| panic!("File exists at '{key_path}' and is a valid RSA keypair"));
     if let biscuit::jws::Secret::RsaKeyPair(a) = keypair {
         let pk_modulus = a
             .as_ref()

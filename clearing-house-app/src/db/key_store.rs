@@ -59,8 +59,7 @@ impl KeyStore {
                             debug!("Database empty. Need to initialize...");
                             debug!("Adding initial document type...");
                             match serde_json::from_str::<DocumentType>(
-                                &crate::util::read_file(FILE_DEFAULT_DOC_TYPE)
-                                    .unwrap_or(String::new()),
+                                &crate::util::read_file(FILE_DEFAULT_DOC_TYPE).unwrap_or_default(),
                             ) {
                                 Ok(dt) => match keystore.add_document_type(dt).await {
                                     Ok(_) => {

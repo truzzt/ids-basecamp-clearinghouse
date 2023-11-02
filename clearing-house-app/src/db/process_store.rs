@@ -192,7 +192,7 @@ impl ProcessStore {
                 trace!("didn't find process");
                 Ok(false)
             }
-            _ => Err(anyhow!("User '{}' could not be authorized", &user).into()),
+            _ => Err(anyhow!("User '{}' could not be authorized", &user)),
         }
     }
 
