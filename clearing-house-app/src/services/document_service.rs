@@ -23,8 +23,6 @@ pub enum DocumentServiceError {
         source: anyhow::Error,
         description: String,
     },
-    #[error("Error while creating the chain hash!")]
-    ChainHashError,
     #[error("Error while retrieving keys from keyring!")]
     KeyringServiceError(#[from] crate::services::keyring_service::KeyringServiceError),
     #[error("Invalid dates in query!")]
@@ -53,9 +51,6 @@ impl axum::response::IntoResponse for DocumentServiceError {
                 format!("{}: {}", description, source),
             )
                 .into_response(),
-            Self::ChainHashError => {
-                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
-            }
             Self::KeyringServiceError(e) => e.into_response(),
             Self::InvalidDates => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::NotFound => (StatusCode::NOT_FOUND, self.to_string()).into_response(),
@@ -130,7 +125,7 @@ impl DocumentService {
                 }?;
 
                 debug!("start encryption");
-                let mut enc_doc = match doc.encrypt(keys) {
+                let enc_doc = match doc.encrypt(keys) {
                     Ok(ct) => {
                         debug!("got ct");
                         Ok(ct)
@@ -141,31 +136,9 @@ impl DocumentService {
                     }
                 }?;
 
-                // chain the document to previous documents
-                debug!("add the chain hash...");
-                // get the document with the previous tc
-                match self.db.get_document_with_previous_tc(doc.tc).await {
-                    Ok(Some(previous_doc)) => {
-                        enc_doc.hash = previous_doc.hash();
-                    }
-                    Ok(None) => {
-                        if doc.tc == 0 {
-                            info!("No entries found for pid {}. Beginning new chain!", doc.pid);
-                        } else {
-                            // If this happens, db didn't find a tc entry that should exist.
-                            return Err(DocumentServiceError::ChainHashError);
-                        }
-                    }
-                    Err(e) => {
-                        error!("Error while creating the chain hash: {:?}", e);
-                        return Err(DocumentServiceError::ChainHashError);
-                    }
-                }
-
                 // prepare the success result message
-
                 let receipt =
-                    DocumentReceipt::new(enc_doc.ts, &enc_doc.pid, &enc_doc.id, &enc_doc.hash);
+                    DocumentReceipt::new(enc_doc.ts, &enc_doc.pid, &enc_doc.id);
 
                 trace!("storing document ....");
                 // store document

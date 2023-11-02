@@ -4,7 +4,6 @@ use anyhow::Context;
 use axum::extract::FromRef;
 use axum::response::IntoResponse;
 use num_bigint::BigUint;
-use ring::signature::KeyPair;
 use std::env;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -75,8 +74,9 @@ pub fn get_jwks(key_path: &str) -> Option<biscuit::jwk::JWKSet<biscuit::Empty>> 
         .unwrap_or_else(|_| panic!("Failed to load keyfile from path {key_path}"));
 
     if let biscuit::jws::Secret::RsaKeyPair(a) = keypair {
+        use ring::signature::KeyPair;
         let pk_modulus = BigUint::from_bytes_be(
-            a.as_ref()
+            a
                 .public_key()
                 .modulus()
                 .big_endian_without_leading_zero(),
@@ -112,6 +112,7 @@ pub fn get_jwks(key_path: &str) -> Option<biscuit::jwk::JWKSet<biscuit::Empty>> 
 }
 
 pub fn get_fingerprint(key_path: &str) -> Option<String> {
+    use ring::signature::KeyPair;
     let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path)
         .unwrap_or_else(|_| panic!("File exists at '{key_path}' and is a valid RSA keypair"));
     if let biscuit::jws::Secret::RsaKeyPair(a) = keypair {
@@ -133,6 +134,50 @@ pub fn get_fingerprint(key_path: &str) -> Option<String> {
     } else {
         None
     }
+}
+
+pub fn create_token<
+    T: std::fmt::Display + Clone + serde::Serialize + for<'de> serde::Deserialize<'de>,
+>(
+    issuer: &str,
+    audience: &str,
+    private_claims: &T,
+) -> String {
+    let signing_secret = match env::var(ENV_SHARED_SECRET) {
+        Ok(secret) => biscuit::jws::Secret::Bytes(secret.to_string().into_bytes()),
+        Err(_) => {
+            panic!(
+                "Shared Secret not configured. Please configure environment variable {}",
+                ENV_SHARED_SECRET
+            );
+        }
+    };
+    let expiration_date = chrono::Utc::now() + chrono::Duration::minutes(5);
+
+    let claims = biscuit::ClaimsSet::<T> {
+        registered: biscuit::RegisteredClaims {
+            issuer: Some(issuer.to_string()),
+            issued_at: Some(biscuit::Timestamp::from(chrono::Utc::now())),
+            audience: Some(biscuit::SingleOrMultiple::Single(audience.to_string())),
+            expiry: Some(biscuit::Timestamp::from(expiration_date)),
+            ..Default::default()
+        },
+        private: private_claims.clone(),
+    };
+
+    // Construct the JWT
+    let jwt = biscuit::jws::Compact::new_decoded(
+        From::from(biscuit::jws::RegisteredHeader {
+            algorithm: biscuit::jwa::SignatureAlgorithm::HS256,
+            ..Default::default()
+        }),
+        claims,
+    );
+
+    jwt.into_encoded(&signing_secret)
+        .unwrap()
+        .unwrap_encoded()
+        .to_string()
 }
 
 pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'de>>(

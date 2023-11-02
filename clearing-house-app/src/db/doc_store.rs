@@ -11,7 +11,7 @@ use anyhow::anyhow;
 use futures::StreamExt;
 use mongodb::bson::doc;
 use mongodb::options::{
-    AggregateOptions, CreateCollectionOptions, IndexOptions, UpdateOptions, WriteConcern,
+    AggregateOptions, CreateCollectionOptions, UpdateOptions, WriteConcern,
 };
 use mongodb::{bson, Client, IndexModel};
 
@@ -86,7 +86,7 @@ impl DataStore {
                             };
 
                             // This purpose of this index is to ensure that the transaction counter is unique
-                            let mut index_options = IndexOptions::default();
+                            /*let mut index_options = IndexOptions::default();
                             index_options.unique = Some(true);
                             let mut index_model = IndexModel::default();
                             index_model.keys = doc! {format!("{}.{}",MONGO_DOC_ARRAY, MONGO_TC): 1};
@@ -107,7 +107,7 @@ impl DataStore {
                                     debug!("... failed.");
                                     return Err(anyhow!("Failed to create index"));
                                 }
-                            }
+                            }*/
 
                             // This creates a compound index over pid and the timestamp to enable paging using buckets
                             let mut compound_index_model = IndexModel::default();
@@ -163,7 +163,7 @@ impl DataStore {
                                 MONGO_DOC_ARRAY: mongodb::bson::to_bson(&bucket_update)?,
                             },
                             "$inc": {"counter": 1},
-                            "$setOnInsert": { "_id": format!("{}_{}", doc.pid.clone(), doc.ts), MONGO_DT_ID: doc.dt_id.clone(), MONGO_FROM_TS: doc.ts},
+                            "$setOnInsert": { "_id": format!("{}_{}_{}", doc.pid.clone(), doc.ts, crate::util::new_uuid()), MONGO_DT_ID: doc.dt_id.clone(), MONGO_FROM_TS: doc.ts},
                             "$set": {MONGO_TO_TS: doc.ts},
                         }, update_options).await {
             Ok(_r) => {
@@ -326,14 +326,14 @@ impl DataStore {
                     doc! {"$skip": skip_buckets},
                     // worst case: overlap between two buckets.
                     doc! {"$limit": 2},
-                    doc! {"$unwind": format ! ("${}", MONGO_DOC_ARRAY)},
+                    doc! {"$unwind": format! ("${}", MONGO_DOC_ARRAY)},
                     doc! {"$replaceRoot": { "newRoot": "$documents"}},
                     doc! {"$match":{
                     MONGO_TS: {"$gte": date_from.timestamp(), "$lte": date_to.timestamp()}
                     }},
                     doc! {"$sort": {MONGO_TS: sort_order}},
                     doc! {"$skip": start_entry as i32},
-                    doc! { "$limit": size as i32},
+                    doc! {"$limit": size as i32},
                 ];
 
                 let coll = self
@@ -483,8 +483,6 @@ mod bucket {
     pub struct DocumentBucketUpdate {
         pub id: String,
         pub ts: i64,
-        pub tc: i64,
-        pub hash: String,
         pub keys_ct: String,
         pub cts: Vec<String>,
     }
@@ -494,8 +492,6 @@ mod bucket {
             DocumentBucketUpdate {
                 id: doc.id.clone(),
                 ts: doc.ts,
-                tc: doc.tc,
-                hash: doc.hash.clone(),
                 keys_ct: doc.keys_ct.clone(),
                 cts: doc.cts.to_vec(),
             }
@@ -512,8 +508,6 @@ mod bucket {
             dt_id,
             pid,
             ts: bucket_update.ts,
-            tc: bucket_update.tc,
-            hash: bucket_update.hash.clone(),
             keys_ct: bucket_update.keys_ct.clone(),
             cts: bucket_update.cts.to_vec(),
         }

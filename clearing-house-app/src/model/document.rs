@@ -3,8 +3,6 @@ use crate::model::crypto::{KeyEntry, KeyMap};
 use crate::util::new_uuid;
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::{Aes256GcmSiv, KeyInit};
-use base64::Engine;
-use blake2_rfc::blake2b::Blake2b;
 use chrono::Local;
 use generic_array::GenericArray;
 use std::collections::HashMap;
@@ -79,7 +77,6 @@ pub struct Document {
     pub dt_id: String,
     pub pid: String,
     pub ts: i64,
-    pub tc: i64,
     pub parts: Vec<DocumentPart>,
 }
 
@@ -132,14 +129,9 @@ impl Document {
             self.pid.clone(),
             self.dt_id.clone(),
             self.ts,
-            self.tc,
             key_ct,
             cts,
         ))
-    }
-
-    pub fn get_formatted_tc(&self) -> String {
-        format_tc(self.tc)
     }
 
     pub fn get_parts_map(&self) -> HashMap<String, String> {
@@ -150,13 +142,12 @@ impl Document {
         p_map
     }
 
-    pub fn new(pid: String, dt_id: String, tc: i64, parts: Vec<DocumentPart>) -> Document {
+    pub fn new(pid: String, dt_id: String, parts: Vec<DocumentPart>) -> Document {
         Document {
             id: Document::create_uuid(),
             dt_id,
             pid,
             ts: Local::now().timestamp(),
-            tc,
             parts,
         }
     }
@@ -166,7 +157,6 @@ impl Document {
         pid: String,
         dt_id: String,
         ts: i64,
-        tc: i64,
         parts: Vec<DocumentPart>,
     ) -> Document {
         Document {
@@ -174,7 +164,6 @@ impl Document {
             dt_id,
             pid,
             ts,
-            tc,
             parts,
         }
     }
@@ -186,8 +175,6 @@ pub struct EncryptedDocument {
     pub pid: String,
     pub dt_id: String,
     pub ts: i64,
-    pub tc: i64,
-    pub hash: String,
     pub keys_ct: String,
     pub cts: Vec<String>,
 }
@@ -229,34 +216,8 @@ impl EncryptedDocument {
             self.pid.clone(),
             self.dt_id.clone(),
             self.ts,
-            self.tc,
             pts,
         ))
-    }
-
-    pub fn get_formatted_tc(&self) -> String {
-        format_tc(self.tc)
-    }
-
-    pub fn hash(&self) -> String {
-        let mut hasher = Blake2b::new(64);
-
-        hasher.update(self.id.as_bytes());
-        hasher.update(self.pid.as_bytes());
-        hasher.update(self.dt_id.as_bytes());
-        hasher.update(self.get_formatted_tc().as_bytes());
-        hasher.update(self.ts.to_string().as_bytes());
-        hasher.update(self.hash.as_bytes());
-        hasher.update(self.keys_ct.as_bytes());
-        let mut cts = self.cts.clone();
-        cts.sort();
-        for ct in cts.iter() {
-            hasher.update(ct.as_bytes());
-        }
-
-        let res = base64::engine::general_purpose::STANDARD.encode(hasher.finalize());
-        debug!("hashed cts: '{}'", &res);
-        res
     }
 
     pub fn new(
@@ -264,7 +225,6 @@ impl EncryptedDocument {
         pid: String,
         dt_id: String,
         ts: i64,
-        tc: i64,
         keys_ct: String,
         cts: Vec<String>,
     ) -> EncryptedDocument {
@@ -273,8 +233,6 @@ impl EncryptedDocument {
             pid,
             dt_id,
             ts,
-            tc,
-            hash: String::from("0"),
             keys_ct,
             cts,
         }
@@ -294,30 +252,4 @@ pub fn restore_pt_no_dt(pt: &str) -> anyhow::Result<(String, String)> {
 /// formats the pt before encryption
 fn format_pt_for_storage(field_name: &str, pt: &str) -> String {
     format!("{}{}{}", field_name, SPLIT_CT, pt)
-}
-
-fn format_tc(tc: i64) -> String {
-    format!("{:08}", tc)
-}
-
-#[cfg(test)]
-mod test {
-    /// Purpose of this test case: The `base64::encode` function has been deprecated in favor of
-    /// `base64::engine::Engine::encode`. This test case ensures that the new function works as
-    /// expected.
-    #[test]
-    fn hash() {
-        let doc = super::EncryptedDocument::new(
-            String::from("id"),
-            String::from("pid"),
-            String::from("dt_id"),
-            42,
-            12,
-            String::from("keys_ct"),
-            vec![String::from("ct1"), String::from("ct2")],
-        );
-
-        let hash = doc.hash();
-        assert_eq!("X/BsEutzaPbi555duyusiD9z5aUCwE7oNIMteMtdYLEAqJ7FJ0Ln13J3t1Qw8MMJhLCb9rRE8bRbqHtV4mYqRA==", hash);
-    }
 }

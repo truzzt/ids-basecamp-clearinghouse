@@ -1,4 +1,4 @@
-pub(crate) mod claims;
+pub mod claims;
 pub mod constants;
 pub(crate) mod crypto;
 pub(crate) mod doc_type;
