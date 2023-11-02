@@ -5,7 +5,6 @@ pub(crate) mod doc_type;
 pub(crate) mod document;
 pub mod ids;
 pub(crate) mod process;
-pub(crate) mod util;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum SortingOrder {

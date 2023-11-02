@@ -58,3 +58,19 @@ pub(super) async fn shutdown_signal() {
 
     info!("signal received, starting graceful shutdown");
 }
+
+/// Returns a new UUID as a string with hyphens.
+pub fn new_uuid() -> String {
+    use uuid::Uuid;
+    Uuid::new_v4().hyphenated().to_string()
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_new_uuid() {
+        let uuid = super::new_uuid();
+        assert_eq!(uuid.len(), 36);
+        assert_eq!(uuid.chars().filter(|&c| c == '-').count(), 4);
+    }
+}

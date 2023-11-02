@@ -1,6 +1,6 @@
 use crate::model::constants::SPLIT_CT;
 use crate::model::crypto::{KeyEntry, KeyMap};
-use crate::model::util::new_uuid;
+use crate::util::new_uuid;
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::{Aes256GcmSiv, KeyInit};
 use base64::Engine;
