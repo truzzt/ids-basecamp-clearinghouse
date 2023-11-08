@@ -7,11 +7,15 @@
     "doc": "doc"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cd clearing-house-app && cargo test",
+    "start": "docker compose -f docker/docker-compose.yml up -d"
+  },
+  "bugs": {
+    "url": "https://github.com/truzzt/ids-basecamp-clearinghouse/issues"
   },
   "keywords": [],
   "repository": "https://github.com/truzzt/ids-basecamp-clearinghouse",
-  "author": "",
+  "author": "Maximilian Schönenberg, Daniel Hommen",
   "license": "Apache-2.0",
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
