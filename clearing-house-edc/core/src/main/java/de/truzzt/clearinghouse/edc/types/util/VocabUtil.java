@@ -12,7 +12,7 @@
  *       truzzt GmbH - EDC extension implementation
  *
  */
-package de.truzzt.clearinghouse.edc.types.ids.util;
+package de.truzzt.clearinghouse.edc.types.util;
 
 import java.net.MalformedURLException;
 import java.net.URI;
