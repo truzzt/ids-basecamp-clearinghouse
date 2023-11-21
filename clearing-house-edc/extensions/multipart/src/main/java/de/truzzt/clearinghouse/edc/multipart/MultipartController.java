@@ -168,7 +168,7 @@ public class MultipartController {
 
         // Check the security token type
         var tokenFormat = securityToken.getTokenFormat().getId().toString();
-        if (!tokenFormat.equals(TokenFormat.JWT_TOKEN_FORMAT)) {
+        if (!TokenFormat.isValid(tokenFormat)) {
             monitor.severe(LOG_ID + ": Invalid security token type: " + tokenFormat);
             return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))

@@ -21,7 +21,8 @@ import java.net.URI;
 
 public class TokenFormat {
 
-    public static final String JWT_TOKEN_FORMAT = "idsc:JWT";
+    public static final String JWT_TOKEN_FORMAT_IDS = "idsc:JWT";
+    public static final String JWT_TOKEN_FORMAT_DSP = "https://w3id.org/idsa/code/JWT";
 
     @JsonProperty("@id")
     @NotNull
@@ -29,5 +30,9 @@ public class TokenFormat {
 
     public URI getId() {
         return id;
+    }
+
+    public static boolean isValid(String id) {
+        return id.equals(JWT_TOKEN_FORMAT_IDS) || id.equals(JWT_TOKEN_FORMAT_DSP);
     }
 }
