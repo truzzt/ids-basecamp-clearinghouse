@@ -72,7 +72,7 @@ public class MultipartControllerTest {
         connectorId = IdsId.Builder.newInstance().type(IdsType.CONNECTOR).value("http://test.connector").build();
         typeManagerUtil = new TypeManagerUtil(new ObjectMapper());
 
-        List<Handler> multipartHandlers = List.of(logMessageHandler);
+        List<Handler> multipartHandlers = List.of(logMessageHandler, requestMessageHandler);
         controller = new MultipartController(monitor, connectorId, typeManagerUtil, tokenService, IDS_WEBHOOK_ADDRESS, multipartHandlers);
     }
 
@@ -131,7 +131,7 @@ public class MultipartControllerTest {
 
     @Test
     public void createProcessSuccess() {
-        var responseHeader = TestUtils.getValidResponseHeader(mapper);
+        var responseHeader = TestUtils.getResponseHeader(mapper, TestUtils.VALID_CREATE_PROCESS_HEADER_JSON);
         var responsePayload = TestUtils.getValidResponsePayload(mapper);
 
         doReturn(Result.success())

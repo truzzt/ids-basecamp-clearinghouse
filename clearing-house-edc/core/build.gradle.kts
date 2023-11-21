@@ -54,4 +54,14 @@ tasks.jacocoTestReport {
         xml.required = true
     }
     dependsOn(tasks.test)
+    classDirectories.setFrom(
+            files(classDirectories.files.map {
+                fileTree(it) {
+                    exclude(
+                            "**/dto/**",
+                            "**/types/clearinghouse/*",
+                            "**/types/ids/*")
+                }
+            })
+    )
 }
