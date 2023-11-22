@@ -20,6 +20,7 @@ EXPOSE 8000
 
 WORKDIR /app
 COPY init_db /app/init_db
+COPY config.toml /app/
 
 COPY --from=build-env /usr/src/chapp/target/release/clearing-house-app /app/
 CMD ["/app/clearing-house-app"]
