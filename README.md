@@ -14,18 +14,24 @@
 ## Install
 
 ```sh
-npm install
+npm run install
 ```
 
 ## Usage
 ```sh
-npm start
+npm run start
 ```
 
 ## Run tests
 
+### CH_APP
 ```sh
-npm test
+npm run test:app
+```
+
+### CH_EDC
+```sh
+npm run test:edc
 ```
 
 ## Authors
