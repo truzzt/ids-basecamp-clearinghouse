@@ -15,7 +15,7 @@ async fn log_message() {
     std::env::set_var("SERVICE_ID_LOG", "test");
     std::env::set_var("SHARED_SECRET", "test");
     std::env::set_var("CH_APP_LOG_LEVEL", "TRACE");
-    std::env::set_var("CH_CLEAR_DB", "false");
+    std::env::set_var("CH_APP_CLEAR_DB", "false");
 
     let app = clearing_house_app::app().await.unwrap();
 
@@ -69,7 +69,7 @@ async fn log_message() {
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
     assert!(!body.is_empty());
     println!("Receipt: {:?}", body);
-/*
+
     // Query
     let query_resp = app
         .oneshot(Request::builder()
@@ -83,5 +83,5 @@ async fn log_message() {
 
     let body = hyper::body::to_bytes(query_resp.into_body()).await.unwrap();
     println!("Query: {:?}", body);
- */
+
 }
