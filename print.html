@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Admin Guide</li><li class="chapter-item expanded "><a href="content/admin-guide/installation.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="content/admin-guide/tests.html"><strong aria-hidden="true">2.</strong> Tests</a></li><li class="chapter-item expanded "><a href="content/admin-guide/maintenance.html"><strong aria-hidden="true">3.</strong> Maintenance</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="content/references/API.html"><strong aria-hidden="true">4.</strong> API</a></li><li class="chapter-item expanded affix "><li class="part-title">Internals</li><li class="chapter-item expanded "><a href="content/internals/architecture.html"><strong aria-hidden="true">5.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="content/internals/communication.html"><strong aria-hidden="true">5.1.</strong> Communication</a></li><li class="chapter-item expanded "><a href="content/internals/functionality.html"><strong aria-hidden="true">5.2.</strong> Functionality</a></li></ol></li><li class="chapter-item expanded "><a href="Proposal.html"><strong aria-hidden="true">6.</strong> Proposal</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Admin Guide</li><li class="chapter-item expanded "><a href="content/admin-guide/installation.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="content/admin-guide/ch-app_installation.html"><strong aria-hidden="true">1.1.</strong> Clearinghouse-App</a></li></ol></li><li class="chapter-item expanded "><a href="content/admin-guide/tests.html"><strong aria-hidden="true">2.</strong> Tests</a></li><li class="chapter-item expanded "><a href="content/admin-guide/maintenance.html"><strong aria-hidden="true">3.</strong> Maintenance</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="content/references/API.html"><strong aria-hidden="true">4.</strong> API</a></li><li class="chapter-item expanded affix "><li class="part-title">Internals</li><li class="chapter-item expanded "><a href="content/internals/architecture.html"><strong aria-hidden="true">5.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="content/internals/communication.html"><strong aria-hidden="true">5.1.</strong> Communication</a></li><li class="chapter-item expanded "><a href="content/internals/functionality.html"><strong aria-hidden="true">5.2.</strong> Functionality</a></li></ol></li><li class="chapter-item expanded "><a href="Proposal.html"><strong aria-hidden="true">6.</strong> Proposal</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -194,6 +194,51 @@ allowing logging operations.</p>
 <p>Local execution:</p>
 <pre><code>java -Dedc.fs.config=launchers/connector-local/resources/config.properties -Dedc.keystore=launchers/connector-local/resources/keystore.jks -Dedc.keystore.password=password -Dedc.vault=launchers/connector-local/resources/vault.properties -jar launchers/connector-local/build/libs/clearing-house-edc.jar
 </code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="clearinghouse-app-installation"><a class="header" href="#clearinghouse-app-installation">Clearinghouse App Installation</a></h1>
+<p>The Clearinghouse App (<code>ch-app</code>) comes pre-packaged in a docker container.</p>
+<h2 id="releases"><a class="header" href="#releases">Releases</a></h2>
+<p>For existing releases visit <a href="https://github.com/truzzt/ids-basecamp-clearinghouse/pkgs/container/ids-basecamp-clearing/ch-app">ids-basecamp-clearinghouse/ch-app Releases</a>.</p>
+<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<p>Starting the <code>ch-app</code> Docker-only, use the following command and adapt it to your needs. </p>
+<pre><code class="language-sh">docker run -d \
+    -p 8000:8000 \
+    -v ${PRIVATE_KEY_PATH}:/app/keys/private_key.der:ro \
+    -e CH_APP_PROCESS_DATABASE_URL='mongodb://mongohost:27017' \
+    -e CH_APP_KEYRING_DATABASE_URL='mongodb://mongohost:27017' \
+    -e CH_APP_DOCUMENT_DATABASE_URL='mongodb://mongohost:27017' \
+    -e CH_APP_CLEAR_DB='false' \
+    -e CH_APP_LOG_LEVEL='INFO' \
+    -e SERVICE_ID_LOG='1' \
+    -e SHARED_SECRET='123' \
+    --name ch-app \
+    ghcr.io/truzzt/ids-basecamp-clearing/ch-app:${TAG}
+</code></pre>
+<p>The following example starts the <code>ch-app</code> together with a <code>mongodb</code> also running on docker (good for local development):</p>
+<pre><code class="language-sh"># Create a docker network
+docker network create testch
+# Start mongodb
+docker run -d -p 27017:27017 --net=testch --name mongohost mongo
+# Start ch-app
+docker run -d \
+    -p 8000:8000 --net=testch \
+    -v ${PRIVATE_KEY_PATH}:/app/keys/private_key.der:ro \
+    -e CH_APP_PROCESS_DATABASE_URL='mongodb://mongohost:27017' \
+    -e CH_APP_KEYRING_DATABASE_URL='mongodb://mongohost:27017' \
+    -e CH_APP_DOCUMENT_DATABASE_URL='mongodb://mongohost:27017' \
+    -e CH_APP_CLEAR_DB='false' \
+    -e CH_APP_LOG_LEVEL='INFO' \
+    -e SERVICE_ID_LOG='1' \
+    -e SHARED_SECRET='123' \
+    --name ch-app \
+    ghcr.io/truzzt/ids-basecamp-clearing/ch-app:${TAG}
+
+# ---
+# Cleanup
+docker rm -f mongohost ch-app
+docker network rm testch
+</code></pre>
+<h2 id="build-1"><a class="header" href="#build-1">Build</a></h2>
+<p>To build the ch-app yourself change into the <code>/clearing-house-app</code> directory and run <code>docker build -t ch-app:latest .</code>. </p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="tests"><a class="header" href="#tests">Tests</a></h1>
 <h2 id="clearinghouse-edc-1"><a class="header" href="#clearinghouse-edc-1">Clearinghouse-edc</a></h2>
 <p>For the test clearinghouse-edc it uses Junit 5 and Jacoco for the coverage.</p>
