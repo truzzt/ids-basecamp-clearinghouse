@@ -1,10 +1,10 @@
-pub(crate) mod claims;
+pub mod claims;
 pub mod constants;
 pub(crate) mod crypto;
 pub(crate) mod doc_type;
 pub(crate) mod document;
 pub mod ids;
-pub(crate) mod process;
+pub mod process;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum SortingOrder {

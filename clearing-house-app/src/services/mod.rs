@@ -15,16 +15,14 @@ pub struct DocumentReceipt {
     pub timestamp: i64,
     pub pid: String,
     pub doc_id: String,
-    pub chain_hash: String,
 }
 
 impl DocumentReceipt {
-    pub fn new(timestamp: i64, pid: &str, doc_id: &str, chain_hash: &str) -> DocumentReceipt {
+    pub fn new(timestamp: i64, pid: &str, doc_id: &str) -> DocumentReceipt {
         DocumentReceipt {
             timestamp,
             pid: pid.to_string(),
             doc_id: doc_id.to_string(),
-            chain_hash: chain_hash.to_string(),
         }
     }
 }

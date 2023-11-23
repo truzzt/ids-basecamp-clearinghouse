@@ -1,7 +1,7 @@
 use anyhow::Context;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub(crate) struct ServiceConfig {
+pub struct ServiceConfig {
     pub service_id: String,
 }
 
@@ -33,7 +33,7 @@ pub(super) fn init_signing_key(signing_key_path: Option<&str>) -> anyhow::Result
 }
 
 /// Signal handler to catch a Ctrl+C and initiate a graceful shutdown
-pub(super) async fn shutdown_signal() {
+pub async fn shutdown_signal() {
     let ctrl_c = async {
         tokio::signal::ctrl_c()
             .await
