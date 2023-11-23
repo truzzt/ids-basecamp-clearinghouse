@@ -1,5 +1,5 @@
 # Use an official Rust runtime as a parent image
-FROM rust:latest
+FROM rust:latest AS build-env
 
 # Set the working directory inside the container
 WORKDIR /usr/src/chapp
@@ -9,15 +9,18 @@ COPY Cargo.toml Cargo.lock config.toml  ./
 
 # Copy the source code into the container
 COPY src ./src
-COPY init_db ./init_db
-COPY keys ./keys
-COPY certs ./certs
 
 # Build the Rust application with dependencies (this helps to cache dependencies)
 RUN cargo build --release
 
-# Expose any necessary ports (if your Rust app listens on a port)
-# EXPOSE 8000
+FROM gcr.io/distroless/cc-debian12
 
-# Run the Rust application when the container starts
-CMD ["cargo", "run", "--release"]
+# Expose any necessary ports (if your Rust app listens on a port)
+EXPOSE 8000
+
+WORKDIR /app
+COPY init_db /app/init_db
+COPY config.toml /app/
+
+COPY --from=build-env /usr/src/chapp/target/release/clearing-house-app /app/
+CMD ["/app/clearing-house-app"]

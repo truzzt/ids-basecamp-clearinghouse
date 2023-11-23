@@ -1,11 +1,11 @@
 use super::DataStoreApi;
 use crate::db::init_database_client;
-use crate::model::constants::{
-    FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT, MONGO_COLL_DOC_TYPES,
-    MONGO_COLL_MASTER_KEY, MONGO_ID
-};
 #[cfg(doc_type)]
 use crate::model::constants::MONGO_PID;
+use crate::model::constants::{
+    FILE_DEFAULT_DOC_TYPE, KEYRING_DB, KEYRING_DB_CLIENT, MONGO_COLL_DOC_TYPES,
+    MONGO_COLL_MASTER_KEY, MONGO_ID,
+};
 use crate::model::crypto::MasterKey;
 use crate::model::doc_type::DocumentType;
 use anyhow::anyhow;
@@ -59,8 +59,7 @@ impl KeyStore {
                             debug!("Database empty. Need to initialize...");
                             debug!("Adding initial document type...");
                             match serde_json::from_str::<DocumentType>(
-                                &crate::util::read_file(FILE_DEFAULT_DOC_TYPE)
-                                    .unwrap_or(String::new()),
+                                &crate::util::read_file(FILE_DEFAULT_DOC_TYPE).unwrap_or_default(),
                             ) {
                                 Ok(dt) => match keystore.add_document_type(dt).await {
                                     Ok(_) => {

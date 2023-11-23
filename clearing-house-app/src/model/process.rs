@@ -31,12 +31,10 @@ pub struct Receipt {
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DataTransaction {
-    pub transaction_id: String,
     pub timestamp: i64,
     pub process_id: String,
     pub document_id: String,
     pub payload: String,
-    pub chain_hash: String,
     pub client_id: String,
     pub clearing_house_version: String,
 }
@@ -57,10 +55,13 @@ impl DataTransaction {
             self.clone(),
         );
 
-        let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path).unwrap();
-        println!("decoded JWS:{:#?}", &jws);
+        let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path)
+            .unwrap_or_else(|_| panic!("File exists at '{key_path}' and is a valid RSA keypair"));
+        debug!("decoded JWS:{:#?}", &jws);
         Receipt {
-            data: jws.into_encoded(&keypair).unwrap(),
+            data: jws
+                .into_encoded(&keypair)
+                .expect("Encoded JWS with keypair"),
         }
     }
 }
@@ -73,14 +74,12 @@ impl From<Receipt> for DataTransaction {
         match r.data.unverified_payload() {
             Ok(d) => d,
             Err(e) => {
-                println!("Error occured: {:#?}", e);
+                println!("Error occurred: {:#?}", e);
                 DataTransaction {
-                    transaction_id: "error".to_string(),
                     timestamp: 0,
                     process_id: "error".to_string(),
                     document_id: "error".to_string(),
                     payload: "error".to_string(),
-                    chain_hash: "error".to_string(),
                     client_id: "error".to_string(),
                     clearing_house_version: "error".to_string(),
                 }

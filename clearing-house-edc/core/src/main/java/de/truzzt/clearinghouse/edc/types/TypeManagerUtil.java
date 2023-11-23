@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 Microsoft Corporation
+ *  Copyright (c) 2023 Microsoft Corporation
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,10 +8,10 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       truzzt GmbH - Initial implementation
+ *       Microsoft Corporation - Initial implementation
+ *       truzzt GmbH - EDC extension implementation
  *
  */
-
 package de.truzzt.clearinghouse.edc.types;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,9 +37,9 @@ public class TypeManagerUtil {
         }
     }
 
-    public byte[] toJson(Object object) {
+    public String toJson(Object object) {
         try {
-            return mapper.writeValueAsBytes(object);
+            return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             throw new EdcException("Error converting to JSON", e);
         }

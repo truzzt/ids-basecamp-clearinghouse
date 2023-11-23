@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2022 Microsoft Corporation
+ *  Copyright (c) 2023 Microsoft Corporation
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,7 +8,8 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Microsoft Corporation - initial implementation
+ *       Microsoft Corporation - Initial implementation
+ *       truzzt GmbH - EDC extension implementation
  *
  */
 
@@ -27,8 +28,8 @@ dependencyResolutionManagement {
         maven {
             url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
         }
-        maven {
-            url = uri("https://maven.iais.fraunhofer.de/artifactory/eis-ids-public/")
+        flatDir {
+            dirs("libs/fraunhofer")
         }
         mavenCentral()
         mavenLocal()

@@ -1,7 +1,7 @@
 use anyhow::Context;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub(crate) struct ServiceConfig {
+pub struct ServiceConfig {
     pub service_id: String,
 }
 
@@ -33,7 +33,7 @@ pub(super) fn init_signing_key(signing_key_path: Option<&str>) -> anyhow::Result
 }
 
 /// Signal handler to catch a Ctrl+C and initiate a graceful shutdown
-pub(super) async fn shutdown_signal() {
+pub async fn shutdown_signal() {
     let ctrl_c = async {
         tokio::signal::ctrl_c()
             .await
@@ -57,4 +57,20 @@ pub(super) async fn shutdown_signal() {
     }
 
     info!("signal received, starting graceful shutdown");
+}
+
+/// Returns a new UUID as a string with hyphens.
+pub fn new_uuid() -> String {
+    use uuid::Uuid;
+    Uuid::new_v4().hyphenated().to_string()
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_new_uuid() {
+        let uuid = super::new_uuid();
+        assert_eq!(uuid.len(), 36);
+        assert_eq!(uuid.chars().filter(|&c| c == '-').count(), 4);
+    }
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 Microsoft Corporation
+ *  Copyright (c) 2023 Microsoft Corporation
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -9,9 +9,9 @@
  *
  *  Contributors:
  *       Microsoft Corporation - Initial implementation
+ *       truzzt GmbH - EDC extension implementation
  *
  */
-
 package de.truzzt.clearinghouse.edc.types.ids;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -53,7 +53,7 @@ public class Message {
     String modelVersion;
 
     @JsonProperty("ids:issued")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSzzz")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     @NotNull
     XMLGregorianCalendar issued;
 

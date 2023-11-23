@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2022 Microsoft Corporation
+ *  Copyright (c) 2023 Microsoft Corporation
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,12 +8,12 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Microsoft Corporation - initial implementation
+ *       truzzt GmbH - Initial implementation
  *
  */
 
 plugins {
-    `java-library`
+    `java-base`
 }
 
 val javaVersion: String by project

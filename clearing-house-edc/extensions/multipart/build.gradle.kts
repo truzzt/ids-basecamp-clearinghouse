@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 Microsoft Corporation
+ *  Copyright (c) 2023 Microsoft Corporation
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,12 +8,18 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Microsoft Corporation - Initial implementation
+ *       truzzt GmbH - Initial implementation
  *
  */
 
 plugins {
     `java-library`
+    `java-test-fixtures`
+    jacoco
+}
+
+configurations.all {
+    exclude(group = "de.fraunhofer.iais.eis.ids.infomodel", module = "java")
 }
 
 dependencies {
@@ -26,4 +32,25 @@ dependencies {
     implementation(edc.api.management.config)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jersey.multipart)
+
+    implementation(":infomodel-java-4.1.3")
+    implementation(":infomodel-util-4.0.4")
+
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.mockito.inline)
+    testImplementation(libs.mockito.inline)
+
+    testImplementation(testFixtures(project(":core")))
+
+    testRuntimeOnly(libs.junit.jupiter.engine)
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required = true
+    }
 }

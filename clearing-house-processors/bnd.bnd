@@ -1,7 +1,0 @@
-Bundle-Name: IDS :: Clearing House Processors
-Bundle-Description: Support Processors required by Clearing House
-Export-Package: \
-	de.fhg.aisec.ids.clearinghouse
-Import-Package: \
-	!org.checkerframework.checker*,\
-	*
