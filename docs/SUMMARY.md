@@ -1,6 +1,7 @@
 # Summary
 
 # Admin Guide
+- [Quick Start](content/admin-guide/quick_start.md)
 - [Installation](content/admin-guide/installation.md)
   - [Clearinghouse-App](content/admin-guide/ch-app_installation.md)
 - [Tests](content/admin-guide/tests.md)
@@ -14,5 +15,6 @@
   - [Communication](content/internals/communication.md)
   - [Functionality](content/internals/functionality.md)
 - [Proposal](Proposal.md)
+- [oldReadme](old_README.md)
 
 
