@@ -1,3 +1,29 @@
+# [1.0.0-alpha.5](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2023-11-23)
+
+
+### Bug Fixes
+
+* **ch-app:** Bump dependencies ([6f273bb](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/6f273bbd5b8c0503f2061aee944b95c692a2a3f1))
+* **ch-app:** Fix all clippy warnings ([812f3e8](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/812f3e868bfb4c17c5a18765bacaf7826ef99532))
+* **ch-app:** Fix integration test case log ([bcc6a56](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/bcc6a5604162d6d4166f00e57587e9bab049c565))
+* quick start docker-compose.yml snytax ([0d83989](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/0d8398932fb4fde1b454d2117ef567cc85ddc0c0))
+* removed workingdir since cd is used ([34e2b9a](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/34e2b9ad64c1e95e969450c412745412b852d716))
+
+
+### Features
+
+* AppSender, LoggingMessageDelegate, LogMessageHandler tests implemented ([5127591](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/5127591162bec3ee6e92227ffbb80f36ffa08f62))
+* **ch-app:** Add and debug integration test ([cef068b](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/cef068b2e41916a05101dab5e3255114a49a95c8))
+* **ch-app:** Add CreateProcessResponse as JSON ([002845a](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/002845aa0729887853954118032084c6e5606354))
+* **ch-app:** Add docs for installation of ch-app ([293500d](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/293500d45f2bccbae47d4ae0dfdbf01851ea4f03))
+* **ch-app:** feature flag sentry ([918a903](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/918a9035ac1e61a0faa8716143f25886d049dae2))
+* **ch-app:** Remove Blockchain, add integration tests ([ffdfbad](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/ffdfbadd10769b99f392617f0d691fcd45dcdafb))
+* **ch-app:** Removed certs folder ([2779f6c](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/2779f6c5fc2f550e9e35af9c60b2ca7426d52036))
+* **ch-app:** Use JWKS from endpoint to validate receipt ([11a7314](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/11a7314f2bfc9236561770623a98239bf71b088e))
+* Create TestUtils with mock and start to create application tests ([f1612e0](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/f1612e027f9815ad9525c7f78aab876baf1f64a1))
+* **docker:** Optimised docker image with distroless image ([d046826](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/d046826132c1e6cc3e60f2c31e2d4f8c397fe01b))
+* readme added ([4d382b5](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/4d382b5877dda24b6143b08a47549d3c29a61d71))
+
 # [1.0.0-alpha.4](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.3...v1.0.0-alpha.4) (2023-10-23)
 
 
