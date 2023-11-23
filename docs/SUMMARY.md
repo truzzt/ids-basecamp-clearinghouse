@@ -2,6 +2,7 @@
 
 # Admin Guide
 - [Installation](content/admin-guide/installation.md)
+  - [Clearinghouse-App](content/admin-guide/ch-app_installation.md)
 - [Tests](content/admin-guide/tests.md)
 - [Maintenance](content/admin-guide/maintenance.md)
 
