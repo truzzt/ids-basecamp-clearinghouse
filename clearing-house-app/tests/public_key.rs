@@ -1,5 +1,6 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
+use biscuit::jwk::JWKSet;
 use tower::ServiceExt;
 
 #[tokio::test]
@@ -23,4 +24,6 @@ async fn retrieve_public_key() {
 
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
     assert!(!body.is_empty());
+    let jwks = serde_json::from_slice::<JWKSet<biscuit::Empty>>(&body).expect("Decoded the JWKSet");
+    println!("JWKS: {:?}", jwks);
 }

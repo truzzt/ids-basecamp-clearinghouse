@@ -2,11 +2,12 @@
 
 use axum::http::{Request, StatusCode};
 use biscuit::jwa::SignatureAlgorithm::PS512;
-use biscuit::jws::Secret;
+use biscuit::jwk::JWKSet;
+use hyper::Body;
 use clearing_house_app::model::claims::{ChClaims, get_fingerprint};
 use clearing_house_app::model::ids::message::IdsMessage;
 use clearing_house_app::model::ids::request::ClearingHouseMessage;
-use clearing_house_app::model::ids::{IdsQueryResult, InfoModelDateTime, InfoModelId, MessageType};
+use clearing_house_app::model::ids::{IdsQueryResult, InfoModelId, MessageType};
 use clearing_house_app::model::{claims::create_token, constants::SERVICE_HEADER};
 use clearing_house_app::util::new_uuid;
 use tower::ServiceExt;
@@ -22,6 +23,26 @@ async fn log_message() {
 
     let app = clearing_house_app::app().await.unwrap();
 
+    // Prerequisite JWKS for checking the signature
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/.well-known/jwks.json")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    assert!(!body.is_empty());
+    let jwks = serde_json::from_slice::<JWKSet<biscuit::Empty>>(&body).expect("Decoded the JWKSet");
+
+    // ---------------------------------------------------------------------------------------------
+    // Create a message
     let pid = new_uuid();
     let id = new_uuid();
 
@@ -36,20 +57,10 @@ async fn log_message() {
             ])),
             type_message: MessageType::Message,
             id: Some(id.clone()),
-            pid: None,
-            model_version: "".to_string(),
-            correlation_message: None,
-            issued: InfoModelDateTime::default(),
-            issuer_connector: InfoModelId::new("".to_string()),
+            model_version: "test".to_string(),
+            issuer_connector: InfoModelId::new("test-connector".to_string()),
             sender_agent: "https://w3id.org/idsa/core/ClearingHouse".to_string(),
-            recipient_connector: None,
-            recipient_agent: None,
-            transfer_contract: None,
-            content_version: None,
-            security_token: None,
-            authorization_token: None,
-            payload: None,
-            payload_type: None,
+            ..Default::default()
         },
         payload: Some("test".to_string()),
         payload_type: None,
@@ -82,8 +93,7 @@ async fn log_message() {
     let receipt = serde_json::from_slice::<Receipt>(&body).unwrap();
     println!("Receipt: {:?}", receipt);
     let decoded_receipt = receipt.data
-        .decode(&Secret::rsa_keypair_from_file("keys/private_key.der")
-            .expect("Loading key successfully"), PS512)
+        .decode_with_jwks(&jwks, Some(PS512))
         .expect("Decoding JWS successful");
     let decoded_receipt_header = decoded_receipt
         .header()
@@ -122,7 +132,10 @@ async fn log_message() {
     let ids_message = serde_json::from_slice::<IdsQueryResult>(&body).unwrap();
     println!("IDS Query Result: {:?}", ids_message);
     let query_docs = ids_message.documents;
+
+    // Check the only document in the result
     assert_eq!(query_docs.len(), 1);
     let doc = query_docs.first().expect("Document is there, just checked").to_owned();
     assert_eq!(doc.payload.expect("Payload is there"), "test".to_string());
+    assert_eq!(doc.model_version, "test".to_string());
 }
