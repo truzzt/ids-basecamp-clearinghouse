@@ -7,8 +7,10 @@
     "doc": "doc"
   },
   "scripts": {
+    "test:app:int": "cd clearing-house-app && cargo test -- --ignored",
     "test:app": "cd clearing-house-app && cargo test",
     "test:edc": "cd clearing-house-edc && ./gradlew test",
+    "docs": "mdbook serve",
     "start": "docker compose -f docker/docker-compose.yml up -d"
   },
   "bugs": {
