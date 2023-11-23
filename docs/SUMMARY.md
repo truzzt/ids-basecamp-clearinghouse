@@ -2,8 +2,9 @@
 
 # Admin Guide
 - [Quick Start](content/admin-guide/quick_start.md)
-- [Installation](content/admin-guide/installation.md)
+- [Installation]()
   - [Clearinghouse-App](content/admin-guide/ch-app_installation.md)
+  - [Clearinghouse-EDC](content/admin-guide/ch-edc_installation.md)
 - [Tests](content/admin-guide/tests.md)
 - [Maintenance](content/admin-guide/maintenance.md)
 

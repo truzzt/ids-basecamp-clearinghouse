@@ -33,6 +33,8 @@ npm run test:edc
 
 👤 **Maximilian Schönenberg**
 👤 **Daniel Hommen**
+👤 **Glaucio Jannotti**
+👤 **Augusto Leal**
 
 
 ## 🤝 Contributing
