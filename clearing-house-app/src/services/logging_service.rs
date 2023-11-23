@@ -78,10 +78,7 @@ pub struct LoggingService {
 
 impl LoggingService {
     pub fn new(db: ProcessStore, doc_api: Arc<DocumentService>) -> LoggingService {
-        LoggingService {
-            db,
-            doc_api,
-        }
+        LoggingService { db, doc_api }
     }
 
     pub async fn log(

@@ -10,7 +10,12 @@ async fn retrieve_public_key() {
     let app = clearing_house_app::app().await.unwrap();
 
     let response = app
-        .oneshot(Request::builder().uri("/.well-known/jwks.json").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/.well-known/jwks.json")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 

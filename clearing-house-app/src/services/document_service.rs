@@ -137,8 +137,7 @@ impl DocumentService {
                 }?;
 
                 // prepare the success result message
-                let receipt =
-                    DocumentReceipt::new(enc_doc.ts, &enc_doc.pid, &enc_doc.id);
+                let receipt = DocumentReceipt::new(enc_doc.ts, &enc_doc.pid, &enc_doc.id);
 
                 trace!("storing document ....");
                 // store document

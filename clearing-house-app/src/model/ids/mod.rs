@@ -5,9 +5,9 @@ pub mod request;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct InfoModelComplexId {
-    //IDS name
+    /// IDS name
     #[serde(rename = "@id", alias = "id", skip_serializing_if = "Option::is_none")]
-    //  Correlated message, e.g. a response to a previous request
+    /// Correlated message, e.g. a response to a previous request
     pub id: Option<String>,
 }
 
@@ -96,9 +96,9 @@ impl std::fmt::Display for InfoModelDateTime {
 pub struct InfoModelTimeStamp {
     //IDS name
     #[serde(
-    rename = "@type",
-    alias = "type",
-    skip_serializing_if = "Option::is_none"
+        rename = "@type",
+        alias = "type",
+        skip_serializing_if = "Option::is_none"
     )]
     pub format: Option<String>,
     //IDS name

@@ -75,12 +75,8 @@ pub fn get_jwks(key_path: &str) -> Option<biscuit::jwk::JWKSet<biscuit::Empty>> 
 
     if let biscuit::jws::Secret::RsaKeyPair(a) = keypair {
         use ring::signature::KeyPair;
-        let pk_modulus = BigUint::from_bytes_be(
-            a
-                .public_key()
-                .modulus()
-                .big_endian_without_leading_zero(),
-        );
+        let pk_modulus =
+            BigUint::from_bytes_be(a.public_key().modulus().big_endian_without_leading_zero());
         let pk_e = BigUint::from_bytes_be(
             a.as_ref()
                 .public_key()
@@ -224,4 +220,13 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
         .validate(val_options)
         .with_context(|| "Failed validating JWT")?;
     Ok(decoded_jwt.payload()?.private.clone())
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn get_fingerprint() {
+        let fingerprint = super::get_fingerprint("keys/private_key.der").unwrap();
+        assert_eq!(fingerprint, "Qra//29Frxbj5hh5Azef+G36SeiOm9q7s8+w8uGLD28");
+    }
 }

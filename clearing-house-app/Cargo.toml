@@ -54,7 +54,9 @@ axum = { version = "0.6.20", features = ["json", "http2"] }
 async-trait = "0.1.73"
 # Helper for working with futures
 futures = "0.3.29"
+# Helper for creating custom error types
 thiserror = "1.0.48"
+# Optional: Sentry integration
 sentry = { version = "0.31.7", optional = true }
 
 [dev-dependencies]

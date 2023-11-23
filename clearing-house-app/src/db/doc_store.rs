@@ -10,9 +10,7 @@ use crate::model::SortingOrder;
 use anyhow::anyhow;
 use futures::StreamExt;
 use mongodb::bson::doc;
-use mongodb::options::{
-    AggregateOptions, CreateCollectionOptions, UpdateOptions, WriteConcern,
-};
+use mongodb::options::{AggregateOptions, CreateCollectionOptions, UpdateOptions, WriteConcern};
 use mongodb::{bson, Client, IndexModel};
 
 #[derive(Clone, Debug)]
