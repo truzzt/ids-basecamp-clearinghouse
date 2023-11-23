@@ -74,16 +74,11 @@ impl axum::response::IntoResponse for LoggingServiceError {
 pub struct LoggingService {
     db: ProcessStore,
     doc_api: Arc<DocumentService>,
-    write_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl LoggingService {
     pub fn new(db: ProcessStore, doc_api: Arc<DocumentService>) -> LoggingService {
-        LoggingService {
-            db,
-            doc_api,
-            write_lock: Arc::new(tokio::sync::Mutex::new(())),
-        }
+        LoggingService { db, doc_api }
     }
 
     pub async fn log(
@@ -133,64 +128,31 @@ impl LoggingService {
 
         // transform message to document
         debug!("transforming message to document...");
-        let mut doc = Document::try_from(m).map_err(LoggingServiceError::ParsingError)?;
+        let doc = Document::try_from(m).map_err(LoggingServiceError::ParsingError)?;
 
-        // lock write access
-        let _x = self.write_lock.lock().await;
-        match self.db.get_transaction_counter().await {
-            Ok(Some(tid)) => {
-                debug!("Storing document...");
-                doc.tc = tid;
-                // TODO: ChClaims usage check
-                match self
-                    .doc_api
-                    .create_enc_document(ChClaims::new(user), doc.clone())
-                    .await
-                {
-                    Ok(doc_receipt) => {
-                        debug!("Increase transaction counter");
-                        match self.db.increment_transaction_counter().await {
-                            Ok(Some(_tid)) => {
-                                debug!("Creating receipt...");
-                                let transaction = DataTransaction {
-                                    transaction_id: doc.get_formatted_tc(),
-                                    timestamp: doc_receipt.timestamp,
-                                    process_id: doc_receipt.pid,
-                                    document_id: doc_receipt.doc_id,
-                                    payload,
-                                    chain_hash: doc_receipt.chain_hash,
-                                    client_id: user.to_owned(),
-                                    clearing_house_version: env!("CARGO_PKG_VERSION").to_string(),
-                                };
-                                debug!("...done. Signing receipt...");
-                                Ok(transaction.sign(key_path))
-                            }
-                            Ok(None) => {
-                                unreachable!("increment_transaction_counter never returns None!")
-                            }
-                            Err(e) => {
-                                error!("Error while incrementing transaction id!");
-                                Err(LoggingServiceError::DatabaseError {
-                                    source: e,
-                                    description: "Error while incrementing transaction id!"
-                                        .to_string(),
-                                }) // InternalError
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        error!("Error while creating document: {:?}", e);
-                        Err(LoggingServiceError::DocumentServiceError(e))
-                    }
-                }
+        debug!("Storing document...");
+        // TODO: ChClaims usage check
+        match self
+            .doc_api
+            .create_enc_document(ChClaims::new(user), doc.clone())
+            .await
+        {
+            Ok(doc_receipt) => {
+                debug!("Creating receipt...");
+                let transaction = DataTransaction {
+                    timestamp: doc_receipt.timestamp,
+                    process_id: doc_receipt.pid,
+                    document_id: doc_receipt.doc_id,
+                    payload,
+                    client_id: user.to_owned(),
+                    clearing_house_version: env!("CARGO_PKG_VERSION").to_string(),
+                };
+                debug!("...done. Signing receipt...");
+                Ok(transaction.sign(key_path))
             }
-            Ok(None) => unreachable!("get_transaction_counter never returns None!"),
             Err(e) => {
-                error!("Error while getting transaction id!");
-                Err(LoggingServiceError::DatabaseError {
-                    source: e,
-                    description: "Error while getting transaction id".to_string(),
-                }) // InternalError
+                error!("Error while creating document: {:?}", e);
+                Err(LoggingServiceError::DocumentServiceError(e))
             }
         }
     }

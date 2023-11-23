@@ -123,7 +123,7 @@ impl Default for IdsMessage {
             pid: None,
             model_version: "".to_string(),
             correlation_message: None,
-            issued: InfoModelDateTime::new(),
+            issued: InfoModelDateTime::default(),
             issuer_connector: InfoModelId::new("".to_string()),
             sender_agent: "https://w3id.org/idsa/core/ClearingHouse".to_string(),
             recipient_connector: None,
@@ -334,7 +334,6 @@ impl TryFrom<IdsMessage> for Document {
         Ok(Document::new(
             m.pid.ok_or(serde_json::Error::custom("PID missing"))?,
             DEFAULT_DOC_TYPE.to_string(),
-            -1,
             doc_parts,
         ))
     }

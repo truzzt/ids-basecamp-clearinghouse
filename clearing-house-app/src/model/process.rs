@@ -31,12 +31,10 @@ pub struct Receipt {
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DataTransaction {
-    pub transaction_id: String,
     pub timestamp: i64,
     pub process_id: String,
     pub document_id: String,
     pub payload: String,
-    pub chain_hash: String,
     pub client_id: String,
     pub clearing_house_version: String,
 }
@@ -78,12 +76,10 @@ impl From<Receipt> for DataTransaction {
             Err(e) => {
                 println!("Error occurred: {:#?}", e);
                 DataTransaction {
-                    transaction_id: "error".to_string(),
                     timestamp: 0,
                     process_id: "error".to_string(),
                     document_id: "error".to_string(),
                     payload: "error".to_string(),
-                    chain_hash: "error".to_string(),
                     client_id: "error".to_string(),
                     clearing_house_version: "error".to_string(),
                 }

@@ -5,9 +5,9 @@ pub mod request;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct InfoModelComplexId {
-    //IDS name
+    /// IDS name
     #[serde(rename = "@id", alias = "id", skip_serializing_if = "Option::is_none")]
-    //  Correlated message, e.g. a response to a previous request
+    /// Correlated message, e.g. a response to a previous request
     pub id: Option<String>,
 }
 
@@ -33,6 +33,7 @@ impl InfoModelComplexId {
         InfoModelComplexId { id: Some(id) }
     }
 }
+
 impl From<String> for InfoModelComplexId {
     fn from(id: String) -> InfoModelComplexId {
         InfoModelComplexId::new(id)
@@ -61,6 +62,7 @@ impl std::fmt::Display for InfoModelId {
         Ok(())
     }
 }
+
 impl From<String> for InfoModelId {
     fn from(id: String) -> InfoModelId {
         InfoModelId::SimpleId(id)
@@ -74,8 +76,8 @@ pub enum InfoModelDateTime {
     Time(chrono::DateTime<chrono::Local>),
 }
 
-impl InfoModelDateTime {
-    pub fn new() -> InfoModelDateTime {
+impl Default for InfoModelDateTime {
+    fn default() -> InfoModelDateTime {
         InfoModelDateTime::Time(chrono::Local::now())
     }
 }
@@ -112,6 +114,7 @@ impl Default for InfoModelTimeStamp {
         }
     }
 }
+
 impl std::fmt::Display for InfoModelTimeStamp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match serde_json::to_string(&self) {
@@ -133,7 +136,7 @@ The message classes relevant for the Connector to Connector communication are li
 available in the Information Model can be found here.
 
 Based on [v4.2.0](https://github.com/International-Data-Spaces-Association/InformationModel/blob/v4.2.0/taxonomies/Message.ttl)
-*/
+ */
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub enum MessageType {
     #[serde(rename = "ids:Message")]
