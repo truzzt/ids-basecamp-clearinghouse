@@ -8,15 +8,26 @@ You will need the private key in the following formats:
 * .jks
 * .der
 
+The .jks should be generated from the MDS Portal
+
+To generate the .der key run
+```sh
+openssl genpkey -algorithm RSA \
+                -pkeyopt rsa_keygen_bits:4096 \
+                -outform der \
+                -out private_key.der
+```
+
 ### Environment
 ```.env
-VERSION=v1.0.0-alpha.5
-SERVICE_ID_LOG=1
+VERSION=1.0.0-beta.1
+SERVICE_ID=1
 SHARED_SECRET=changethis
 KEY_PASSWORD=password
 DAPS_URL=
 DAPS_JWKS_URL=
 API_KEY=changethis
+CLIENT_ID=
 ```
 
 ## docker-compose.yml
@@ -44,8 +55,8 @@ services:
     ch-edc:
         image: ghcr.io/truzzt/ids-basecamp-clearing/ch-edc:$VERSION
         environment:
-            WEB_HTTP_PORT: 11001
-            WEB_HTTP_PATH: /api
+            WEB_HTTP_MANAGEMENT_PORT: 11001
+            WEB_HTTP_MANAGEMENT_PATH: /
             WEB_HTTP_DATA_PORT: 11002
             WEB_HTTP_DATA_PATH: /api/v1/data
             WEB_HTTP_IDS_PORT: 11003
@@ -66,6 +77,7 @@ services:
             EDC_VAULT: /resources/vault/edc/vault.properties
             EDC_OAUTH_TOKEN_URL: $DAPS_URL
             EDC_OAUTH_PROVIDER_JWKS_URL: $DAPS_JWKS_URL
+            EDC_OAUTH_ENDPOINT_AUDIENCE: idsc:IDS_CONNECTORS_ALL
             EDC_OAUTH_CLIENT_ID: $CLIENT_ID
             EDC_KEYSTORE: /resources/vault/edc/keystore.jks
             EDC_KEYSTORE_PASSWORD: $KEY_PASSWORD
@@ -75,9 +87,10 @@ services:
             TRUZZT_CLEARINGHOUSE_JWT_ISSUER: ch-edc
             TRUZZT_CLEARINGHOUSE_JWT_SIGN_SECRET: $SHARED_SECRET 
             TRUZZT_CLEARINGHOUSE_JWT_EXPIRES_AT: 30
-            TRUZZT_CLEARINGHOUSE_APP_BASE_URL: ch-edc:8080
+            TRUZZT_CLEARINGHOUSE_APP_BASE_URL: http://ch-app:8000
         volumes:
             - ./YOUR_PRIVATE_KEY.jks:/resources/vault/edc/keystore.jks
+            - ./vault.properties:/resources/vault/edc/vault.properties
 
     mongodb:
         image: mongo
