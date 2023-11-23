@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Admin Guide</li><li class="chapter-item expanded "><a href="content/admin-guide/quick_start.html" class="active"><strong aria-hidden="true">1.</strong> Quick Start</a></li><li class="chapter-item expanded "><a href="content/admin-guide/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="content/admin-guide/ch-app_installation.html"><strong aria-hidden="true">2.1.</strong> Clearinghouse-App</a></li></ol></li><li class="chapter-item expanded "><a href="content/admin-guide/tests.html"><strong aria-hidden="true">3.</strong> Tests</a></li><li class="chapter-item expanded "><a href="content/admin-guide/maintenance.html"><strong aria-hidden="true">4.</strong> Maintenance</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="content/references/API.html"><strong aria-hidden="true">5.</strong> API</a></li><li class="chapter-item expanded affix "><li class="part-title">Internals</li><li class="chapter-item expanded "><a href="content/internals/architecture.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="content/internals/communication.html"><strong aria-hidden="true">6.1.</strong> Communication</a></li><li class="chapter-item expanded "><a href="content/internals/functionality.html"><strong aria-hidden="true">6.2.</strong> Functionality</a></li></ol></li><li class="chapter-item expanded "><a href="Proposal.html"><strong aria-hidden="true">7.</strong> Proposal</a></li><li class="chapter-item expanded "><a href="old_README.html"><strong aria-hidden="true">8.</strong> oldReadme</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Admin Guide</li><li class="chapter-item expanded "><a href="content/admin-guide/quick_start.html" class="active"><strong aria-hidden="true">1.</strong> Quick Start</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">2.</strong> Installation</div></li><li><ol class="section"><li class="chapter-item expanded "><a href="content/admin-guide/ch-app_installation.html"><strong aria-hidden="true">2.1.</strong> Clearinghouse-App</a></li><li class="chapter-item expanded "><a href="content/admin-guide/ch-edc_installation.html"><strong aria-hidden="true">2.2.</strong> Clearinghouse-EDC</a></li></ol></li><li class="chapter-item expanded "><a href="content/admin-guide/tests.html"><strong aria-hidden="true">3.</strong> Tests</a></li><li class="chapter-item expanded "><a href="content/admin-guide/maintenance.html"><strong aria-hidden="true">4.</strong> Maintenance</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="content/references/API.html"><strong aria-hidden="true">5.</strong> API</a></li><li class="chapter-item expanded affix "><li class="part-title">Internals</li><li class="chapter-item expanded "><a href="content/internals/architecture.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="content/internals/communication.html"><strong aria-hidden="true">6.1.</strong> Communication</a></li><li class="chapter-item expanded "><a href="content/internals/functionality.html"><strong aria-hidden="true">6.2.</strong> Functionality</a></li></ol></li><li class="chapter-item expanded "><a href="Proposal.html"><strong aria-hidden="true">7.</strong> Proposal</a></li><li class="chapter-item expanded "><a href="old_README.html"><strong aria-hidden="true">8.</strong> oldReadme</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -180,14 +180,22 @@
 <li>.jks</li>
 <li>.der</li>
 </ul>
+<p>The .jks should be generated from the MDS Portal</p>
+<p>To generate the .der key run</p>
+<pre><code class="language-sh">openssl genpkey -algorithm RSA \
+                -pkeyopt rsa_keygen_bits:4096 \
+                -outform der \
+                -out private_key.der
+</code></pre>
 <h3 id="environment"><a class="header" href="#environment">Environment</a></h3>
-<pre><code class="language-.env">VERSION=v1.0.0-alpha.5
-SERVICE_ID_LOG=1
+<pre><code class="language-.env">VERSION=1.0.0-beta.1
+SERVICE_ID=1
 SHARED_SECRET=changethis
 KEY_PASSWORD=password
 DAPS_URL=
 DAPS_JWKS_URL=
 API_KEY=changethis
+CLIENT_ID=
 </code></pre>
 <h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
 <pre><code class="language-sh">docker compose up
@@ -211,8 +219,8 @@ services:
     ch-edc:
         image: ghcr.io/truzzt/ids-basecamp-clearing/ch-edc:$VERSION
         environment:
-            WEB_HTTP_PORT: 11001
-            WEB_HTTP_PATH: /api
+            WEB_HTTP_MANAGEMENT_PORT: 11001
+            WEB_HTTP_MANAGEMENT_PATH: /
             WEB_HTTP_DATA_PORT: 11002
             WEB_HTTP_DATA_PATH: /api/v1/data
             WEB_HTTP_IDS_PORT: 11003
@@ -233,6 +241,7 @@ services:
             EDC_VAULT: /resources/vault/edc/vault.properties
             EDC_OAUTH_TOKEN_URL: $DAPS_URL
             EDC_OAUTH_PROVIDER_JWKS_URL: $DAPS_JWKS_URL
+            EDC_OAUTH_ENDPOINT_AUDIENCE: idsc:IDS_CONNECTORS_ALL
             EDC_OAUTH_CLIENT_ID: $CLIENT_ID
             EDC_KEYSTORE: /resources/vault/edc/keystore.jks
             EDC_KEYSTORE_PASSWORD: $KEY_PASSWORD
@@ -242,9 +251,10 @@ services:
             TRUZZT_CLEARINGHOUSE_JWT_ISSUER: ch-edc
             TRUZZT_CLEARINGHOUSE_JWT_SIGN_SECRET: $SHARED_SECRET 
             TRUZZT_CLEARINGHOUSE_JWT_EXPIRES_AT: 30
-            TRUZZT_CLEARINGHOUSE_APP_BASE_URL: ch-edc:8080
+            TRUZZT_CLEARINGHOUSE_APP_BASE_URL: http://ch-app:8000
         volumes:
             - ./YOUR_PRIVATE_KEY.jks:/resources/vault/edc/keystore.jks
+            - ./vault.properties:/resources/vault/edc/vault.properties
 
     mongodb:
         image: mongo
@@ -255,7 +265,7 @@ services:
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
 
-                            <a rel="next prefetch" href="content/admin-guide/installation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="content/admin-guide/ch-app_installation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -266,7 +276,7 @@ services:
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
 
-                    <a rel="next prefetch" href="content/admin-guide/installation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="content/admin-guide/ch-app_installation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
