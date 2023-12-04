@@ -1,3 +1,10 @@
+# [1.0.0-alpha.7](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2023-12-04)
+
+
+### Bug Fixes
+
+* disable tokenFormat check ([c920b82](https://github.com/truzzt/ids-basecamp-clearinghouse/commit/c920b825219edeae317d874f6cb723d1016ecabc))
+
 # [1.0.0-alpha.6](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.5...v1.0.0-alpha.6) (2023-11-23)
 
 # [1.0.0-alpha.5](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2023-11-23)
