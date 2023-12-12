@@ -56,21 +56,15 @@ impl axum::response::IntoResponse for LoggingServiceError {
                 format!("{}: {}", description, source),
             )
                 .into_response(),
-            Self::UserNotAuthorized => {
-                (StatusCode::FORBIDDEN, self.to_string()).into_response()
-            }
-            Self::InvalidRequest => {
-                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
-            }
+            Self::UserNotAuthorized => (StatusCode::FORBIDDEN, self.to_string()).into_response(),
+            Self::InvalidRequest => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::ProcessAlreadyExists => {
                 (StatusCode::BAD_REQUEST, self.to_string()).into_response()
             }
             Self::ProcessDoesNotExist(_) => {
                 (StatusCode::NOT_FOUND, self.to_string()).into_response()
             }
-            Self::ParsingError(_) => {
-                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
-            }
+            Self::ParsingError(_) => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::DocumentServiceError(e) => e.into_response(),
         }
     }
@@ -80,16 +74,11 @@ impl axum::response::IntoResponse for LoggingServiceError {
 pub struct LoggingService {
     db: ProcessStore,
     doc_api: Arc<DocumentService>,
-    write_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl LoggingService {
     pub fn new(db: ProcessStore, doc_api: Arc<DocumentService>) -> LoggingService {
-        LoggingService {
-            db,
-            doc_api,
-            write_lock: Arc::new(tokio::sync::Mutex::new(())),
-        }
+        LoggingService { db, doc_api }
     }
 
     pub async fn log(
@@ -120,7 +109,9 @@ impl LoggingService {
         }?;
 
         // Check if process exists and if the user is authorized to access the process
-        if let Err(LoggingServiceError::ProcessDoesNotExist(_)) = self.get_process_and_check_authorized(&pid, user).await {
+        if let Err(LoggingServiceError::ProcessDoesNotExist(_)) =
+            self.get_process_and_check_authorized(&pid, user).await
+        {
             // convenience: if process does not exist, we create it but only if no error occurred before
             info!("Requested pid '{}' does not exist. Creating...", &pid);
             // create a new process
@@ -137,64 +128,31 @@ impl LoggingService {
 
         // transform message to document
         debug!("transforming message to document...");
-        let mut doc = Document::try_from(m).map_err(LoggingServiceError::ParsingError)?;
+        let doc = Document::try_from(m).map_err(LoggingServiceError::ParsingError)?;
 
-        // lock write access
-        let _x = self.write_lock.lock().await;
-        match self.db.get_transaction_counter().await {
-            Ok(Some(tid)) => {
-                debug!("Storing document...");
-                doc.tc = tid;
-                // TODO: ChClaims usage check
-                match self
-                    .doc_api
-                    .create_enc_document(ChClaims::new(user), doc.clone())
-                    .await
-                {
-                    Ok(doc_receipt) => {
-                        debug!("Increase transaction counter");
-                        match self.db.increment_transaction_counter().await {
-                            Ok(Some(_tid)) => {
-                                debug!("Creating receipt...");
-                                let transaction = DataTransaction {
-                                    transaction_id: doc.get_formatted_tc(),
-                                    timestamp: doc_receipt.timestamp,
-                                    process_id: doc_receipt.pid,
-                                    document_id: doc_receipt.doc_id,
-                                    payload,
-                                    chain_hash: doc_receipt.chain_hash,
-                                    client_id: user.to_owned(),
-                                    clearing_house_version: env!("CARGO_PKG_VERSION").to_string(),
-                                };
-                                debug!("...done. Signing receipt...");
-                                Ok(transaction.sign(key_path))
-                            }
-                            Ok(None) => {
-                                unreachable!("increment_transaction_counter never returns None!")
-                            }
-                            Err(e) => {
-                                error!("Error while incrementing transaction id!");
-                                Err(LoggingServiceError::DatabaseError {
-                                    source: e,
-                                    description: "Error while incrementing transaction id!"
-                                        .to_string(),
-                                }) // InternalError
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        error!("Error while creating document: {:?}", e);
-                        Err(LoggingServiceError::DocumentServiceError(e))
-                    }
-                }
+        debug!("Storing document...");
+        // TODO: ChClaims usage check
+        match self
+            .doc_api
+            .create_enc_document(ChClaims::new(user), doc.clone())
+            .await
+        {
+            Ok(doc_receipt) => {
+                debug!("Creating receipt...");
+                let transaction = DataTransaction {
+                    timestamp: doc_receipt.timestamp,
+                    process_id: doc_receipt.pid,
+                    document_id: doc_receipt.doc_id,
+                    payload,
+                    client_id: user.to_owned(),
+                    clearing_house_version: env!("CARGO_PKG_VERSION").to_string(),
+                };
+                debug!("...done. Signing receipt...");
+                Ok(transaction.sign(key_path))
             }
-            Ok(None) => unreachable!("get_transaction_counter never returns None!"),
             Err(e) => {
-                error!("Error while getting transaction id!");
-                Err(LoggingServiceError::DatabaseError {
-                    source: e,
-                    description: "Error while getting transaction id".to_string(),
-                }) // InternalError
+                error!("Error while creating document: {:?}", e);
+                Err(LoggingServiceError::DocumentServiceError(e))
             }
         }
     }
@@ -265,11 +223,10 @@ impl LoggingService {
                     }
                 }
             }
-            Err(e) =>
-                Err(LoggingServiceError::DatabaseError {
-                    source: e,
-                    description: "Error while getting process".to_string(),
-                })
+            Err(e) => Err(LoggingServiceError::DatabaseError {
+                source: e,
+                description: "Error while getting process".to_string(),
+            }),
         }
     }
 
@@ -279,8 +236,7 @@ impl LoggingService {
         page: Option<u64>,
         size: Option<u64>,
         sort: Option<SortingOrder>,
-        date_to: Option<String>,
-        date_from: Option<String>,
+        (date_to, date_from): (Option<String>, Option<String>),
         pid: String,
     ) -> Result<IdsQueryResult, LoggingServiceError> {
         debug!("page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
@@ -303,12 +259,10 @@ impl LoggingService {
             .doc_api
             .get_enc_documents_for_pid(
                 ChClaims::new(user),
-                None,
                 Some(sanitized_page),
                 Some(sanitized_size),
                 Some(sanitized_sort),
-                date_from,
-                date_to,
+                (date_from, date_to),
                 pid.clone(),
             )
             .await
@@ -372,7 +326,11 @@ impl LoggingService {
     }
 
     /// Checks if a process exists and the user is authorized to access the process
-    async fn get_process_and_check_authorized(&self, pid: &String, user: &str) -> Result<Process, LoggingServiceError> {
+    async fn get_process_and_check_authorized(
+        &self,
+        pid: &String,
+        user: &str,
+    ) -> Result<Process, LoggingServiceError> {
         match self.db.get_process(pid).await {
             Ok(Some(p)) if !p.is_authorized(user) => {
                 warn!("User is not authorized to read from pid '{}'", &pid);
@@ -382,9 +340,7 @@ impl LoggingService {
                 info!("User authorized.");
                 Ok(p)
             }
-            Ok(None) => {
-                Err(LoggingServiceError::ProcessDoesNotExist(pid.clone()))
-            }
+            Ok(None) => Err(LoggingServiceError::ProcessDoesNotExist(pid.clone())),
             Err(e) => {
                 error!("Error while getting process '{}': {}", &pid, e);
                 Err(LoggingServiceError::DatabaseError {
@@ -395,7 +351,6 @@ impl LoggingService {
         }
     }
 }
-
 
 #[cfg(test)]
 mod test {

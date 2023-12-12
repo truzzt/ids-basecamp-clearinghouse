@@ -23,8 +23,6 @@ pub enum DocumentServiceError {
         source: anyhow::Error,
         description: String,
     },
-    #[error("Error while creating the chain hash!")]
-    ChainHashError,
     #[error("Error while retrieving keys from keyring!")]
     KeyringServiceError(#[from] crate::services::keyring_service::KeyringServiceError),
     #[error("Invalid dates in query!")]
@@ -41,7 +39,9 @@ impl axum::response::IntoResponse for DocumentServiceError {
     fn into_response(self) -> axum::response::Response {
         use axum::http::StatusCode;
         match self {
-            Self::DocumentAlreadyExists => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            Self::DocumentAlreadyExists => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
             Self::MissingPayload => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::DatabaseError {
                 source,
@@ -51,12 +51,15 @@ impl axum::response::IntoResponse for DocumentServiceError {
                 format!("{}: {}", description, source),
             )
                 .into_response(),
-            Self::ChainHashError => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
             Self::KeyringServiceError(e) => e.into_response(),
             Self::InvalidDates => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::NotFound => (StatusCode::NOT_FOUND, self.to_string()).into_response(),
-            Self::CorruptedCiphertext(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-            Self::EncryptionError => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
+            Self::CorruptedCiphertext(e) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+            }
+            Self::EncryptionError => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
+            }
         }
     }
 }
@@ -88,7 +91,10 @@ impl DocumentService {
             .collect();
 
         // If the document contains more than 1 payload we panic. This should never happen!
-        assert!(payload.len() <= 1, "Document contains two or more payloads!");
+        assert!(
+            payload.len() <= 1,
+            "Document contains two or more payloads!"
+        );
         if payload.is_empty() {
             return Err(DocumentServiceError::MissingPayload);
         }
@@ -119,7 +125,7 @@ impl DocumentService {
                 }?;
 
                 debug!("start encryption");
-                let mut enc_doc = match doc.encrypt(keys) {
+                let enc_doc = match doc.encrypt(keys) {
                     Ok(ct) => {
                         debug!("got ct");
                         Ok(ct)
@@ -130,31 +136,8 @@ impl DocumentService {
                     }
                 }?;
 
-                // chain the document to previous documents
-                debug!("add the chain hash...");
-                // get the document with the previous tc
-                match self.db.get_document_with_previous_tc(doc.tc).await {
-                    Ok(Some(previous_doc)) => {
-                        enc_doc.hash = previous_doc.hash();
-                    }
-                    Ok(None) => {
-                        if doc.tc == 0 {
-                            info!("No entries found for pid {}. Beginning new chain!", doc.pid);
-                        } else {
-                            // If this happens, db didn't find a tc entry that should exist.
-                            return Err(DocumentServiceError::ChainHashError);
-                        }
-                    }
-                    Err(e) => {
-                        error!("Error while creating the chain hash: {:?}", e);
-                        return Err(DocumentServiceError::ChainHashError);
-                    }
-                }
-
                 // prepare the success result message
-
-                let receipt =
-                    DocumentReceipt::new(enc_doc.ts, &enc_doc.pid, &enc_doc.id, &enc_doc.hash);
+                let receipt = DocumentReceipt::new(enc_doc.ts, &enc_doc.pid, &enc_doc.id);
 
                 trace!("storing document ....");
                 // store document
@@ -162,7 +145,10 @@ impl DocumentService {
                     Ok(_b) => Ok(receipt),
                     Err(e) => {
                         error!("Error while adding: {:?}", e);
-                        Err(DocumentServiceError::DatabaseError { source: e, description: "Error while adding document".to_string() })
+                        Err(DocumentServiceError::DatabaseError {
+                            source: e,
+                            description: "Error while adding document".to_string(),
+                        })
                     }
                 }
             }
@@ -173,12 +159,10 @@ impl DocumentService {
     pub(crate) async fn get_enc_documents_for_pid(
         &self,
         ch_claims: ChClaims,
-        doc_type: Option<String>,
         page: Option<u64>,
         size: Option<u64>,
         sort: Option<SortingOrder>,
-        date_from: Option<String>,
-        date_to: Option<String>,
+        (date_from, date_to): (Option<String>, Option<String>),
         pid: String,
     ) -> Result<QueryResult, DocumentServiceError> {
         debug!("Trying to retrieve documents for pid '{}'...", &pid);
@@ -188,6 +172,7 @@ impl DocumentService {
             page, size, sort
         );
 
+        let dt_id = String::from(DEFAULT_DOC_TYPE);
         let sanitized_page = Self::sanitize_page(page);
         let sanitized_size = Self::sanitize_size(size);
 
@@ -201,10 +186,10 @@ impl DocumentService {
         // Validation of dates with various checks. If none given dates default to date_now (date_to) and (date_now - 2 weeks) (date_from)
         let Ok((sanitized_date_from, sanitized_date_to)) =
             validate_and_sanitize_dates(parsed_date_from, parsed_date_to, None)
-            else {
-                debug!("date validation failed!");
-                return Err(DocumentServiceError::InvalidDates);
-            };
+        else {
+            debug!("date validation failed!");
+            return Err(DocumentServiceError::InvalidDates);
+        };
 
         //new behavior: if pages are "invalid" return {}. Do not adjust page
         //either call db with type filter or without to get cts
@@ -213,10 +198,6 @@ impl DocumentService {
             sanitized_page, sanitized_size, &sanitized_sort
         );
 
-        let dt_id = match doc_type {
-            Some(dt) => dt,
-            None => String::from(DEFAULT_DOC_TYPE),
-        };
         let cts = match self
             .db
             .get_documents_for_pid(
@@ -225,15 +206,17 @@ impl DocumentService {
                 sanitized_page,
                 sanitized_size,
                 &sanitized_sort,
-                &sanitized_date_from,
-                &sanitized_date_to,
+                (&sanitized_date_from, &sanitized_date_to),
             )
             .await
         {
             Ok(cts) => cts,
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
-                return Err(DocumentServiceError::DatabaseError { source: e, description: "Error while retrieving document".to_string() });
+                return Err(DocumentServiceError::DatabaseError {
+                    source: e,
+                    description: "Error while retrieving document".to_string(),
+                });
             }
         };
 
@@ -320,8 +303,8 @@ impl DocumentService {
             &id,
             &pid
         );
-        if hash.is_some() {
-            debug!("integrity check with hash: {}", hash.as_ref().unwrap());
+        if let Some(hash) = hash {
+            debug!("integrity check with hash: {}", hash);
         }
 
         match self.db.get_document(&id, &pid).await {
@@ -368,7 +351,10 @@ impl DocumentService {
             }
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
-                Err(DocumentServiceError::DatabaseError {source: e, description: "Error while retrieving document".to_string()})
+                Err(DocumentServiceError::DatabaseError {
+                    source: e,
+                    description: "Error while retrieving document".to_string(),
+                })
             }
         }
     }

@@ -1,7 +1,6 @@
-use axum::http::StatusCode;
-use axum::Json;
 use crate::model::claims::ExtractChClaims;
 use crate::{model::claims::get_jwks, model::SortingOrder, AppState};
+use axum::http::StatusCode;
 use biscuit::jwk::JWKSet;
 
 use crate::model::ids::message::IdsMessage;
@@ -23,7 +22,7 @@ async fn log(
         .log(ch_claims, state.signing_key_path.as_str(), message, pid)
         .await
     {
-        Ok(id) => Ok((StatusCode::CREATED, Json(id))),
+        Ok(id) => Ok((StatusCode::CREATED, axum::Json(id))),
         Err(e) => {
             error!("Error while logging: {:?}", e);
             Err(e)
@@ -47,7 +46,10 @@ async fn create_process(
         .create_process(ch_claims, message, pid)
         .await
     {
-        Ok(id) => Ok((StatusCode::CREATED, Json(CreateProcessResponse { pid: id }))),
+        Ok(id) => Ok((
+            StatusCode::CREATED,
+            axum::Json(CreateProcessResponse { pid: id }),
+        )),
         Err(e) => {
             error!("Error while creating process: {:?}", e);
             Err(e)
@@ -78,13 +80,12 @@ async fn query_pid(
             params.page,
             params.size,
             params.sort,
-            params.date_to,
-            params.date_from,
+            (params.date_to, params.date_from),
             pid,
         )
         .await
     {
-        Ok(result) => Ok((StatusCode::OK, Json(result))),
+        Ok(result) => Ok((StatusCode::OK, axum::Json(result))),
         Err(e) => {
             error!("Error while querying: {:?}", e);
             Err(e)
@@ -104,7 +105,7 @@ async fn query_id(
         .query_id(ch_claims, pid, id, message)
         .await
     {
-        Ok(result) => Ok((StatusCode::OK, Json(result))),
+        Ok(result) => Ok((StatusCode::OK, axum::Json(result))),
         Err(e) => {
             error!("Error while querying: {:?}", e);
             Err(e)
@@ -116,7 +117,7 @@ async fn get_public_sign_key(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> super::ApiResult<JWKSet<biscuit::Empty>, &'static str> {
     match get_jwks(state.signing_key_path.as_str()) {
-        Some(jwks) => Ok((StatusCode::OK, Json(jwks))),
+        Some(jwks) => Ok((StatusCode::OK, axum::Json(jwks))),
         None => Err("Error reading signing key"),
     }
 }

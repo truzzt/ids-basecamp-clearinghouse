@@ -10,9 +10,7 @@ use crate::model::SortingOrder;
 use anyhow::anyhow;
 use futures::StreamExt;
 use mongodb::bson::doc;
-use mongodb::options::{
-    AggregateOptions, CreateCollectionOptions, IndexOptions, UpdateOptions, WriteConcern,
-};
+use mongodb::options::{AggregateOptions, CreateCollectionOptions, UpdateOptions, WriteConcern};
 use mongodb::{bson, Client, IndexModel};
 
 #[derive(Clone, Debug)]
@@ -86,7 +84,7 @@ impl DataStore {
                             };
 
                             // This purpose of this index is to ensure that the transaction counter is unique
-                            let mut index_options = IndexOptions::default();
+                            /*let mut index_options = IndexOptions::default();
                             index_options.unique = Some(true);
                             let mut index_model = IndexModel::default();
                             index_model.keys = doc! {format!("{}.{}",MONGO_DOC_ARRAY, MONGO_TC): 1};
@@ -107,7 +105,7 @@ impl DataStore {
                                     debug!("... failed.");
                                     return Err(anyhow!("Failed to create index"));
                                 }
-                            }
+                            }*/
 
                             // This creates a compound index over pid and the timestamp to enable paging using buckets
                             let mut compound_index_model = IndexModel::default();
@@ -160,10 +158,10 @@ impl DataStore {
         match coll.update_one(query,
                               doc! {
                             "$push": {
-                                MONGO_DOC_ARRAY: mongodb::bson::to_bson(&bucket_update).unwrap(),
+                                MONGO_DOC_ARRAY: mongodb::bson::to_bson(&bucket_update)?,
                             },
                             "$inc": {"counter": 1},
-                            "$setOnInsert": { "_id": format!("{}_{}", doc.pid.clone(), doc.ts), MONGO_DT_ID: doc.dt_id.clone(), MONGO_FROM_TS: doc.ts},
+                            "$setOnInsert": { "_id": format!("{}_{}_{}", doc.pid.clone(), doc.ts, crate::util::new_uuid()), MONGO_DT_ID: doc.dt_id.clone(), MONGO_FROM_TS: doc.ts},
                             "$set": {MONGO_TO_TS: doc.ts},
                         }, update_options).await {
             Ok(_r) => {
@@ -280,8 +278,7 @@ impl DataStore {
         page: u64,
         size: u64,
         sort: &SortingOrder,
-        date_from: &chrono::NaiveDateTime,
-        date_to: &chrono::NaiveDateTime,
+        (date_from, date_to): (&chrono::NaiveDateTime, &chrono::NaiveDateTime),
     ) -> anyhow::Result<Vec<EncryptedDocument>> {
         debug!(
             "...trying to get page {} of size {} of documents for pid {} of dt {}...",
@@ -289,7 +286,7 @@ impl DataStore {
         );
 
         match self
-            .get_start_bucket_size(dt_id, pid, page, size, sort, date_from, date_to)
+            .get_start_bucket_size(dt_id, pid, page, size, sort, (date_from, date_to))
             .await
         {
             Ok(bucket_size) => {
@@ -318,23 +315,23 @@ impl DataStore {
 
                 let pipeline = vec![
                     doc! {"$match":{
-                        MONGO_PID: pid.clone(),
-                        MONGO_DT_ID: dt_id.clone(),
-                        MONGO_FROM_TS: {"$lte": date_to.timestamp()},
-                        MONGO_TO_TS: {"$gte": date_from.timestamp()}
+                    MONGO_PID: pid.clone(),
+                    MONGO_DT_ID: dt_id.clone(),
+                    MONGO_FROM_TS: {"$lte": date_to.timestamp()},
+                    MONGO_TO_TS: {"$gte": date_from.timestamp()}
                     }},
-                    doc! {"$sort" : {MONGO_FROM_TS: sort_order}},
-                    doc! {"$skip" : skip_buckets},
+                    doc! {"$sort": {MONGO_FROM_TS: sort_order}},
+                    doc! {"$skip": skip_buckets},
                     // worst case: overlap between two buckets.
-                    doc! {"$limit" : 2},
-                    doc! {"$unwind": format!("${}", MONGO_DOC_ARRAY)},
+                    doc! {"$limit": 2},
+                    doc! {"$unwind": format! ("${}", MONGO_DOC_ARRAY)},
                     doc! {"$replaceRoot": { "newRoot": "$documents"}},
                     doc! {"$match":{
-                        MONGO_TS: {"$gte": date_from.timestamp(), "$lte": date_to.timestamp()}
+                    MONGO_TS: {"$gte": date_from.timestamp(), "$lte": date_to.timestamp()}
                     }},
-                    doc! {"$sort" : {MONGO_TS: sort_order}},
-                    doc! {"$skip" : start_entry as i32},
-                    doc! { "$limit": size as i32},
+                    doc! {"$sort": {MONGO_TS: sort_order}},
+                    doc! {"$skip": start_entry as i32},
+                    doc! {"$limit": size as i32},
                 ];
 
                 let coll = self
@@ -369,8 +366,7 @@ impl DataStore {
         page: u64,
         size: u64,
         sort: &SortingOrder,
-        date_from: &chrono::NaiveDateTime,
-        date_to: &chrono::NaiveDateTime,
+        (date_from, date_to): (&chrono::NaiveDateTime, &chrono::NaiveDateTime),
     ) -> anyhow::Result<DocumentBucketSize> {
         debug!("...trying to get the offset for page {} of size {} of documents for pid {} of dt {}...", pid, dt_id, page, size);
         let sort_order = match sort {
@@ -485,8 +481,6 @@ mod bucket {
     pub struct DocumentBucketUpdate {
         pub id: String,
         pub ts: i64,
-        pub tc: i64,
-        pub hash: String,
         pub keys_ct: String,
         pub cts: Vec<String>,
     }
@@ -496,8 +490,6 @@ mod bucket {
             DocumentBucketUpdate {
                 id: doc.id.clone(),
                 ts: doc.ts,
-                tc: doc.tc,
-                hash: doc.hash.clone(),
                 keys_ct: doc.keys_ct.clone(),
                 cts: doc.cts.to_vec(),
             }
@@ -514,8 +506,6 @@ mod bucket {
             dt_id,
             pid,
             ts: bucket_update.ts,
-            tc: bucket_update.tc,
-            hash: bucket_update.hash.clone(),
             keys_ct: bucket_update.keys_ct.clone(),
             cts: bucket_update.cts.to_vec(),
         }

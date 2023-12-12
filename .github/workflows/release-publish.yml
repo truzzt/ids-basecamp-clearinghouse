@@ -58,9 +58,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: release
     if: ${{ needs.release.outputs.new_tag_version != '' }}
-    defaults:
-        run:
-          working-directory: ./clearing-house-edc
     permissions:
       contents: read
       packages: write
