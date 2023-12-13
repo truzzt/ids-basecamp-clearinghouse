@@ -17,6 +17,7 @@ package de.truzzt.clearinghouse.edc.multipart;
 import de.truzzt.clearinghouse.edc.handler.Handler;
 import de.truzzt.clearinghouse.edc.handler.LogMessageHandler;
 import de.truzzt.clearinghouse.edc.app.AppSender;
+import de.truzzt.clearinghouse.edc.handler.QueryMessageHandler;
 import de.truzzt.clearinghouse.edc.handler.RequestMessageHandler;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import org.eclipse.edc.connector.api.management.configuration.ManagementApiConfiguration;
@@ -76,6 +77,7 @@ public class MultipartExtension implements ServiceExtension {
         var handlers = new LinkedList<Handler>();
         handlers.add(new RequestMessageHandler(connectorId, typeManagerUtil, clearingHouseAppSender, context));
         handlers.add(new LogMessageHandler(connectorId, typeManagerUtil, clearingHouseAppSender, context));
+        handlers.add(new QueryMessageHandler(connectorId, typeManagerUtil, clearingHouseAppSender, context));
 
         var multipartController = new MultipartController(monitor,
                 connectorId,

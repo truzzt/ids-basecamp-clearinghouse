@@ -24,11 +24,7 @@ import de.truzzt.clearinghouse.edc.types.ids.Message;
 
 import de.truzzt.clearinghouse.edc.types.ids.RejectionMessage;
 import de.truzzt.clearinghouse.edc.types.ids.TokenFormat;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import jakarta.ws.rs.core.Response;
@@ -106,6 +102,23 @@ public class MultipartController {
     public Response createProcess(@PathParam(PID) String pid,
                                   @FormDataParam(HEADER) InputStream headerInputStream,
                                   @FormDataParam(PAYLOAD) String payload){
+        var response = validaRequest(pid, headerInputStream);
+        if (response.fail())
+            return response.getError();
+
+        return processRequest(pid, response.getHeader(), payload);
+    }
+
+    @POST
+    @Path("messages/query/{pid}")
+    public Response queryMessages(@PathParam(PID) String pid,
+                                  @FormDataParam(HEADER) InputStream headerInputStream,
+                                  @FormDataParam(PAYLOAD) String payload,
+                                  @QueryParam("page") Integer page,
+                                  @QueryParam("size") Integer size,
+                                  @QueryParam("sort") String sort,
+                                  @QueryParam("date_to") String dateTo,
+                                  @QueryParam("date_from") String dateFrom){
         var response = validaRequest(pid, headerInputStream);
         if (response.fail())
             return response.getError();
