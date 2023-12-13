@@ -1,6 +1,6 @@
-use axum::http::StatusCode;
 use crate::model::constants::DEFAULT_PROCESS_ID;
 use crate::ports::ApiResponse;
+use axum::http::StatusCode;
 
 use crate::model::doc_type::DocumentType;
 use crate::services::keyring_service::KeyringServiceError;
@@ -81,7 +81,7 @@ async fn get_doc_type(
     match state.keyring_service.get_doc_type(id, pid).await {
         Ok(dt) => match dt {
             Some(dt) => Ok((StatusCode::OK, Json(Some(dt)))),
-            None => Ok((StatusCode::OK, Json(None)))
+            None => Ok((StatusCode::OK, Json(None))),
         },
         Err(e) => {
             error!("Error while retrieving doctype: {:?}", e);

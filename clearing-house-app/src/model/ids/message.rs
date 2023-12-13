@@ -123,7 +123,7 @@ impl Default for IdsMessage {
             pid: None,
             model_version: "".to_string(),
             correlation_message: None,
-            issued: InfoModelDateTime::new(),
+            issued: InfoModelDateTime::default(),
             issuer_connector: InfoModelId::new("".to_string()),
             sender_agent: "https://w3id.org/idsa/core/ClearingHouse".to_string(),
             recipient_connector: None,
@@ -139,7 +139,6 @@ impl Default for IdsMessage {
 }
 
 impl IdsMessage {
-
     pub fn restore() -> IdsMessage {
         IdsMessage {
             type_message: MessageType::LogMessage,
@@ -265,6 +264,7 @@ impl TryFrom<IdsMessage> for Document {
     type Error = serde_json::Error;
 
     fn try_from(m: IdsMessage) -> Result<Self, Self::Error> {
+        use serde::ser::Error;
         let mut doc_parts = vec![];
 
         // message_id
@@ -283,10 +283,7 @@ impl TryFrom<IdsMessage> for Document {
 
         // correlation_message
         if let Some(s) = m.correlation_message {
-            doc_parts.push(DocumentPart::new(
-                CORRELATION_MESSAGE.to_string(),
-                s,
-            ));
+            doc_parts.push(DocumentPart::new(CORRELATION_MESSAGE.to_string(), s));
         }
 
         // issued
@@ -309,18 +306,12 @@ impl TryFrom<IdsMessage> for Document {
 
         // transfer_contract
         if let Some(s) = m.transfer_contract {
-            doc_parts.push(DocumentPart::new(
-                TRANSFER_CONTRACT.to_string(),
-                s,
-            ));
+            doc_parts.push(DocumentPart::new(TRANSFER_CONTRACT.to_string(), s));
         }
 
         // content_version
         if let Some(s) = m.content_version {
-            doc_parts.push(DocumentPart::new(
-                CONTENT_VERSION.to_string(),
-                s,
-            ));
+            doc_parts.push(DocumentPart::new(CONTENT_VERSION.to_string(), s));
         }
 
         // security_token
@@ -340,7 +331,11 @@ impl TryFrom<IdsMessage> for Document {
         }
 
         // pid
-        Ok(Document::new(m.pid.unwrap(), DEFAULT_DOC_TYPE.to_string(), -1, doc_parts))
+        Ok(Document::new(
+            m.pid.ok_or(serde_json::Error::custom("PID missing"))?,
+            DEFAULT_DOC_TYPE.to_string(),
+            doc_parts,
+        ))
     }
 }
 

@@ -20,8 +20,7 @@ pub(crate) fn router() -> axum::routing::Router<AppState> {
 /// Router for the logging service
 #[cfg(not(doc_type))]
 pub(crate) fn router() -> axum::routing::Router<AppState> {
-    axum::Router::new()
-        .merge(logging_api::router())
+    axum::Router::new().merge(logging_api::router())
 }
 
 /// Result type alias for the API
