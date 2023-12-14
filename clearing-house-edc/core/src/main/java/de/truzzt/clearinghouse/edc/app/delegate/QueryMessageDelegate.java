@@ -1,6 +1,8 @@
 package de.truzzt.clearinghouse.edc.app.delegate;
 
-import de.truzzt.clearinghouse.edc.dto.*;
+import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
+import de.truzzt.clearinghouse.edc.dto.QueryMessageRequest;
+import de.truzzt.clearinghouse.edc.dto.QueryMessageResponse;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
@@ -8,15 +10,57 @@ import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
 import okhttp3.ResponseBody;
 
+import java.time.format.DateTimeFormatter;
+
 public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageResponse> {
     private final TypeManagerUtil typeManagerUtil;
+
+    private final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public QueryMessageDelegate(TypeManagerUtil typeManagerUtil) {
         this.typeManagerUtil = typeManagerUtil;
     }
 
     public String buildRequestUrl(String baseUrl, HandlerRequest handlerRequest) {
-        return baseUrl + "/messages/query/" + handlerRequest.getPid();
+
+        String queryParameters = "";
+        if (handlerRequest.getPagging() != null) {
+            var pagging = handlerRequest.getPagging();
+
+            if (pagging.getPage() != null) {
+                queryParameters += "?page=" + pagging.getSize();
+            }
+
+            if (pagging.getSize() != null) {
+                if (queryParameters.isEmpty())
+                    queryParameters += "?size=" + pagging.getSize();
+                else
+                    queryParameters += "&size=" + pagging.getSize();
+            }
+
+            if (pagging.getSort() != null) {
+                if (queryParameters.isEmpty())
+                    queryParameters += "?sort=" + pagging.getSort().toString().toLowerCase();
+                else
+                    queryParameters += "&sort=" + pagging.getSort().toString().toLowerCase();
+            }
+
+            if (pagging.getDateFrom() != null) {
+                if (queryParameters.isEmpty())
+                    queryParameters += "?dateFrom=" + dateFormat.format(pagging.getDateFrom());
+                else
+                    queryParameters += "&dateFrom=" + dateFormat.format(pagging.getDateFrom());
+            }
+
+            if (pagging.getDateTo() != null) {
+                if (queryParameters.isEmpty())
+                    queryParameters += "?dateTo=" + dateFormat.format(pagging.getDateTo());
+                else
+                    queryParameters += "&dateTo=" + dateFormat.format(pagging.getDateTo());
+            }
+        }
+
+        return baseUrl + "/messages/query/" + handlerRequest.getPid() + queryParameters;
     }
 
     public QueryMessageRequest buildRequestBody(HandlerRequest handlerRequest) {

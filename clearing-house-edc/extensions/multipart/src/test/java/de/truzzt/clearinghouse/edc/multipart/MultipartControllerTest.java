@@ -8,7 +8,6 @@ import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
 import de.truzzt.clearinghouse.edc.handler.Handler;
 import de.truzzt.clearinghouse.edc.handler.LogMessageHandler;
 import de.truzzt.clearinghouse.edc.handler.RequestMessageHandler;
-import de.truzzt.clearinghouse.edc.multipart.dto.RequestValidationResponse;
 import de.truzzt.clearinghouse.edc.multipart.tests.TestUtils;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.ids.Message;
@@ -25,22 +24,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyByte;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 
 public class MultipartControllerTest {
 
@@ -160,7 +152,7 @@ public class MultipartControllerTest {
     public void missingPIDError() {
         var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
 
-        var response = controller.validaRequest(null, header);
+        var response = controller.validateRequest(null, header);
 
         assertNotNull(response);
         assertTrue(response.fail());
@@ -175,7 +167,7 @@ public class MultipartControllerTest {
     public void missingHeaderError() {
         var pid = UUID.randomUUID().toString();
 
-        var response = controller.validaRequest(pid, null);
+        var response = controller.validateRequest(pid, null);
 
         assertNotNull(response);
         assertTrue(response.fail());
@@ -191,7 +183,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.INVALID_HEADER_JSON);
 
-        var response = controller.validaRequest(pid, header);
+        var response = controller.validateRequest(pid, header);
 
         assertNotNull(response);
         assertTrue(response.fail());
@@ -207,7 +199,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.MISSING_FIELDS_HEADER_JSON);
 
-        var response = controller.validaRequest(pid, header);
+        var response = controller.validateRequest(pid, header);
 
         assertNotNull(response);
         assertTrue(response.fail());
@@ -226,7 +218,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.INVALID_TOKEN_HEADER_JSON);
 
-        var response = controller.validaRequest(pid, header);
+        var response = controller.validateRequest(pid, header);
 
         assertNotNull(response);
         assertTrue(response.fail());
@@ -242,7 +234,7 @@ public class MultipartControllerTest {
         var pid = UUID.randomUUID().toString();
         var header = TestUtils.getHeaderInputStream(TestUtils.MISSING_TOKEN_HEADER_JSON);
 
-        var response = controller.validaRequest(pid, header);
+        var response = controller.validateRequest(pid, header);
 
         assertNotNull(response);
         assertTrue(response.fail());

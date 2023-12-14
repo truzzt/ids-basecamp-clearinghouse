@@ -18,7 +18,9 @@ import de.fraunhofer.iais.eis.DynamicAttributeTokenBuilder;
 import de.truzzt.clearinghouse.edc.handler.Handler;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
+import de.truzzt.clearinghouse.edc.multipart.dto.PaggingValidationResponse;
 import de.truzzt.clearinghouse.edc.multipart.dto.RequestValidationResponse;
+import de.truzzt.clearinghouse.edc.types.Pagging;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.ids.Message;
 
@@ -36,6 +38,9 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.createFormDataMultiPart;
@@ -54,6 +59,15 @@ public class MultipartController {
     private static final String HEADER = "header";
     private static final String PAYLOAD = "payload";
     private static final String PID = "pid";
+
+    private static final String PAGE = "page";
+    private static final String SIZE = "size";
+    private static final String SORT = "sort";
+    private static final String DATE_FROM = "date_from";
+    private static final String DATE_TO = "date_to";
+
+    private static final DateTimeFormatter dateParser = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
     private static final String LOG_ID = "InfrastructureController";
 
     private final Monitor monitor;
@@ -82,7 +96,7 @@ public class MultipartController {
     public Response logMessage(@PathParam(PID) String pid,
                                @FormDataParam(HEADER) InputStream headerInputStream,
                                @FormDataParam(PAYLOAD) String payload) {
-        var response = validaRequest(pid, headerInputStream);
+        var response = validateRequest(pid, headerInputStream);
         if (response.fail())
             return response.getError();
 
@@ -101,8 +115,9 @@ public class MultipartController {
     @Path("process/{pid}")
     public Response createProcess(@PathParam(PID) String pid,
                                   @FormDataParam(HEADER) InputStream headerInputStream,
-                                  @FormDataParam(PAYLOAD) String payload){
-        var response = validaRequest(pid, headerInputStream);
+                                  @FormDataParam(PAYLOAD) String payload) {
+
+        var response = validateRequest(pid, headerInputStream);
         if (response.fail())
             return response.getError();
 
@@ -113,20 +128,24 @@ public class MultipartController {
     @Path("messages/query/{pid}")
     public Response queryMessages(@PathParam(PID) String pid,
                                   @FormDataParam(HEADER) InputStream headerInputStream,
-                                  @FormDataParam(PAYLOAD) String payload,
-                                  @QueryParam("page") Integer page,
-                                  @QueryParam("size") Integer size,
-                                  @QueryParam("sort") String sort,
-                                  @QueryParam("date_to") String dateTo,
-                                  @QueryParam("date_from") String dateFrom){
-        var response = validaRequest(pid, headerInputStream);
-        if (response.fail())
-            return response.getError();
+                                  @QueryParam(PAGE) String page,
+                                  @QueryParam(SIZE) String size,
+                                  @QueryParam(SORT) String sort,
+                                  @QueryParam(DATE_FROM) String dateFrom,
+                                  @QueryParam(DATE_TO) String dateTo) {
 
-        return processRequest(pid, response.getHeader(), payload);
+        var requestValidation = validateRequest(pid, headerInputStream);
+        if (requestValidation.fail())
+            return requestValidation.getError();
+
+        var paggingValidation = validatePagging(page, size, sort, dateTo, dateFrom);
+        if (paggingValidation.fail())
+            return paggingValidation.getError();
+
+        return processRequest(pid, requestValidation.getHeader(), null, paggingValidation.getPagging());
     }
 
-    RequestValidationResponse validaRequest(String pid, InputStream headerInputStream){
+    RequestValidationResponse validateRequest(String pid, InputStream headerInputStream){
         // Check if pid is missing
         if (pid == null) {
             monitor.severe(LOG_ID + ": PID is missing");
@@ -198,25 +217,89 @@ public class MultipartController {
       return new RequestValidationResponse(header);
     }
 
-    Response processRequest(String pid, Message header, String payload){
+    PaggingValidationResponse validatePagging(String page, String size, String sort, String dateTo, String dateFrom) {
+        var builder = Pagging.Builder.newInstance();
+
+        if (!StringUtils.isNullOrBlank(page)) {
+            try {
+                builder =  builder.page(Integer.parseInt(page));
+            } catch (NumberFormatException e) {
+                monitor.severe(LOG_ID + ": Invalid page number: " + page);
+                return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .build());
+            }
+        }
+
+        if (!StringUtils.isNullOrBlank(size)) {
+            try {
+                builder = builder.size(Integer.parseInt(size));
+            } catch (NumberFormatException e) {
+                monitor.severe(LOG_ID + ": Invalid page size: " + size);
+                return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .build());
+            }
+        }
+
+        if (sort != null) {
+            try {
+                builder = builder.sort(Pagging.Sort.valueOf(sort.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                monitor.severe(LOG_ID + ": Invalid sort: " + sort);
+                return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .build());
+            }
+        }
+
+        if (!StringUtils.isNullOrBlank(dateFrom)) {
+            try {
+                builder = builder.dateFrom(LocalDate.parse(dateFrom, dateParser));
+            } catch (DateTimeParseException e) {
+                monitor.severe(LOG_ID + ": Invalid dateFrom: " + dateFrom);
+                return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .build());
+            }
+        }
+
+        if (!StringUtils.isNullOrBlank(dateTo)) {
+            try {
+                builder = builder.dateTo(LocalDate.parse(dateTo, dateParser));
+            } catch (DateTimeParseException e) {
+                monitor.severe(LOG_ID + ": Invalid dateTo: " + dateTo);
+                return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .build());
+            }
+        }
+
+        return new PaggingValidationResponse(builder.build());
+    }
+
+    Response processRequest(@NotNull String pid, @NotNull Message header, String payload, Pagging pagging) {
 
         // Build the multipart request
-        var multipartRequest = HandlerRequest.Builder.newInstance()
+        var handlerRequest = HandlerRequest.Builder.newInstance()
                 .pid(pid)
                 .header(header)
                 .payload(payload)
+                .pagging(pagging)
                 .build();
 
         // Send to handler processing
         HandlerResponse handlerResponse;
         try {
             handlerResponse = multipartHandlers.stream()
-                    .filter(h -> h.canHandle(multipartRequest))
+                    .filter(h -> h.canHandle(handlerRequest))
                     .findFirst()
-                    .map(it -> it.handleRequest(multipartRequest))
+                    .map(it -> it.handleRequest(handlerRequest))
                     .orElseGet(() -> HandlerResponse.Builder.newInstance()
                             .header(messageTypeNotSupported(header, connectorId))
-                            .build());
+                            .build()
+                    );
+
         } catch (Exception e) {
             monitor.severe(LOG_ID + ": Error in message handler processing", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -236,15 +319,17 @@ public class MultipartController {
             var rejectionMessage = (RejectionMessage) handlerResponse.getHeader();
 
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER,
-                            createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId))
-                    ).build();
-        }
-        else {
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId)))
+                    .build();
+        } else {
             return Response.status(Response.Status.CREATED)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, handlerResponse.getHeader(), PAYLOAD, handlerResponse.getPayload()))
                     .build();
         }
+    }
+
+    Response processRequest(@NotNull String pid, @NotNull Message header, @NotNull String payload) {
+        return processRequest(pid, header, payload, null);
     }
 
     private boolean validateToken(Message header) {
