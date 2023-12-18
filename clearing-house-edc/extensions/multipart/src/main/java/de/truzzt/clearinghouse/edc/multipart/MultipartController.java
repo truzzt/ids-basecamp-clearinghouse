@@ -70,6 +70,10 @@ public class MultipartController {
 
     private static final String LOG_ID = "InfrastructureController";
 
+    private static final String MESSAGES_LOG_PID = "messages/log/{pid}";
+    private static final String PROCESS_PID = "process/{pid}";
+    private static final String MESSAGES_QUERY_PID = "messages/query/{pid}";
+
     private final Monitor monitor;
     private final IdsId connectorId;
     private final TypeManagerUtil typeManagerUtil;
@@ -92,11 +96,11 @@ public class MultipartController {
     }
 
     @POST
-    @Path("messages/log/{pid}")
+    @Path(MESSAGES_LOG_PID)
     public Response logMessage(@PathParam(PID) String pid,
                                @FormDataParam(HEADER) InputStream headerInputStream,
                                @FormDataParam(PAYLOAD) String payload) {
-        var response = validateRequest(pid, headerInputStream);
+        var response = validateRequest(pid, headerInputStream, MESSAGES_LOG_PID);
         if (response.fail())
             return response.getError();
 
@@ -112,12 +116,12 @@ public class MultipartController {
     }
 
     @POST
-    @Path("process/{pid}")
+    @Path(PROCESS_PID)
     public Response createProcess(@PathParam(PID) String pid,
                                   @FormDataParam(HEADER) InputStream headerInputStream,
                                   @FormDataParam(PAYLOAD) String payload) {
 
-        var response = validateRequest(pid, headerInputStream);
+        var response = validateRequest(pid, headerInputStream, PROCESS_PID);
         if (response.fail())
             return response.getError();
 
@@ -125,7 +129,7 @@ public class MultipartController {
     }
 
     @POST
-    @Path("messages/query/{pid}")
+    @Path(MESSAGES_QUERY_PID)
     public Response queryMessages(@PathParam(PID) String pid,
                                   @FormDataParam(HEADER) InputStream headerInputStream,
                                   @QueryParam(PAGE) String page,
@@ -134,7 +138,7 @@ public class MultipartController {
                                   @QueryParam(DATE_FROM) String dateFrom,
                                   @QueryParam(DATE_TO) String dateTo) {
 
-        var requestValidation = validateRequest(pid, headerInputStream);
+        var requestValidation = validateRequest(pid, headerInputStream, MESSAGES_QUERY_PID);
         if (requestValidation.fail())
             return requestValidation.getError();
 
@@ -145,7 +149,10 @@ public class MultipartController {
         return processRequest(pid, requestValidation.getHeader(), null, paggingValidation.getPagging());
     }
 
-    RequestValidationResponse validateRequest(String pid, InputStream headerInputStream){
+    RequestValidationResponse validateRequest(String pid, InputStream headerInputStream, String endpoint){
+
+
+
         // Check if pid is missing
         if (pid == null) {
             monitor.severe(LOG_ID + ": PID is missing");
@@ -171,6 +178,30 @@ public class MultipartController {
             return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
                     .build());
+        }
+
+
+        if(endpoint == MESSAGES_LOG_PID){
+            if(!header.getType().equals("ids:LogMessage")){
+                monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getType()));
+                return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .build());
+            }
+        } else if(endpoint == PROCESS_PID){
+            if(!header.getType().equals("ids:RequestMessage")){
+                monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getType()));
+                return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .build());
+            }
+        } else if(endpoint == MESSAGES_QUERY_PID){
+            if(!header.getType().equals("ids:QueryMessage")){
+                monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getType()));
+                return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .build());
+            }
         }
 
         // Check if any required header field missing

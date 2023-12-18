@@ -2,12 +2,7 @@ package de.truzzt.clearinghouse.edc.tests;
 
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
-import de.truzzt.clearinghouse.edc.dto.CreateProcessRequest;
-import de.truzzt.clearinghouse.edc.dto.CreateProcessResponse;
-import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.LoggingMessageRequest;
-import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
+import de.truzzt.clearinghouse.edc.dto.*;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
@@ -27,6 +22,7 @@ public class TestUtils extends BaseTestUtils {
     private static final String TEST_PAYLOAD = "Hello World";
     private static final String TEST_CREATE_PROCCESS_PAYLOAD = "{ \"owners\": [\"1\", \"2\"]}";;
     private static final String VALID_HEADER_JSON = "headers/valid-header.json";
+    private static final String VALID_QUERY_MESSAGE_HEADER_JSON = "headers/valid-query-message-header.json";
     private static final String VALID_CREATE_PROCESS_HEADER_JSON = "headers/valid-create-process-header.json";
     private static final String INVALID_HEADER_JSON = "headers/invalid-header.json";
     private static final String INVALID_TYPE_HEADER_JSON = "headers/invalid-type.json";
@@ -34,6 +30,10 @@ public class TestUtils extends BaseTestUtils {
 
     public static Message getValidHeader(ObjectMapper mapper) {
         return parseFile(mapper, Message.class, VALID_HEADER_JSON);
+    }
+
+    public static Message getValidQueryMessageHeader(ObjectMapper mapper) {
+        return parseFile(mapper, Message.class, VALID_QUERY_MESSAGE_HEADER_JSON);
     }
 
     public static Message getValidCreateProcessHeader(ObjectMapper mapper) {
@@ -98,6 +98,15 @@ public class TestUtils extends BaseTestUtils {
         }
     }
 
+    public static QueryMessageResponse getValidQueryMessageResponse(String url, ObjectMapper mapper) {
+        try {
+            return mapper.readValue(getValidResponse(url).body().byteStream(), QueryMessageResponse.class);
+
+        } catch (IOException e) {
+            throw new EdcException("Error parsing response", e);
+        }
+    }
+
     public static CreateProcessResponse getValidCreateProcessResponse(String url, ObjectMapper mapper) {
         try {
             return mapper.readValue(getValidResponse(url).body().byteStream(), CreateProcessResponse.class);
@@ -109,36 +118,26 @@ public class TestUtils extends BaseTestUtils {
 
     public static LoggingMessageRequest getValidLoggingMessageRequest(HandlerRequest handlerRequest) {
 
-        var header = handlerRequest.getHeader();
-
-        var multipartContext = header.getContext();
-        var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
-
-        var multipartSecurityToken = header.getSecurityToken();
-        var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
-        var securityToken = SecurityToken.Builder.newInstance().
-                type(multipartSecurityToken.getType()).
-                id(multipartSecurityToken.getId()).
-                tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
-                tokenValue(multipartSecurityToken.getTokenValue()).
-                build();
-
-        var requestHeader = Header.Builder.newInstance()
-                .context(context)
-                .id(header.getId())
-                .type(header.getType())
-                .securityToken(securityToken)
-                .issuerConnector(header.getIssuerConnector())
-                .modelVersion(header.getModelVersion())
-                .issued(header.getIssued())
-                .senderAgent(header.getSenderAgent())
-                .build();
+        var requestHeader = createRequestHeader(handlerRequest);
 
         return new LoggingMessageRequest(requestHeader, handlerRequest.getPayload());
     }
 
+    public static QueryMessageRequest getValidQueryMessageRequest(HandlerRequest handlerRequest) {
+
+        var requestHeader = createRequestHeader(handlerRequest);
+
+        return new QueryMessageRequest(requestHeader);
+    }
+
     public static CreateProcessRequest getValidCreateProcessRequest(HandlerRequest handlerRequest) {
 
+        var requestHeader = createRequestHeader(handlerRequest);
+
+        return new CreateProcessRequest(requestHeader, handlerRequest.getPayload());
+    }
+
+    private static Header createRequestHeader(HandlerRequest handlerRequest) {
         var header = handlerRequest.getHeader();
 
         var multipartContext = header.getContext();
@@ -164,7 +163,7 @@ public class TestUtils extends BaseTestUtils {
                 .senderAgent(header.getSenderAgent())
                 .build();
 
-        return new CreateProcessRequest(requestHeader, handlerRequest.getPayload());
+        return requestHeader;
     }
 
     public static ResponseBody getValidResponseBody(){
@@ -178,6 +177,13 @@ public class TestUtils extends BaseTestUtils {
         return HandlerRequest.Builder.newInstance()
                 .pid(UUID.randomUUID().toString())
                 .header(getValidHeader(mapper))
+                .payload(TEST_PAYLOAD).build();
+    }
+
+    public static HandlerRequest getValidHandlerQueryMessageRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidQueryMessageHeader(mapper))
                 .payload(TEST_PAYLOAD).build();
     }
 

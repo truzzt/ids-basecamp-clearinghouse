@@ -15,6 +15,7 @@
 package de.truzzt.clearinghouse.edc.types.ids;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,6 +23,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import java.net.URI;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Message {
 
     @JsonProperty("@context")
@@ -45,7 +47,6 @@ public class Message {
     private URI issuerConnector;
 
     @JsonProperty("ids:recipientConnector")
-    @NotNull
     private List<URI> recipientConnector;
 
     @JsonProperty("ids:modelVersion")
