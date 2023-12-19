@@ -3,6 +3,7 @@ package de.truzzt.clearinghouse.edc.tests;
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.dto.*;
+import de.truzzt.clearinghouse.edc.types.Pagging;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
@@ -13,6 +14,7 @@ import org.eclipse.edc.spi.EdcException;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public class TestUtils extends BaseTestUtils {
@@ -46,6 +48,39 @@ public class TestUtils extends BaseTestUtils {
 
     public static Message getInvalidTypeHeader(ObjectMapper mapper) {
         return parseFile(mapper, Message.class, INVALID_TYPE_HEADER_JSON);
+    }
+
+    public static Pagging getValidPagging(){
+        return Pagging.Builder.newInstance()
+                .page(1)
+                .size(1)
+                .sort(Pagging.Sort.ASC)
+                .dateFrom(LocalDate.now())
+                .dateTo(LocalDate.now())
+                .build();
+    }
+
+    public static Pagging getValidPaggingOnlySize(){
+        return Pagging.Builder.newInstance()
+                .size(1)
+                .build();
+    }
+    public static Pagging getValidPaggingOnlySort(){
+        return Pagging.Builder.newInstance()
+                .sort(Pagging.Sort.ASC)
+                .build();
+    }
+
+    public static Pagging getValidPaggingOnlyDateFrom(){
+        return Pagging.Builder.newInstance()
+                .dateFrom(LocalDate.now())
+                .build();
+    }
+
+    public static Pagging getValidPaggingOnlyDateTo(){
+        return Pagging.Builder.newInstance()
+                .dateTo(LocalDate.now())
+                .build();
     }
 
     public static Response getValidResponse(String url) {
@@ -184,7 +219,40 @@ public class TestUtils extends BaseTestUtils {
         return HandlerRequest.Builder.newInstance()
                 .pid(UUID.randomUUID().toString())
                 .header(getValidQueryMessageHeader(mapper))
-                .payload(TEST_PAYLOAD).build();
+                .payload(TEST_PAYLOAD)
+                .pagging(getValidPagging()).build();
+    }
+
+    public static HandlerRequest getValidHandlerQueryMessageOnlySizeRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidQueryMessageHeader(mapper))
+                .payload(TEST_PAYLOAD)
+                .pagging(getValidPaggingOnlySize()).build();
+    }
+
+    public static HandlerRequest getValidHandlerQueryMessageOnlySortRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidQueryMessageHeader(mapper))
+                .payload(TEST_PAYLOAD)
+                .pagging(getValidPaggingOnlySort()).build();
+    }
+
+    public static HandlerRequest getValidHandlerQueryMessageOnlyDateFromRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidQueryMessageHeader(mapper))
+                .payload(TEST_PAYLOAD)
+                .pagging(getValidPaggingOnlyDateFrom()).build();
+    }
+
+    public static HandlerRequest getValidHandlerQueryMessageOnlyDateToRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidQueryMessageHeader(mapper))
+                .payload(TEST_PAYLOAD)
+                .pagging(getValidPaggingOnlyDateTo()).build();
     }
 
     public static HandlerRequest getValidHandlerCreateProcessRequest(ObjectMapper mapper){
@@ -210,6 +278,13 @@ public class TestUtils extends BaseTestUtils {
 
     public static AppSenderRequest getValidAppSenderRequest(ObjectMapper mapper){
         return new AppSenderRequest(TEST_BASE_URL+ "/headers/log/" + UUID.randomUUID(),
+                JWT.create().toString(),
+                getValidHandlerRequest(mapper)
+        );
+    }
+
+    public static AppSenderRequest getValidQueryAppSenderRequest(ObjectMapper mapper){
+        return new AppSenderRequest(TEST_BASE_URL+ "/headers/query/" + UUID.randomUUID(),
                 JWT.create().toString(),
                 getValidHandlerRequest(mapper)
         );

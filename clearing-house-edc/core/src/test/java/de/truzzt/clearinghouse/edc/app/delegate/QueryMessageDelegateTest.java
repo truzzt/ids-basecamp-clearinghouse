@@ -32,14 +32,64 @@ class QueryMessageDelegateTest {
     }
 
     @Test
-    public void successfulBuildRequestUrl() {
+    public void successfulBuildCompleteRequestUrl() {
 
         HandlerRequest request = TestUtils.getValidHandlerQueryMessageRequest(mapper);
 
         String response = senderDelegate.buildRequestUrl(TestUtils.TEST_BASE_URL, request);
 
         assertNotNull(response);
-        assertEquals(response, "http://localhost:8000/messages/query/" +request.getPid());
+        assertEquals(response, "http://localhost:8000/messages/query/" +request.getPid()+
+                "?page=1&size=1&sort=asc&dateFrom="+ request.getPagging().getDateFrom().toString()+
+                "&dateTo="+request.getPagging().getDateFrom().toString());
+    }
+
+    @Test
+    public void successfulBuildOnlySizeRequestUrl() {
+
+        HandlerRequest request = TestUtils.getValidHandlerQueryMessageOnlySizeRequest(mapper);
+
+        String response = senderDelegate.buildRequestUrl(TestUtils.TEST_BASE_URL, request);
+
+        assertNotNull(response);
+        assertEquals(response, "http://localhost:8000/messages/query/" +request.getPid()+
+                "?size=1");
+    }
+
+    @Test
+    public void successfulBuildOnlySortRequestUrl() {
+
+        HandlerRequest request = TestUtils.getValidHandlerQueryMessageOnlySortRequest(mapper);
+
+        String response = senderDelegate.buildRequestUrl(TestUtils.TEST_BASE_URL, request);
+
+        assertNotNull(response);
+        assertEquals(response, "http://localhost:8000/messages/query/" +request.getPid()+
+                "?sort=asc");
+    }
+
+    @Test
+    public void successfulBuildOnlyDateFromRequestUrl() {
+
+        HandlerRequest request = TestUtils.getValidHandlerQueryMessageOnlyDateFromRequest(mapper);
+
+        String response = senderDelegate.buildRequestUrl(TestUtils.TEST_BASE_URL, request);
+
+        assertNotNull(response);
+        assertEquals(response, "http://localhost:8000/messages/query/" +request.getPid()+
+                "?dateFrom="+ request.getPagging().getDateFrom().toString());
+    }
+
+    @Test
+    public void successfulBuildOnlyDateToRequestUrl() {
+
+        HandlerRequest request = TestUtils.getValidHandlerQueryMessageOnlyDateToRequest(mapper);
+
+        String response = senderDelegate.buildRequestUrl(TestUtils.TEST_BASE_URL, request);
+
+        assertNotNull(response);
+        assertEquals(response, "http://localhost:8000/messages/query/" +request.getPid()+
+                "?dateTo="+ request.getPagging().getDateTo().toString());
     }
 
     @Test
@@ -56,7 +106,7 @@ class QueryMessageDelegateTest {
     public void successfulParseResponseBody() {
 
         ResponseBody body = TestUtils.getValidResponseBody();
-        doReturn(TestUtils.getValidQueryMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
+        doReturn(TestUtils.getValidQueryMessageResponse(TestUtils.getValidQueryAppSenderRequest(mapper).getUrl(), mapper))
                 .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
 
         QueryMessageResponse response = senderDelegate.parseResponseBody(body);

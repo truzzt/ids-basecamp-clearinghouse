@@ -60,7 +60,8 @@ tasks.jacocoTestReport {
                     exclude(
                             "**/dto/**",
                             "**/types/clearinghouse/*",
-                            "**/types/ids/*")
+                            "**/types/ids/*",
+                            "**/types/Pagging*")
                 }
             })
     )
