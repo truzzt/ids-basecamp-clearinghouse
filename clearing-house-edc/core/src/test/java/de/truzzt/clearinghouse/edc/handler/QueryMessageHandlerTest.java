@@ -3,7 +3,6 @@ package de.truzzt.clearinghouse.edc.handler;
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.app.AppSender;
-import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
 import de.truzzt.clearinghouse.edc.app.delegate.QueryMessageDelegate;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
