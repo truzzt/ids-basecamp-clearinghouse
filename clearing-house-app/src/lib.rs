@@ -1,12 +1,12 @@
 #[macro_use]
 extern crate tracing;
 
+use std::sync::Arc;
 use crate::db::doc_store::DataStore;
 use crate::db::key_store::KeyStore;
 use crate::db::process_store::ProcessStore;
 use crate::model::constants::ENV_LOGGING_SERVICE_ID;
 use crate::util::ServiceConfig;
-use std::sync::Arc;
 
 mod config;
 mod crypto;
