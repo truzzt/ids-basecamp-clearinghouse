@@ -22,7 +22,7 @@ impl super::DocumentStore for PostgresDocumentStore {
         transfer_contract, issued, issuer_connector, content_version, recipient_connector,
         sender_agent, recipient_agent, payload, payload_type, message_id)
         VALUES
-        ($1, $2, $3, $4, $5,
+        ($1, (SELECT id from processes where process_id = $2), $3, $4, $5,
         $6, $7, $8, $9, $10,
         $11, $12, $13, $14, $15)"#,
         )
@@ -58,11 +58,12 @@ impl super::DocumentStore for PostgresDocumentStore {
 
     async fn get_document(&self, id: &str, pid: &str) -> anyhow::Result<Option<Document>> {
         sqlx::query_as::<_, DocumentRow>(
-            r#"SELECT id, process_id, created_at, model_version, correlation_message,
+            r#"SELECT id, processes.process_id, created_at, model_version, correlation_message,
         transfer_contract, issued, issuer_connector, content_version, recipient_connector,
         sender_agent, recipient_agent, payload, payload_type, message_id
         FROM documents
-        WHERE id = $1 AND process_id = $2"#,
+        LEFT JOIN processes ON processes.id = documents.process_id
+        WHERE id = $1 AND processes.process_id = $2"#,
         )
         .bind(id)
         .bind(pid)
@@ -87,11 +88,12 @@ impl super::DocumentStore for PostgresDocumentStore {
 
         sqlx::query_as::<_, DocumentRow>(
             format!(
-                r#"SELECT id, process_id, created_at, model_version, correlation_message,
+                r#"SELECT id, processes.process_id, created_at, model_version, correlation_message,
         transfer_contract, issued, issuer_connector, content_version, recipient_connector,
         sender_agent, recipient_agent, payload, payload_type, message_id
         FROM documents
-        WHERE process_id = $1 AND created_at BETWEEN $2 AND $3
+        LEFT JOIN processes ON processes.id = documents.process_id
+        WHERE processes.process_id = $1 AND created_at BETWEEN $2 AND $3
         ORDER BY created_at {}
         LIMIT $4 OFFSET $5"#,
                 sort_order
