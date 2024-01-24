@@ -1,20 +1,6 @@
-use crate::model::constants::DEFAULT_DOC_TYPE;
-use crate::model::document::{Document, DocumentPart};
+use crate::model::document::Document;
 use crate::model::ids::{InfoModelDateTime, InfoModelId, MessageType, SecurityToken};
 use std::collections::HashMap;
-
-const MESSAGE_ID: &str = "message_id";
-const MODEL_VERSION: &str = "model_version";
-const CORRELATION_MESSAGE: &str = "correlation_message";
-const TRANSFER_CONTRACT: &str = "transfer_contract";
-const ISSUED: &str = "issued";
-const ISSUER_CONNECTOR: &str = "issuer_connector";
-const CONTENT_VERSION: &str = "content_version";
-/// const RECIPIENT_CONNECTOR: &'static str = "recipient_connector"; // all messages should contain the CH connector, so we skip this information
-const SENDER_AGENT: &str = "sender_agent";
-///const RECIPIENT_AGENT: &'static str = "recipient_agent";  // all messages should contain the CH agent, so we skip this information
-const PAYLOAD: &str = "payload";
-const PAYLOAD_TYPE: &str = "payload_type";
 
 /// Metadata describing payload exchanged by interacting Connectors.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -138,16 +124,6 @@ impl Default for IdsMessage {
     }
 }
 
-impl IdsMessage {
-    pub fn restore() -> IdsMessage {
-        IdsMessage {
-            type_message: MessageType::LogMessage,
-            //TODO recipient_agent CH
-            ..Default::default()
-        }
-    }
-}
-
 /// Conversion from Document to IdsMessage
 ///
 /// note: Documents are converted into LogMessages. The LogMessage contains
@@ -171,73 +147,7 @@ impl IdsMessage {
 /// - payload_type
 impl From<Document> for IdsMessage {
     fn from(doc: Document) -> Self {
-        let mut m = IdsMessage::restore();
-        // pid
-        m.pid = Some(doc.pid.clone());
-        // message_id
-        let p_map = doc.get_parts_map();
-        if let Some(v) = p_map.get(MESSAGE_ID) {
-            m.id = Some(v.clone());
-        }
-        // model_version
-        if let Some(v) = p_map.get(MODEL_VERSION) {
-            m.model_version = v.clone();
-        }
-
-        // correlation_message
-        if let Some(v) = p_map.get(CORRELATION_MESSAGE) {
-            m.correlation_message = Some(v.clone());
-        }
-
-        // transfer_contract
-        if let Some(v) = p_map.get(TRANSFER_CONTRACT) {
-            m.transfer_contract = Some(v.clone());
-        }
-
-        // issued
-        if let Some(v) = p_map.get(ISSUED) {
-            match serde_json::from_str(v) {
-                Ok(date_time) => {
-                    m.issued = date_time;
-                }
-                Err(e) => {
-                    error!(
-                        "Error while converting DateTimeStamp (field 'issued') from database: {}",
-                        e
-                    );
-                }
-            }
-        }
-
-        // issuer_connector
-        if let Some(v) = p_map.get(ISSUER_CONNECTOR) {
-            m.issuer_connector = InfoModelId::SimpleId(v.clone());
-        }
-
-        // content_version
-        if let Some(v) = p_map.get(CONTENT_VERSION) {
-            m.content_version = Some(v.clone());
-        }
-
-        // sender_agent
-        if let Some(v) = p_map.get(SENDER_AGENT) {
-            m.sender_agent = v.clone();
-        }
-
-        // payload
-        if let Some(v) = p_map.get(PAYLOAD) {
-            m.payload = Some(v.clone());
-        }
-
-        // payload_type
-        if let Some(v) = p_map.get(PAYLOAD_TYPE) {
-            m.payload_type = Some(v.clone());
-        }
-
-        //TODO: security_token
-        //TODO: authorization_token
-
-        m
+        doc.content.clone()
     }
 }
 
@@ -260,82 +170,17 @@ impl From<Document> for IdsMessage {
 /// - authorization_token
 /// - payload
 /// - payload_type
-impl TryFrom<IdsMessage> for Document {
-    type Error = serde_json::Error;
+impl Into<Document> for IdsMessage {
+    fn into(self) -> Document {
+        let mut m = self.clone();
 
-    fn try_from(m: IdsMessage) -> Result<Self, Self::Error> {
-        use serde::ser::Error;
-        let mut doc_parts = vec![];
+        m.id = Some(m.id.unwrap_or_else(|| autogen("Message")));
 
-        // message_id
-        let id = match m.id {
-            Some(m_id) => m_id,
-            None => autogen("Message"),
-        };
+        // Remove security tokens to protect against impersonation of other owners of the same process
+        m.security_token = None;
+        m.authorization_token = None;
 
-        doc_parts.push(DocumentPart::new(MESSAGE_ID.to_string(), id));
-
-        // model_version
-        doc_parts.push(DocumentPart::new(
-            MODEL_VERSION.to_string(),
-            m.model_version,
-        ));
-
-        // correlation_message
-        if let Some(s) = m.correlation_message {
-            doc_parts.push(DocumentPart::new(CORRELATION_MESSAGE.to_string(), s));
-        }
-
-        // issued
-        doc_parts.push(DocumentPart::new(
-            ISSUED.to_string(),
-            serde_json::to_string(&m.issued)?,
-        ));
-
-        // issuer_connector
-        doc_parts.push(DocumentPart::new(
-            ISSUER_CONNECTOR.to_string(),
-            m.issuer_connector.to_string(),
-        ));
-
-        // sender_agent
-        doc_parts.push(DocumentPart::new(
-            SENDER_AGENT.to_string(),
-            m.sender_agent.to_string(),
-        ));
-
-        // transfer_contract
-        if let Some(s) = m.transfer_contract {
-            doc_parts.push(DocumentPart::new(TRANSFER_CONTRACT.to_string(), s));
-        }
-
-        // content_version
-        if let Some(s) = m.content_version {
-            doc_parts.push(DocumentPart::new(CONTENT_VERSION.to_string(), s));
-        }
-
-        // security_token
-        //TODO
-
-        // authorization_token
-        //TODO
-
-        // payload
-        if let Some(s) = m.payload {
-            doc_parts.push(DocumentPart::new(PAYLOAD.to_string(), s));
-        }
-
-        // payload_type
-        if let Some(s) = m.payload_type {
-            doc_parts.push(DocumentPart::new(PAYLOAD_TYPE.to_string(), s));
-        }
-
-        // pid
-        Ok(Document::new(
-            m.pid.ok_or(serde_json::Error::custom("PID missing"))?,
-            DEFAULT_DOC_TYPE.to_string(),
-            doc_parts,
-        ))
+        Document::new(m.pid.clone().expect("Missing pid"), m)
     }
 }
 

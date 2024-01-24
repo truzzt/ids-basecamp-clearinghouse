@@ -1,7 +1,5 @@
 log_level = "INFO" # TRACE, DEBUG, INFO, WARN, ERROR
-document_database_url= "mongodb://localhost:27017"
-process_database_url= "mongodb://localhost:27017"
-keyring_database_url= "mongodb://localhost:27017"
+database_url= "mongodb://localhost:27017"
 clear_db = true
 signing_key = "keys/private_key.der" # Optional
 performance_tracing = false

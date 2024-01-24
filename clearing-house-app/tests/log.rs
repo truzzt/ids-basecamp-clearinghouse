@@ -10,7 +10,6 @@ use clearing_house_app::model::ids::{IdsQueryResult, InfoModelId, MessageType};
 use clearing_house_app::model::process::Receipt;
 use clearing_house_app::model::{claims::create_token, constants::SERVICE_HEADER};
 use clearing_house_app::util::new_uuid;
-use hyper::Body;
 use tower::ServiceExt;
 
 #[tokio::test]
@@ -29,7 +28,7 @@ async fn log_message() {
         .oneshot(
             Request::builder()
                 .uri("/.well-known/jwks.json")
-                .body(Body::empty())
+                .body(axum::body::Body::empty())
                 .unwrap(),
         )
         .await
@@ -37,7 +36,9 @@ async fn log_message() {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     assert!(!body.is_empty());
     let jwks = serde_json::from_slice::<JWKSet<biscuit::Empty>>(&body).expect("Decoded the JWKSet");
 
@@ -77,7 +78,7 @@ async fn log_message() {
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header(SERVICE_HEADER, create_token("test", "test", &claims))
-                .body(serde_json::to_string(&msg).unwrap().into())
+                .body(serde_json::to_string(&msg).unwrap())
                 .unwrap(),
         )
         .await
@@ -86,7 +87,9 @@ async fn log_message() {
     // Check status code
     assert_eq!(response.status(), StatusCode::CREATED);
     // get body
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     assert!(!body.is_empty());
 
     // Decode receipt
@@ -123,14 +126,16 @@ async fn log_message() {
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header(SERVICE_HEADER, create_token("test", "test", &claims))
-                .body(serde_json::to_string(&msg).unwrap().into())
+                .body(serde_json::to_string(&msg).unwrap())
                 .unwrap(),
         )
         .await
         .unwrap();
     assert_eq!(query_resp.status(), StatusCode::OK);
 
-    let body = hyper::body::to_bytes(query_resp.into_body()).await.unwrap();
+    let body = axum::body::to_bytes(query_resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
     assert!(!body.is_empty());
 
     let ids_message = serde_json::from_slice::<IdsQueryResult>(&body).unwrap();
