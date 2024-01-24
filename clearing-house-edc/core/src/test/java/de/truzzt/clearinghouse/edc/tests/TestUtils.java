@@ -3,6 +3,8 @@ package de.truzzt.clearinghouse.edc.tests;
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
+import de.truzzt.clearinghouse.edc.dto.CreateProcessRequest;
+import de.truzzt.clearinghouse.edc.dto.CreateProcessResponse;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageRequest;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
@@ -23,13 +25,19 @@ public class TestUtils extends BaseTestUtils {
     public static final String TEST_BASE_URL = "http://localhost:8000";
 
     private static final String TEST_PAYLOAD = "Hello World";
+    private static final String TEST_CREATE_PROCCESS_PAYLOAD = "{ \"owners\": [\"1\", \"2\"]}";;
     private static final String VALID_HEADER_JSON = "headers/valid-header.json";
+    private static final String VALID_CREATE_PROCESS_HEADER_JSON = "headers/valid-create-process-header.json";
     private static final String INVALID_HEADER_JSON = "headers/invalid-header.json";
     private static final String INVALID_TYPE_HEADER_JSON = "headers/invalid-type.json";
     private static final String INVALID_TOKEN_HEADER_JSON = "headers/invalid-token.json";
 
     public static Message getValidHeader(ObjectMapper mapper) {
         return parseFile(mapper, Message.class, VALID_HEADER_JSON);
+    }
+
+    public static Message getValidCreateProcessHeader(ObjectMapper mapper) {
+        return parseFile(mapper, Message.class, VALID_CREATE_PROCESS_HEADER_JSON);
     }
 
     public static Message getInvalidTokenHeader(ObjectMapper mapper) {
@@ -90,6 +98,15 @@ public class TestUtils extends BaseTestUtils {
         }
     }
 
+    public static CreateProcessResponse getValidCreateProcessResponse(String url, ObjectMapper mapper) {
+        try {
+            return mapper.readValue(getValidResponse(url).body().byteStream(), CreateProcessResponse.class);
+
+        } catch (IOException e) {
+            throw new EdcException("Error parsing response", e);
+        }
+    }
+
     public static LoggingMessageRequest getValidLoggingMessageRequest(HandlerRequest handlerRequest) {
 
         var header = handlerRequest.getHeader();
@@ -120,6 +137,36 @@ public class TestUtils extends BaseTestUtils {
         return new LoggingMessageRequest(requestHeader, handlerRequest.getPayload());
     }
 
+    public static CreateProcessRequest getValidCreateProcessRequest(HandlerRequest handlerRequest) {
+
+        var header = handlerRequest.getHeader();
+
+        var multipartContext = header.getContext();
+        var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
+
+        var multipartSecurityToken = header.getSecurityToken();
+        var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
+        var securityToken = SecurityToken.Builder.newInstance().
+                type(multipartSecurityToken.getType()).
+                id(multipartSecurityToken.getId()).
+                tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
+                tokenValue(multipartSecurityToken.getTokenValue()).
+                build();
+
+        var requestHeader = Header.Builder.newInstance()
+                .context(context)
+                .id(header.getId())
+                .type(header.getType())
+                .securityToken(securityToken)
+                .issuerConnector(header.getIssuerConnector())
+                .modelVersion(header.getModelVersion())
+                .issued(header.getIssued())
+                .senderAgent(header.getSenderAgent())
+                .build();
+
+        return new CreateProcessRequest(requestHeader, handlerRequest.getPayload());
+    }
+
     public static ResponseBody getValidResponseBody(){
         return ResponseBody.create(
                 MediaType.get("application/json; charset=utf-8"),
@@ -131,6 +178,13 @@ public class TestUtils extends BaseTestUtils {
         return HandlerRequest.Builder.newInstance()
                 .pid(UUID.randomUUID().toString())
                 .header(getValidHeader(mapper))
+                .payload(TEST_PAYLOAD).build();
+    }
+
+    public static HandlerRequest getValidHandlerCreateProcessRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidCreateProcessHeader(mapper))
                 .payload(TEST_PAYLOAD).build();
     }
 

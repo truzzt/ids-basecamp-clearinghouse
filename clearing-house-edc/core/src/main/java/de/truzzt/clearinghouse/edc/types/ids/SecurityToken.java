@@ -15,7 +15,7 @@
 package de.truzzt.clearinghouse.edc.types.ids;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.truzzt.clearinghouse.edc.types.ids.util.VocabUtil;
+import de.truzzt.clearinghouse.edc.types.util.VocabUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;

@@ -2,11 +2,12 @@ package de.truzzt.clearinghouse.edc.handler;
 
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import de.truzzt.clearinghouse.edc.app.AppSender;
+import de.truzzt.clearinghouse.edc.app.delegate.CreateProcessDelegate;
 import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
+import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.ids.SecurityToken;
 import okhttp3.ResponseBody;
@@ -25,7 +26,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
-class LogMessageHandlerTest {
+class RequestMessageHandlerTest {
+
     @Mock
     private IdsId connectorId;
     @Mock
@@ -34,29 +36,27 @@ class LogMessageHandlerTest {
     private AppSender appSender;
     @Mock
     private ServiceExtensionContext context;
+
     @Mock
-    private LogMessageHandler logMessageHandler;
+    private CreateProcessDelegate createProcessDelegate;
     @Mock
-    private LoggingMessageDelegate senderDelegate;
+    private RequestMessageHandler requestMessageHandler;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        senderDelegate = spy(new LoggingMessageDelegate(typeManagerUtil));
-        logMessageHandler = spy(new LogMessageHandler(connectorId, typeManagerUtil, appSender, context));
+        requestMessageHandler = spy(new RequestMessageHandler(connectorId, typeManagerUtil, appSender, context));
     }
-
     @Test
-    public void successfulCanHandle(){
+    void successfulCanHandle() {
+        HandlerRequest request = TestUtils.getValidHandlerCreateProcessRequest(mapper);
 
-        HandlerRequest request = TestUtils.getValidHandlerRequest(mapper);
-
-        Boolean response = logMessageHandler.canHandle(request);
+        Boolean response = requestMessageHandler.canHandle(request);
 
         assertNotNull(response);
-        assertEquals(response, true);
+        assertEquals(true, response);
     }
 
     @Test
@@ -64,7 +64,7 @@ class LogMessageHandlerTest {
 
         HandlerRequest request = TestUtils.getInvalidHandlerRequest(mapper);
 
-        Boolean response = logMessageHandler.canHandle(request);
+        Boolean response = requestMessageHandler.canHandle(request);
 
         assertNotNull(response);
         assertEquals(response, false);
@@ -74,16 +74,19 @@ class LogMessageHandlerTest {
     public void successfulHandleRequest(){
         HandlerRequest request = TestUtils.getValidHandlerRequest(mapper);
         doReturn(JWT.create().toString())
-                .when(logMessageHandler).buildJWTToken(any(SecurityToken.class), any(ServiceExtensionContext.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
-                .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
-        doReturn(APP_BASE_URL_DEFAULT_VALUE+ "/headers/log/" + request.getPid())
-                .when(senderDelegate)
-                .buildRequestUrl(any(String.class), any(HandlerRequest.class));
-        doReturn(TestUtils.getValidLoggingMessageRequest(request))
-                .when(senderDelegate).buildRequestBody(any(HandlerRequest.class));
+                .when(requestMessageHandler).buildJWTToken(any(SecurityToken.class), any(ServiceExtensionContext.class));
 
-        HandlerResponse response = logMessageHandler.handleRequest(request);
+        doReturn(TestUtils.getValidCreateProcessResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
+                .when(createProcessDelegate).parseResponseBody(any(ResponseBody.class));
+
+        doReturn(APP_BASE_URL_DEFAULT_VALUE+ "/process/" + request.getPid())
+                .when(createProcessDelegate)
+                .buildRequestUrl(any(String.class), any(HandlerRequest.class));
+
+        doReturn(TestUtils.getValidCreateProcessRequest(request))
+                .when(createProcessDelegate).buildRequestBody(any(HandlerRequest.class));
+
+        HandlerResponse response = requestMessageHandler.handleRequest(request);
 
         assertNotNull(response);
         assertEquals(response.getHeader().getType(), "ids:MessageProcessedNotificationMessage");
@@ -91,7 +94,7 @@ class LogMessageHandlerTest {
 
     @Test
     public void missingSubjectBuildJwtToken() {
-        EdcException exception = assertThrows(EdcException.class, () -> logMessageHandler.buildJWTToken(
+        EdcException exception = assertThrows(EdcException.class, () -> requestMessageHandler.buildJWTToken(
                 TestUtils.getInvalidTokenHandlerRequest(mapper)
                         .getHeader()
                         .getSecurityToken(), context));
@@ -101,7 +104,7 @@ class LogMessageHandlerTest {
     @Test
     public void successfulBuildJwtToken() {
         doReturn("1").when(context).getSetting(anyString(), anyString());
-        var response = logMessageHandler.buildJWTToken(
+        var response = requestMessageHandler.buildJWTToken(
                 TestUtils.getValidHandlerRequest(mapper)
                         .getHeader()
                         .getSecurityToken(), context);
