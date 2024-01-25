@@ -3,15 +3,15 @@
 use axum::http::{Request, StatusCode};
 use biscuit::jwa::SignatureAlgorithm::PS512;
 use biscuit::jwk::JWKSet;
-use hyper::Body;
-use clearing_house_app::model::claims::{ChClaims, get_fingerprint};
+use clearing_house_app::model::claims::{get_fingerprint, ChClaims};
 use clearing_house_app::model::ids::message::IdsMessage;
 use clearing_house_app::model::ids::request::ClearingHouseMessage;
 use clearing_house_app::model::ids::{IdsQueryResult, InfoModelId, MessageType};
+use clearing_house_app::model::process::Receipt;
 use clearing_house_app::model::{claims::create_token, constants::SERVICE_HEADER};
 use clearing_house_app::util::new_uuid;
+use hyper::Body;
 use tower::ServiceExt;
-use clearing_house_app::model::process::Receipt;
 
 #[tokio::test]
 #[ignore]
@@ -66,7 +66,7 @@ async fn log_message() {
         payload_type: None,
     };
 
-    let claims = ChClaims::new("test");
+    let claims = ChClaims::new("69:F5:9D:B0:DD:A6:9D:30:5F:58:AA:2D:20:4D:B2:39:F0:54:FC:3B:keyid:4F:66:7D:BD:08:EE:C6:4A:D1:96:D8:7C:6C:A2:32:8A:EC:A6:AD:49");
 
     // Send log message
     let response = app
@@ -92,14 +92,18 @@ async fn log_message() {
     // Decode receipt
     let receipt = serde_json::from_slice::<Receipt>(&body).unwrap();
     println!("Receipt: {:?}", receipt);
-    let decoded_receipt = receipt.data
+    let decoded_receipt = receipt
+        .data
         .decode_with_jwks(&jwks, Some(PS512))
         .expect("Decoding JWS successful");
     let decoded_receipt_header = decoded_receipt
         .header()
         .expect("Header is now already decoded");
 
-    assert_eq!(decoded_receipt_header.registered.key_id, get_fingerprint("keys/private_key.der"));
+    assert_eq!(
+        decoded_receipt_header.registered.key_id,
+        get_fingerprint("keys/private_key.der")
+    );
 
     let decoded_receipt_payload = decoded_receipt
         .payload()
@@ -135,7 +139,10 @@ async fn log_message() {
 
     // Check the only document in the result
     assert_eq!(query_docs.len(), 1);
-    let doc = query_docs.first().expect("Document is there, just checked").to_owned();
+    let doc = query_docs
+        .first()
+        .expect("Document is there, just checked")
+        .to_owned();
     assert_eq!(doc.payload.expect("Payload is there"), "test".to_string());
     assert_eq!(doc.model_version, "test".to_string());
 }

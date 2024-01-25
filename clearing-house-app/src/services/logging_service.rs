@@ -88,7 +88,7 @@ impl LoggingService {
         msg: ClearingHouseMessage,
         pid: String,
     ) -> Result<Receipt, LoggingServiceError> {
-        trace!("...user '{:?}'", &ch_claims.client_id);
+        trace!("...user '{}'", &ch_claims.client_id);
         let user = &ch_claims.client_id;
         // Add non-InfoModel information to IdsMessage
         let mut m = msg.header;
@@ -241,7 +241,7 @@ impl LoggingService {
     ) -> Result<IdsQueryResult, LoggingServiceError> {
         debug!("page: {:#?}, size:{:#?} and sort:{:#?}", page, size, sort);
 
-        trace!("...user '{:?}'", &ch_claims.client_id);
+        trace!("...user '{}'", &ch_claims.client_id);
         let user = &ch_claims.client_id;
 
         // Check if process exists and if the user is authorized to access the process
@@ -291,7 +291,7 @@ impl LoggingService {
         id: String,
         _message: ClearingHouseMessage,
     ) -> Result<IdsMessage, LoggingServiceError> {
-        trace!("...user '{:?}'", &ch_claims.client_id);
+        trace!("...user '{}'", &ch_claims.client_id);
         let user = &ch_claims.client_id;
 
         // Check if process exists and if the user is authorized to access the process
