@@ -24,8 +24,8 @@ jobs:
     - name: Build and Test
       run: |
         cd clearing-house-app
-        cargo build --verbose --features postgres
-        cargo test --verbose --features postgres
+        cargo build --verbose
+        cargo test --verbose
 
   edc-unit-tests:
     runs-on: ubuntu-latest

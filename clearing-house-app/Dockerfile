@@ -11,7 +11,7 @@ COPY Cargo.toml Cargo.lock config.toml  ./
 COPY src ./src
 
 # Build the Rust application with dependencies (this helps to cache dependencies)
-RUN cargo build --release --features postgres
+RUN cargo build --release
 
 FROM gcr.io/distroless/cc-debian12
 

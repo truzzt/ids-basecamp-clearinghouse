@@ -67,6 +67,7 @@ pub fn validate_and_sanitize_dates(
 
 #[cfg(test)]
 mod test {
+    use std::ops::Add;
 
     #[test]
     fn validate_and_sanitize_dates() {
@@ -81,12 +82,12 @@ mod test {
 
         // # Good cases
         assert_eq!(
-            (date_from, date_now),
+            (date_from, date_now.add(chrono::Duration::seconds(1))),
             super::validate_and_sanitize_dates(None, None, Some(date_now))
                 .expect("Should be valid")
         );
         assert_eq!(
-            (date_from, date_now),
+            (date_from, date_now.add(chrono::Duration::seconds(1))),
             super::validate_and_sanitize_dates(Some(date_from), None, Some(date_now))
                 .expect("Should be valid")
         );
