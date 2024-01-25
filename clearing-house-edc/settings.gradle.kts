@@ -16,50 +16,72 @@
 pluginManagement {
     repositories {
         maven {
-            url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+            val user = providers.gradleProperty("gitHubUserName")
+            val token = providers.gradleProperty("gitHubUserPassword")
+            url = uri("https://maven.pkg.github.com/ids-basecamp/gradle-plugins-fork")
+            credentials {
+                username = user.orNull
+                password = token.orNull
+            }
         }
-        mavenCentral()
         gradlePluginPortal()
+        mavenCentral()
+        mavenLocal()
     }
 }
 
 dependencyResolutionManagement {
     repositories {
+        val user = providers.gradleProperty("gitHubUserName")
+        val token = providers.gradleProperty("gitHubUserPassword")
         maven {
-            url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+            url = uri("https://maven.pkg.github.com/ids-basecamp/gradle-plugins-fork")
+            credentials {
+                username = user.orNull
+                password = token.orNull
+            }
         }
-        flatDir {
-            dirs("libs/fraunhofer")
+        maven {
+            url = uri("https://maven.pkg.github.com/ids-basecamp/edc-fork")
+            credentials {
+                username = user.orNull
+                password = token.orNull
+            }
         }
         mavenCentral()
         mavenLocal()
     }
     versionCatalogs {
+        val gradlePluginsGroup = providers.gradleProperty("gradlePluginsGroup")
+        val gradlePluginsVersion = providers.gradleProperty("gradlePluginsVersion")
         create("libs") {
-            from("org.eclipse.edc:edc-versions:0.0.1-milestone-8")
+            from(gradlePluginsGroup.get() + ":edc-versions:" + gradlePluginsVersion.get())
         }
+
+        val edcGroup = providers.gradleProperty("edcGroup")
+        val edcVersion = providers.gradleProperty("edcVersion")
         create("edc") {
-            version("edc", "0.0.1-milestone-8")
-            library("spi-catalog", "org.eclipse.edc", "catalog-spi").versionRef("edc")
-            library("spi-core", "org.eclipse.edc", "core-spi").versionRef("edc")
-            library("spi-web", "org.eclipse.edc", "web-spi").versionRef("edc")
-            library("util", "org.eclipse.edc", "util").versionRef("edc")
-            library("boot", "org.eclipse.edc", "boot").versionRef("edc")
-            library("config-filesystem", "org.eclipse.edc", "configuration-filesystem").versionRef("edc")
-            library("core-controlplane", "org.eclipse.edc", "control-plane-core").versionRef("edc")
-            library("core-connector", "org.eclipse.edc", "connector-core").versionRef("edc")
-            library("core-jetty", "org.eclipse.edc", "jetty-core").versionRef("edc")
-            library("core-jersey", "org.eclipse.edc", "jersey-core").versionRef("edc")
-            library("junit", "org.eclipse.edc", "junit").versionRef("edc")
-            library("api-management-config", "org.eclipse.edc", "management-api-configuration").versionRef("edc")
-            library("api-management", "org.eclipse.edc", "management-api").versionRef("edc")
-            library("api-observability", "org.eclipse.edc", "api-observability").versionRef("edc")
-            library("ext-http", "org.eclipse.edc", "http").versionRef("edc")
-            library("spi-ids", "org.eclipse.edc", "ids-spi").versionRef("edc")
-            library("ids", "org.eclipse.edc", "ids").versionRef("edc")
-            library("ids-jsonld-serdes", "org.eclipse.edc", "ids-jsonld-serdes").versionRef("edc")
-            library("oauth2-core", "org.eclipse.edc", "oauth2-core").versionRef("edc")
-            library("vault-filesystem", "org.eclipse.edc", "vault-filesystem").versionRef("edc")
+            version("edc", edcVersion.get())
+            library("spi-catalog", edcGroup.get(), "catalog-spi").versionRef("edc")
+            library("spi-core", edcGroup.get(), "core-spi").versionRef("edc")
+            library("spi-web", edcGroup.get(), "web-spi").versionRef("edc")
+            library("util", edcGroup.get(), "util").versionRef("edc")
+            library("boot", edcGroup.get(), "boot").versionRef("edc")
+            library("config-filesystem", edcGroup.get(), "configuration-filesystem").versionRef("edc")
+            library("core-controlplane", edcGroup.get(), "control-plane-core").versionRef("edc")
+            library("core-connector", edcGroup.get(), "connector-core").versionRef("edc")
+            library("core-jetty", edcGroup.get(), "jetty-core").versionRef("edc")
+            library("core-jersey", edcGroup.get(), "jersey-core").versionRef("edc")
+            library("junit", edcGroup.get(), "junit").versionRef("edc")
+            library("api-management-config", edcGroup.get(), "management-api-configuration").versionRef("edc")
+            library("api-management", edcGroup.get(), "management-api").versionRef("edc")
+            library("api-observability", edcGroup.get(), "api-observability").versionRef("edc")
+            library("ext-http", edcGroup.get(), "http").versionRef("edc")
+            library("spi-ids", edcGroup.get(), "ids-spi").versionRef("edc")
+            library("ids", edcGroup.get(), "ids").versionRef("edc")
+            library("ids-jsonld-serdes", edcGroup.get(), "ids-jsonld-serdes").versionRef("edc")
+            library("oauth2-core", edcGroup.get(), "oauth2-core").versionRef("edc")
+            library("vault-filesystem", edcGroup.get(), "vault-filesystem").versionRef("edc")
 
             bundle(
                 "connector",
