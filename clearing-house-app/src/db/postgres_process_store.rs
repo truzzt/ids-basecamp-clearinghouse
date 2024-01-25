@@ -6,22 +6,30 @@ pub(crate) struct PostgresProcessStore {
 }
 
 impl PostgresProcessStore {
-    pub(crate) fn new(db: sqlx::PgPool) -> Self {
+    pub(crate) async fn new(db: sqlx::PgPool, clear_db: bool) -> Self {
+        if clear_db {
+            sqlx::query("TRUNCATE FROM process_owners, clients, processes CASCADE")
+                .execute(&db)
+                .await
+                .unwrap();
+        }
+
         Self { db }
     }
 }
 
 impl super::ProcessStore for PostgresProcessStore {
     async fn get_processes(&self) -> anyhow::Result<Vec<Process>> {
-        sqlx::query_as::<_, Process>(
+        sqlx::query_as::<_, ProcessRow>(
             r#"SELECT p.process_id, p.created_at, ARRAY_AGG(c.client_id) AS owners FROM processes p
         LEFT JOIN process_owners po ON p.id = po.process_id
         LEFT JOIN clients c ON po.client_id = c.id
         GROUP BY p.process_id, p.created_at"#,
         )
-            .fetch_all(&self.db)
-            .await
-            .map_err(|e| e.into())
+        .fetch_all(&self.db)
+        .await
+        .map(|r| r.into_iter().map(|p| p.into()).collect())
+        .map_err(|e| e.into())
     }
 
     async fn delete_process(&self, pid: &str) -> anyhow::Result<bool> {
@@ -43,27 +51,30 @@ impl super::ProcessStore for PostgresProcessStore {
     }
 
     async fn get_process(&self, pid: &str) -> anyhow::Result<Option<Process>> {
-        sqlx::query_as::<_, Process>(
+        sqlx::query_as::<_, ProcessRow>(
             r#"SELECT p.process_id, p.created_at, ARRAY_AGG(c.client_id) AS owners FROM processes p
         LEFT JOIN process_owners po ON p.id = po.process_id
         LEFT JOIN clients c ON po.client_id = c.id
         WHERE p.process_id = $1
         GROUP BY p.process_id, p.created_at"#,
         )
-            .bind(pid)
-            .fetch_optional(&self.db)
-            .await
-            .map_err(|e| e.into())
+        .bind(pid)
+        .fetch_optional(&self.db)
+        .await
+        .map(|r| r.map(|p| p.into()))
+        .map_err(|e| e.into())
     }
 
     async fn store_process(&self, process: Process) -> anyhow::Result<()> {
+        let process = ProcessRow::from(process);
         let mut tx = self.db.begin().await?;
 
         // Create a process
-        let process_row = sqlx::query(r#"INSERT INTO processes (process_id) VALUES ($1) RETURNING id"#)
-            .bind(&process.id)
-            .fetch_one(&mut *tx)
-            .await?;
+        let process_row =
+            sqlx::query(r#"INSERT INTO processes (process_id) VALUES ($1) RETURNING id"#)
+                .bind(&process.process_id)
+                .fetch_one(&mut *tx)
+                .await?;
 
         let pid = process_row.get::<i32, _>("id");
 
@@ -99,5 +110,26 @@ impl super::ProcessStore for PostgresProcessStore {
         tx.commit().await?;
 
         Ok(())
+    }
+}
+
+#[derive(sqlx::FromRow, Debug)]
+struct ProcessRow {
+    pub process_id: String,
+    pub owners: Vec<String>,
+}
+
+impl From<Process> for ProcessRow {
+    fn from(p: Process) -> Self {
+        Self {
+            process_id: p.id,
+            owners: p.owners,
+        }
+    }
+}
+
+impl Into<Process> for ProcessRow {
+    fn into(self) -> Process {
+        Process::new(self.process_id, self.owners)
     }
 }

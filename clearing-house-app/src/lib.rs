@@ -26,7 +26,10 @@ type MongoLoggingService = services::logging_service::LoggingService<
 /// Contains the application state
 #[derive(Clone)]
 pub(crate) struct AppState {
+    #[cfg(feature = "postgres")]
     pub logging_service: Arc<PostgresLoggingService>,
+    #[cfg(feature = "mongodb")]
+    pub logging_service: Arc<MongoLoggingService>,
     pub service_config: Arc<ServiceConfig>,
     pub signing_key_path: String,
 }
@@ -35,26 +38,34 @@ impl AppState {
     /// Initialize the application state from config
     async fn init(conf: &config::CHConfig) -> anyhow::Result<Self> {
         trace!("Initializing Process store");
-        /*let process_store =
-        crate::db::mongo_process_store::MongoProcessStore::init_process_store(&conf.database_url, conf.clear_db)
-            .await
-            .expect("Failure to initialize process store! Exiting...");*/
+        #[cfg(feature = "mongodb")]
+        let process_store = db::mongo_process_store::MongoProcessStore::init_process_store(
+            &conf.database_url,
+            conf.clear_db,
+        )
+        .await
+        .expect("Failure to initialize process store! Exiting...");
+        #[cfg(feature = "postgres")]
         let process_store = db::postgres_process_store::PostgresProcessStore::new(
-            sqlx::PgPool::connect("postgres://my_user:my_password@localhost:5432/ch")
-                .await
-                .unwrap(),
-        );
+            sqlx::PgPool::connect(&conf.database_url).await.unwrap(),
+            conf.clear_db,
+        )
+        .await;
 
         trace!("Initializing Document store");
-        /*let doc_store = MongoDocumentStore::init_datastore(&conf.document_database_url, conf.clear_db)
+        #[cfg(feature = "mongodb")]
+        let doc_store = db::mongo_doc_store::MongoDocumentStore::init_datastore(
+            &conf.database_url,
+            conf.clear_db,
+        )
         .await
-        .expect("Failure to initialize document store! Exiting...");*/
-
+        .expect("Failure to initialize document store! Exiting...");
+        #[cfg(feature = "postgres")]
         let doc_store = db::postgres_document_store::PostgresDocumentStore::new(
-            sqlx::PgPool::connect("postgres://my_user:my_password@localhost:5432/ch")
-                .await
-                .unwrap(),
-        );
+            sqlx::PgPool::connect(&conf.database_url).await.unwrap(),
+            conf.clear_db,
+        )
+        .await;
 
         trace!("Initializing services");
         let doc_service = Arc::new(services::document_service::DocumentService::new(doc_store));

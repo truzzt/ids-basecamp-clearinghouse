@@ -26,7 +26,7 @@ CREATE TABLE process_owners
 
 CREATE TABLE documents
 (
-    id                  VARCHAR PRIMARY KEY,
+    id                  UUID PRIMARY KEY,
     process_id          INTEGER   NOT NULL REFERENCES processes (id),
     created_at          TIMESTAMP NOT NULL,
     model_version       VARCHAR   NOT NULL,

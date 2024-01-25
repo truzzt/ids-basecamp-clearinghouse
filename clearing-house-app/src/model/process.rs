@@ -1,6 +1,5 @@
-#[derive(Clone, serde::Serialize, serde::Deserialize, Debug, sqlx::FromRow)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct Process {
-    #[sqlx(rename = "process_id")]
     pub id: String,
     pub owners: Vec<String>,
 }

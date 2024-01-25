@@ -32,9 +32,9 @@ rand = "0.8.5"
 # lazy initialization of static variables
 once_cell = "1.18.0"
 # Base64 encoding
-base64 = "0.21.2"
+base64 = "0.21.7    "
 # UUID generation
-uuid = { version = "1.4.1", features = ["serde", "v4"] }
+uuid = { version = "1", features = ["serde", "v4"] }
 # Big integer handling (RSA key modulus and exponent)
 num-bigint = "0.4.3"
 # Generating fingerprint of RSA keys
@@ -42,7 +42,7 @@ openssh-keys = "0.6.2"
 # Async runtime
 tokio = { version = ">= 1.32.0", features = ["macros", "rt-multi-thread", "signal"] }
 # HTTP server
-axum = { version = "0.7.3", features = ["json", "http2"] }
+axum = { version = "0.7.4", features = ["json", "http2"] }
 # Helper to allow defining traits for async functions
 async-trait = "0.1.73"
 # Helper for working with futures

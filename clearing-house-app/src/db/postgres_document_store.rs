@@ -7,7 +7,14 @@ pub(crate) struct PostgresDocumentStore {
 }
 
 impl PostgresDocumentStore {
-    pub(crate) fn new(db: sqlx::PgPool) -> Self {
+    pub(crate) async fn new(db: sqlx::PgPool, clear_db: bool) -> Self {
+        if clear_db {
+            sqlx::query("TRUNCATE FROM documents")
+                .execute(&db)
+                .await
+                .unwrap();
+        }
+
         Self { db }
     }
 }
@@ -58,7 +65,7 @@ impl super::DocumentStore for PostgresDocumentStore {
 
     async fn get_document(&self, id: &str, pid: &str) -> anyhow::Result<Option<Document>> {
         sqlx::query_as::<_, DocumentRow>(
-            r#"SELECT id, processes.process_id, created_at, model_version, correlation_message,
+            r#"SELECT documents.id, processes.process_id, documents.created_at, model_version, correlation_message,
         transfer_contract, issued, issuer_connector, content_version, recipient_connector,
         sender_agent, recipient_agent, payload, payload_type, message_id
         FROM documents
@@ -88,12 +95,12 @@ impl super::DocumentStore for PostgresDocumentStore {
 
         sqlx::query_as::<_, DocumentRow>(
             format!(
-                r#"SELECT id, processes.process_id, created_at, model_version, correlation_message,
+                r#"SELECT documents.id, processes.process_id, documents.created_at, model_version, correlation_message,
         transfer_contract, issued, issuer_connector, content_version, recipient_connector,
         sender_agent, recipient_agent, payload, payload_type, message_id
         FROM documents
         LEFT JOIN processes ON processes.id = documents.process_id
-        WHERE processes.process_id = $1 AND created_at BETWEEN $2 AND $3
+        WHERE processes.process_id = $1 AND documents.created_at BETWEEN $2 AND $3
         ORDER BY created_at {}
         LIMIT $4 OFFSET $5"#,
                 sort_order
