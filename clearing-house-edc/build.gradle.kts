@@ -53,6 +53,11 @@ allprojects {
         javaLanguageVersion.set(JavaLanguageVersion.of(javaVersion))
     }
 
+    configure<CheckstyleExtension> {
+        configFile = rootProject.file("resources/edc-checkstyle-config.xml")
+        configDirectory.set(rootProject.file("resources"))
+    }
+
     repositories {
         val gitHubUserName: String? by project
         val gitHubUserPassword: String? by project
