@@ -9,7 +9,8 @@ pub(crate) struct PostgresDocumentStore {
 impl PostgresDocumentStore {
     pub(crate) async fn new(db: sqlx::PgPool, clear_db: bool) -> Self {
         if clear_db {
-            sqlx::query("TRUNCATE FROM documents")
+            info!("Clearing database 'documents'");
+            sqlx::query("TRUNCATE documents")
                 .execute(&db)
                 .await
                 .unwrap();

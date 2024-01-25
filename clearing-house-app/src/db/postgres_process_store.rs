@@ -8,7 +8,8 @@ pub(crate) struct PostgresProcessStore {
 impl PostgresProcessStore {
     pub(crate) async fn new(db: sqlx::PgPool, clear_db: bool) -> Self {
         if clear_db {
-            sqlx::query("TRUNCATE FROM process_owners, clients, processes CASCADE")
+            info!("Clearing database 'process_owners', 'clients' and 'processes'");
+            sqlx::query("TRUNCATE process_owners, clients, processes CASCADE")
                 .execute(&db)
                 .await
                 .unwrap();

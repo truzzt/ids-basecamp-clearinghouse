@@ -37,6 +37,21 @@ pub(crate) struct AppState {
 impl AppState {
     /// Initialize the application state from config
     async fn init(conf: &config::CHConfig) -> anyhow::Result<Self> {
+        #[cfg(feature = "postgres")]
+        let pool = async {
+            info!("Connecting to database");
+            let pool = sqlx::PgPool::connect(&conf.database_url).await.unwrap();
+
+            info!("Migrating database");
+            sqlx::migrate!()
+                .run(&pool)
+                .await
+                .expect("Failed to migrate database!");
+
+            pool
+        }
+        .await;
+
         trace!("Initializing Process store");
         #[cfg(feature = "mongodb")]
         let process_store = db::mongo_process_store::MongoProcessStore::init_process_store(
@@ -46,11 +61,9 @@ impl AppState {
         .await
         .expect("Failure to initialize process store! Exiting...");
         #[cfg(feature = "postgres")]
-        let process_store = db::postgres_process_store::PostgresProcessStore::new(
-            sqlx::PgPool::connect(&conf.database_url).await.unwrap(),
-            conf.clear_db,
-        )
-        .await;
+        let process_store =
+            db::postgres_process_store::PostgresProcessStore::new(pool.clone(), conf.clear_db)
+                .await;
 
         trace!("Initializing Document store");
         #[cfg(feature = "mongodb")]
@@ -61,11 +74,8 @@ impl AppState {
         .await
         .expect("Failure to initialize document store! Exiting...");
         #[cfg(feature = "postgres")]
-        let doc_store = db::postgres_document_store::PostgresDocumentStore::new(
-            sqlx::PgPool::connect(&conf.database_url).await.unwrap(),
-            conf.clear_db,
-        )
-        .await;
+        let doc_store =
+            db::postgres_document_store::PostgresDocumentStore::new(pool, conf.clear_db).await;
 
         trace!("Initializing services");
         let doc_service = Arc::new(services::document_service::DocumentService::new(doc_store));
