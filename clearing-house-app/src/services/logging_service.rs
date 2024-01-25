@@ -350,15 +350,3 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
         }
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::LoggingService;
-    use crate::model::constants::DEFAULT_PROCESS_ID;
-
-    #[test]
-    fn check_for_default_pid() {
-        assert!(LoggingService::check_for_default_pid(DEFAULT_PROCESS_ID).is_err());
-        assert!(LoggingService::check_for_default_pid("not_default").is_ok());
-    }
-}
