@@ -13,7 +13,7 @@ impl PostgresDocumentStore {
             sqlx::query("TRUNCATE documents")
                 .execute(&db)
                 .await
-                .unwrap();
+                .expect("Clearing database 'documents' failed");
         }
 
         Self { db }
