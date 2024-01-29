@@ -13,22 +13,24 @@
  */
 package de.truzzt.clearinghouse.edc.handler;
 
+import de.fraunhofer.iais.eis.RequestMessage;
 import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.app.delegate.CreateProcessDelegate;
 import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
+import org.eclipse.edc.protocol.ids.api.multipart.handler.Handler;
+import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartRequest;
+import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartResponse;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.jetbrains.annotations.NotNull;
 
-import static de.truzzt.clearinghouse.edc.util.ResponseUtil.createMultipartResponse;
-import static de.truzzt.clearinghouse.edc.util.ResponseUtil.messageProcessedNotification;
 import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_DEFAULT_VALUE;
 import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_SETTING;
+import static org.eclipse.edc.protocol.ids.api.multipart.util.ResponseUtil.createMultipartResponse;
+import static org.eclipse.edc.protocol.ids.api.multipart.util.ResponseUtil.messageProcessedNotification;
 
-public class RequestMessageHandler implements Handler {
+public class RequestMessageHandler extends AbstractHandler implements Handler {
 
     private final IdsId connectorId;
     private final AppSender appSender;
@@ -37,23 +39,23 @@ public class RequestMessageHandler implements Handler {
     private final ServiceExtensionContext context;
 
     public RequestMessageHandler(IdsId connectorId,
-                                 TypeManagerUtil typeManagerUtil,
                                  AppSender appSender,
                                  ServiceExtensionContext context) {
         this.connectorId = connectorId;
         this.appSender = appSender;
         this.context = context;
 
-        this.senderDelegate = new CreateProcessDelegate(typeManagerUtil);
+        this.senderDelegate = new CreateProcessDelegate();
     }
 
     @Override
-    public boolean canHandle(@NotNull HandlerRequest handlerRequest) {
-        return handlerRequest.getHeader().getType().equals("ids:RequestMessage");
+    public boolean canHandle(@NotNull MultipartRequest multipartRequest) {
+        return multipartRequest.getHeader() instanceof RequestMessage;
     }
 
     @Override
-    public @NotNull HandlerResponse handleRequest(@NotNull HandlerRequest handlerRequest) {
+    public @NotNull MultipartResponse handleRequest(@NotNull  MultipartRequest multipartRequest) {
+        var handlerRequest = (HandlerRequest) multipartRequest;
         var baseUrl = context.getSetting(APP_BASE_URL_SETTING, APP_BASE_URL_DEFAULT_VALUE);
         var header = handlerRequest.getHeader();
 

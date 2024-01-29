@@ -1,19 +1,15 @@
 package de.truzzt.clearinghouse.edc.multipart;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.fraunhofer.iais.eis.DynamicAttributeToken;
+import de.fraunhofer.iais.eis.*;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
-import de.truzzt.clearinghouse.edc.handler.Handler;
 import de.truzzt.clearinghouse.edc.handler.LogMessageHandler;
 import de.truzzt.clearinghouse.edc.handler.RequestMessageHandler;
 import de.truzzt.clearinghouse.edc.multipart.tests.TestUtils;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
-import de.truzzt.clearinghouse.edc.types.ids.Message;
-import de.truzzt.clearinghouse.edc.types.ids.RejectionMessage;
-import de.truzzt.clearinghouse.edc.types.ids.RejectionReason;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.edc.protocol.ids.api.multipart.handler.Handler;
+import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartResponse;
 import org.eclipse.edc.protocol.ids.spi.service.DynamicAttributeTokenService;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.protocol.ids.spi.types.IdsType;
@@ -26,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -43,7 +40,6 @@ public class MultipartControllerTest {
     private MultipartController controller;
 
     private IdsId connectorId;
-    private TypeManagerUtil typeManagerUtil;
 
     @Mock
     private Monitor monitor;
@@ -62,13 +58,13 @@ public class MultipartControllerTest {
         MockitoAnnotations.openMocks(this);
 
         connectorId = IdsId.Builder.newInstance().type(IdsType.CONNECTOR).value("http://test.connector").build();
-        typeManagerUtil = new TypeManagerUtil(new ObjectMapper());
+
 
         List<Handler> multipartHandlers = List.of(logMessageHandler, requestMessageHandler);
-        controller = new MultipartController(monitor, connectorId, typeManagerUtil, tokenService, IDS_WEBHOOK_ADDRESS, multipartHandlers);
+        controller = new MultipartController(monitor, connectorId, mapper, tokenService, IDS_WEBHOOK_ADDRESS, multipartHandlers);
     }
 
-    private <T> T extractHeader(Response response, Class<T> type) {
+    private <T> T extractHeader(Response response, Class<T> type) throws IOException {
 
         assertInstanceOf(FormDataMultiPart.class, response.getEntity());
         FormDataMultiPart multiPartResponse = (FormDataMultiPart) response.getEntity();
@@ -78,10 +74,10 @@ public class MultipartControllerTest {
 
         assertInstanceOf(String.class, header.getEntity());
         var entity = (String) header.getEntity();
-        return typeManagerUtil.parse(new ByteArrayInputStream(entity.getBytes()), type);
+        return mapper.readValue(entity.getBytes(), type);
     }
 
-    private <T> T extractPayload(Response response, Class<T> type) {
+    private <T> T extractPayload(Response response, Class<T> type) throws IOException {
 
         assertInstanceOf(FormDataMultiPart.class, response.getEntity());
         FormDataMultiPart multiPartResponse = (FormDataMultiPart) response.getEntity();
@@ -91,11 +87,11 @@ public class MultipartControllerTest {
 
         assertInstanceOf(String.class, payload.getEntity());
         var entity = (String) payload.getEntity();
-        return typeManagerUtil.parse(new ByteArrayInputStream(entity.getBytes()), type);
+        return mapper.readValue(entity.getBytes(), type);
     }
 
     @Test
-    public void logMessageSuccess() {
+    public void logMessageSuccess() throws IOException {
         var responseHeader = TestUtils.getValidResponseHeader(mapper);
         var responsePayload = TestUtils.getValidResponsePayload(mapper);
 
@@ -103,7 +99,7 @@ public class MultipartControllerTest {
                 .when(tokenService).verifyDynamicAttributeToken(any(DynamicAttributeToken.class), any(URI.class), any(String.class));
         doReturn(true)
                 .when(logMessageHandler).canHandle(any(HandlerRequest.class));
-        doReturn(HandlerResponse.Builder.newInstance().header(responseHeader).payload(responsePayload).build())
+        doReturn(MultipartResponse.Builder.newInstance().header(responseHeader).payload(responsePayload).build())
                 .when(logMessageHandler).handleRequest(any(HandlerRequest.class));
 
         var pid = UUID.randomUUID().toString();
@@ -115,14 +111,15 @@ public class MultipartControllerTest {
         assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
 
         var message = extractHeader(response, Message.class);
-        assertEquals("ids:LogMessage", message.getType());
+
+        assertTrue(message instanceof LogMessage);
 
         var payload = extractPayload(response, LoggingMessageResponse.class);
         assertNotNull(payload.getData());
     }
 
     @Test
-    public void createProcessSuccess() {
+    public void createProcessSuccess() throws IOException {
         var responseHeader = TestUtils.getResponseHeader(mapper, TestUtils.VALID_CREATE_PROCESS_HEADER_JSON);
         var responsePayload = TestUtils.getValidResponsePayload(mapper);
 
@@ -130,7 +127,7 @@ public class MultipartControllerTest {
                 .when(tokenService).verifyDynamicAttributeToken(any(DynamicAttributeToken.class), any(URI.class), any(String.class));
         doReturn(true)
                 .when(requestMessageHandler).canHandle(any(HandlerRequest.class));
-        doReturn(HandlerResponse.Builder.newInstance().header(responseHeader).payload(responsePayload).build())
+        doReturn(MultipartResponse.Builder.newInstance().header(responseHeader).payload(responsePayload).build())
                 .when(requestMessageHandler).handleRequest(any(HandlerRequest.class));
 
         var pid = UUID.randomUUID().toString();
@@ -142,7 +139,7 @@ public class MultipartControllerTest {
         assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
 
         var message = extractHeader(response, Message.class);
-        assertEquals("ids:RequestMessage", message.getType());
+        assertTrue(message instanceof RequestMessage);
 
         var payload = extractPayload(response, LoggingMessageResponse.class);
         assertNotNull(payload.getData());
@@ -157,8 +154,7 @@ public class MultipartControllerTest {
 
         assertNotNull(response);
         assertTrue(response.fail());
-
-        var message = extractHeader(response.getError(), RejectionMessage.class);
+        var message = (RejectionMessage) response.getHeader();
 
         assertNotNull(message.getRejectionReason());
         assertEquals(RejectionReason.MALFORMED_MESSAGE.getId(), message.getRejectionReason().getId());
@@ -173,7 +169,7 @@ public class MultipartControllerTest {
         assertNotNull(response);
         assertTrue(response.fail());
 
-        var message = extractHeader(response.getError(), RejectionMessage.class);
+        var message = (RejectionMessage) response.getHeader();
 
         assertNotNull(message.getRejectionReason());
         assertEquals(RejectionReason.MALFORMED_MESSAGE.getId(), message.getRejectionReason().getId());
@@ -188,7 +184,7 @@ public class MultipartControllerTest {
         assertNotNull(response);
         assertTrue(response.fail());
 
-       var message = extractHeader(response.getError(), RejectionMessage.class);
+        var message = (RejectionMessage) response.getHeader();
 
         assertNotNull(message.getRejectionReason());
         assertEquals(RejectionReason.MALFORMED_MESSAGE.getId(), message.getRejectionReason().getId());
@@ -204,7 +200,7 @@ public class MultipartControllerTest {
         assertNotNull(response);
         assertTrue(response.fail());
 
-        var message = extractHeader(response.getError(), RejectionMessage.class);
+        var message = (RejectionMessage) response.getHeader();
 
         assertNotNull(message.getRejectionReason());
         assertEquals(RejectionReason.MALFORMED_MESSAGE.getId(), message.getRejectionReason().getId());
@@ -220,7 +216,7 @@ public class MultipartControllerTest {
         assertNotNull(response);
         assertTrue(response.fail());
 
-        var message = extractHeader(response.getError(), RejectionMessage.class);
+        var message = (RejectionMessage) response.getHeader();
 
         assertNotNull(message.getRejectionReason());
         assertEquals(RejectionReason.MALFORMED_MESSAGE.getId(), message.getRejectionReason().getId());
@@ -239,7 +235,7 @@ public class MultipartControllerTest {
         assertNotNull(response);
         assertTrue(response.fail());
 
-        var message = extractHeader(response.getError(), RejectionMessage.class);
+        var message = (RejectionMessage) response.getHeader();
 
         assertNotNull(message.getRejectionReason());
         assertEquals(RejectionReason.NOT_AUTHENTICATED.getId(), message.getRejectionReason().getId());
@@ -255,7 +251,7 @@ public class MultipartControllerTest {
         assertNotNull(response);
         assertTrue(response.fail());
 
-        var message = extractHeader(response.getError(), RejectionMessage.class);
+        var message = (RejectionMessage) response.getHeader();
 
         assertNotNull(message.getRejectionReason());
         assertEquals(RejectionReason.NOT_AUTHENTICATED.getId(), message.getRejectionReason().getId());
@@ -274,7 +270,7 @@ public class MultipartControllerTest {
         assertNotNull(response);
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
 
-        var message = extractHeader(response, RejectionMessage.class);
+        var message = (RejectionMessage) response;
 
         assertNotNull(message.getRejectionReason());
         assertEquals(RejectionReason.MALFORMED_MESSAGE.getId(), message.getRejectionReason().getId());
@@ -295,7 +291,7 @@ public class MultipartControllerTest {
         assertNotNull(response);
         assertEquals(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), response.getStatus());
 
-        var message = extractHeader(response, RejectionMessage.class);
+        var message = (RejectionMessage) response;
 
         assertNotNull(message.getRejectionReason());
         assertEquals(RejectionReason.MESSAGE_TYPE_NOT_SUPPORTED.getId(), message.getRejectionReason().getId());

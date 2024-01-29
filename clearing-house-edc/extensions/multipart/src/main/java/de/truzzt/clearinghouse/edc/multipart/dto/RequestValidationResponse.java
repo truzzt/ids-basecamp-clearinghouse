@@ -13,7 +13,7 @@
  */
 package de.truzzt.clearinghouse.edc.multipart.dto;
 
-import de.truzzt.clearinghouse.edc.types.ids.Message;
+import de.fraunhofer.iais.eis.Message;
 import jakarta.ws.rs.core.Response;
 import org.jetbrains.annotations.NotNull;
 

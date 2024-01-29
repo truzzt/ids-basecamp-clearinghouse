@@ -3,7 +3,6 @@ package de.truzzt.clearinghouse.edc.app.delegate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.dto.*;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import okhttp3.ResponseBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -14,37 +14,27 @@
  */
 package de.truzzt.clearinghouse.edc.dto;
 
-import de.truzzt.clearinghouse.edc.types.ids.Message;
-import de.truzzt.clearinghouse.edc.types.Pagging;
+import de.fraunhofer.iais.eis.Message;
 
+import de.truzzt.clearinghouse.edc.types.Pagging;
+import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartRequest;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-public class HandlerRequest {
+public class HandlerRequest extends MultipartRequest {
 
     private final String pid;
-    private final Message header;
-    private final String payload;
     private final Pagging pagging;
 
     private HandlerRequest(@NotNull String pid, @NotNull Message header, String payload, Pagging pagging) {
+        super(header, payload, null);
         this.pid = pid;
-        this.header = header;
-        this.payload = payload;
         this.pagging = pagging;
     }
 
     public String getPid() {
         return pid;
-    }
-
-    public Message getHeader() {
-        return header;
-    }
-
-    public String getPayload() {
-        return payload;
     }
 
     public Pagging getPagging() {

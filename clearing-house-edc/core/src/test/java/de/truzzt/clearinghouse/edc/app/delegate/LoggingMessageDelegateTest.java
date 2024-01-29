@@ -1,11 +1,10 @@
 package de.truzzt.clearinghouse.edc.app.delegate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageRequest;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
+import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import okhttp3.ResponseBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +20,6 @@ import static org.mockito.Mockito.spy;
 class LoggingMessageDelegateTest {
 
     @Mock
-    private TypeManagerUtil typeManagerUtil;
-    @Mock
     private LoggingMessageDelegate senderDelegate;
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -30,7 +27,7 @@ class LoggingMessageDelegateTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        senderDelegate = spy(new LoggingMessageDelegate(typeManagerUtil));
+        senderDelegate = spy(new LoggingMessageDelegate());
     }
 
     @Test

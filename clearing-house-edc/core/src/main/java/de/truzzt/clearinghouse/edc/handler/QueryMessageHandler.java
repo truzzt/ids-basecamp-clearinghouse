@@ -4,18 +4,20 @@ import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.app.delegate.QueryMessageDelegate;
 import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
+import de.truzzt.clearinghouse.edc.dto.QueryMessageRequest;
+import org.eclipse.edc.protocol.ids.api.multipart.handler.Handler;
+import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartRequest;
+import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartResponse;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.jetbrains.annotations.NotNull;
 
-import static de.truzzt.clearinghouse.edc.util.ResponseUtil.createMultipartResponse;
-import static de.truzzt.clearinghouse.edc.util.ResponseUtil.messageProcessedNotification;
 import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_DEFAULT_VALUE;
 import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_SETTING;
+import static org.eclipse.edc.protocol.ids.api.multipart.util.ResponseUtil.createMultipartResponse;
+import static org.eclipse.edc.protocol.ids.api.multipart.util.ResponseUtil.messageProcessedNotification;
 
-public class QueryMessageHandler implements Handler{
+public class QueryMessageHandler extends AbstractHandler implements Handler {
 
     private final IdsId connectorId;
     private final AppSender appSender;
@@ -24,22 +26,22 @@ public class QueryMessageHandler implements Handler{
     private final ServiceExtensionContext context;
 
     public QueryMessageHandler(IdsId connectorId,
-                             TypeManagerUtil typeManagerUtil,
                              AppSender appSender,
                              ServiceExtensionContext context) {
         this.connectorId = connectorId;
         this.appSender = appSender;
         this.context = context;
 
-        this.senderDelegate = new QueryMessageDelegate(typeManagerUtil);
+        this.senderDelegate = new QueryMessageDelegate();
     }
     @Override
-    public boolean canHandle(@NotNull HandlerRequest handlerRequest) {
-        return handlerRequest.getHeader().getType().equals("ids:QueryMessage");
+    public boolean canHandle(@NotNull MultipartRequest multipartRequest) {
+        return multipartRequest.getHeader() instanceof QueryMessageRequest;
     }
 
     @Override
-    public @NotNull HandlerResponse handleRequest(@NotNull HandlerRequest handlerRequest) {
+    public @NotNull MultipartResponse handleRequest(@NotNull MultipartRequest multipartRequest) {
+        var handlerRequest = (HandlerRequest) multipartRequest;
         var baseUrl = context.getSetting(APP_BASE_URL_SETTING, APP_BASE_URL_DEFAULT_VALUE);
         var header = handlerRequest.getHeader();
 

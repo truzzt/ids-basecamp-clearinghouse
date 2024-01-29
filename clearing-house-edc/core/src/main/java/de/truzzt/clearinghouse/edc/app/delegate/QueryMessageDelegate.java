@@ -1,24 +1,23 @@
 package de.truzzt.clearinghouse.edc.app.delegate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.QueryMessageRequest;
 import de.truzzt.clearinghouse.edc.dto.QueryMessageResponse;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
 import okhttp3.ResponseBody;
+import org.eclipse.edc.spi.EdcException;
 
 import java.time.format.DateTimeFormatter;
 
 public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageResponse> {
-    private final TypeManagerUtil typeManagerUtil;
 
     private final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public QueryMessageDelegate(TypeManagerUtil typeManagerUtil) {
-        this.typeManagerUtil = typeManagerUtil;
+    public QueryMessageDelegate() {
     }
 
     public String buildRequestUrl(String baseUrl, HandlerRequest handlerRequest) {
@@ -72,7 +71,7 @@ public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageRespo
         var multipartSecurityToken = header.getSecurityToken();
         var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
         var securityToken = SecurityToken.Builder.newInstance().
-                type(multipartSecurityToken.getType()).
+                type(multipartSecurityToken.getClass().getSimpleName()).
                 id(multipartSecurityToken.getId()).
                 tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
                 tokenValue(multipartSecurityToken.getTokenValue()).
@@ -81,7 +80,7 @@ public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageRespo
         var requestHeader = Header.Builder.newInstance()
                 .context(context)
                 .id(header.getId())
-                .type(header.getType())
+                .type(header.getClass().getSimpleName())
                 .securityToken(securityToken)
                 .issuerConnector(header.getIssuerConnector())
                 .modelVersion(header.getModelVersion())
@@ -94,6 +93,10 @@ public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageRespo
 
     @Override
     public QueryMessageResponse parseResponseBody(ResponseBody responseBody) {
-        return typeManagerUtil.parse(responseBody.byteStream(), QueryMessageResponse.class);
+        try {
+            return new ObjectMapper().readValue(responseBody.byteStream(), QueryMessageResponse.class);
+        } catch (Exception e){
+            throw new EdcException("Error parsing byte to QueryMessageResponse", e);
+        }
     }
 }

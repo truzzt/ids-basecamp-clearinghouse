@@ -1,9 +1,9 @@
 package de.truzzt.clearinghouse.edc.multipart.tests;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.fraunhofer.iais.eis.Message;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
 import de.truzzt.clearinghouse.edc.tests.BaseTestUtils;
-import de.truzzt.clearinghouse.edc.types.ids.Message;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;

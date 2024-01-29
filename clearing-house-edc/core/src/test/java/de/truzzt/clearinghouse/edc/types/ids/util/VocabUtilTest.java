@@ -1,6 +1,6 @@
 package de.truzzt.clearinghouse.edc.types.ids.util;
 
-import de.truzzt.clearinghouse.edc.types.util.VocabUtil;
+import de.fraunhofer.iais.eis.util.VocabUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;

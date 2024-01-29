@@ -14,22 +14,21 @@
  */
 package de.truzzt.clearinghouse.edc.multipart;
 
-import de.fraunhofer.iais.eis.DynamicAttributeTokenBuilder;
-import de.truzzt.clearinghouse.edc.handler.Handler;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.fraunhofer.iais.eis.*;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
+import de.truzzt.clearinghouse.edc.dto.QueryMessageRequest;
 import de.truzzt.clearinghouse.edc.multipart.dto.PaggingValidationResponse;
 import de.truzzt.clearinghouse.edc.multipart.dto.RequestValidationResponse;
 import de.truzzt.clearinghouse.edc.types.Pagging;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
-import de.truzzt.clearinghouse.edc.types.ids.Message;
 
-import de.truzzt.clearinghouse.edc.types.ids.RejectionMessage;
-import de.truzzt.clearinghouse.edc.types.ids.TokenFormat;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import jakarta.ws.rs.core.Response;
+import org.eclipse.edc.protocol.ids.api.multipart.controller.AbstractMultipartController;
+import org.eclipse.edc.protocol.ids.api.multipart.handler.Handler;
+import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartResponse;
 import org.eclipse.edc.protocol.ids.spi.service.DynamicAttributeTokenService;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -43,18 +42,13 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
-import static de.truzzt.clearinghouse.edc.util.ResponseUtil.createFormDataMultiPart;
-import static de.truzzt.clearinghouse.edc.util.ResponseUtil.createRejectionMessage;
-import static de.truzzt.clearinghouse.edc.util.ResponseUtil.internalRecipientError;
-import static de.truzzt.clearinghouse.edc.util.ResponseUtil.malformedMessage;
-import static de.truzzt.clearinghouse.edc.util.ResponseUtil.messageTypeNotSupported;
-import static de.truzzt.clearinghouse.edc.util.ResponseUtil.notAuthenticated;
 import static java.lang.String.format;
+import static org.eclipse.edc.protocol.ids.api.multipart.util.ResponseUtil.*;
 
 @Consumes({MediaType.MULTIPART_FORM_DATA})
 @Produces({MediaType.MULTIPART_FORM_DATA})
 @Path("/")
-public class MultipartController {
+public class MultipartController extends AbstractMultipartController {
 
     private static final String HEADER = "header";
     private static final String PAYLOAD = "payload";
@@ -74,25 +68,16 @@ public class MultipartController {
     private static final String PROCESS_PID = "process/{pid}";
     private static final String MESSAGES_QUERY_PID = "messages/query/{pid}";
 
-    private final Monitor monitor;
-    private final IdsId connectorId;
-    private final TypeManagerUtil typeManagerUtil;
-    private final DynamicAttributeTokenService tokenService;
-    private final String idsWebhookAddress;
-    private final List<Handler> multipartHandlers;
+    public static final String JWT_TOKEN_FORMAT_IDS = "idsc:JWT";
+    public static final String JWT_TOKEN_FORMAT_DSP = "https://w3id.org/idsa/code/JWT";
 
     public MultipartController(@NotNull Monitor monitor,
                                @NotNull IdsId connectorId,
-                               @NotNull TypeManagerUtil typeManagerUtil,
+                               @NotNull ObjectMapper objectMapper,
                                @NotNull DynamicAttributeTokenService tokenService,
                                @NotNull String idsWebhookAddress,
                                @NotNull List<Handler> multipartHandlers) {
-        this.monitor = monitor;
-        this.connectorId = connectorId;
-        this.typeManagerUtil = typeManagerUtil;
-        this.tokenService = tokenService;
-        this.idsWebhookAddress = idsWebhookAddress;
-        this.multipartHandlers = multipartHandlers;
+        super(monitor, connectorId, objectMapper, tokenService, multipartHandlers, idsWebhookAddress);
     }
 
     @POST
@@ -108,7 +93,7 @@ public class MultipartController {
         if (payload == null) {
             monitor.severe(LOG_ID + ": Payload is missing");
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                     .build();
         }
 
@@ -157,7 +142,7 @@ public class MultipartController {
         if (pid == null) {
             monitor.severe(LOG_ID + ": PID is missing");
             return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                     .build());
         }
 
@@ -165,41 +150,41 @@ public class MultipartController {
         if (headerInputStream == null) {
             monitor.severe(LOG_ID + ": Header is missing");
             return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                     .build());
         }
 
         // Convert header to message
         Message header;
         try {
-            header = typeManagerUtil.parse(headerInputStream, Message.class);
+            header = objectMapper.readValue(headerInputStream, Message.class);
         } catch (Exception e) {
             monitor.severe(format(LOG_ID + ": Header parsing failed: %s", e.getMessage()));
             return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                     .build());
         }
 
 
         if(endpoint == MESSAGES_LOG_PID){
-            if(!header.getType().equals("ids:LogMessage")){
-                monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getType()));
+            if(!(header instanceof LogMessage)){
+                monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getClass().getSimpleName()));
                 return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
         } else if(endpoint == PROCESS_PID){
-            if(!header.getType().equals("ids:RequestMessage")){
-                monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getType()));
+            if(!(header instanceof RequestMessage)){
+                monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getClass().getSimpleName()));
                 return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
         } else if(endpoint == MESSAGES_QUERY_PID){
-            if(!header.getType().equals("ids:QueryMessage")){
-                monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getType()));
+            if(!(header instanceof QueryMessageRequest)){
+                monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getClass().getSimpleName()));
                 return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
         }
@@ -207,7 +192,7 @@ public class MultipartController {
         // Check if any required header field missing
         if (header.getId() == null
                 || (header.getId() != null && StringUtils.isNullOrBlank(header.getId().toString()))
-                || StringUtils.isNullOrBlank(header.getType())
+                || StringUtils.isNullOrBlank(header.getClass().getSimpleName())
                 || StringUtils.isNullOrBlank(header.getModelVersion())
                 || header.getIssued() == null
                 || header.getIssuerConnector() == null
@@ -216,7 +201,7 @@ public class MultipartController {
                 || (header.getSenderAgent() != null && StringUtils.isNullOrBlank(header.getSenderAgent().toString()))
         ) {
             return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(header, connectorId)))
+                    .entity(createFormDataMultiPart(malformedMessage(header, connectorId)))
                     .build());
         }
 
@@ -225,23 +210,23 @@ public class MultipartController {
         if (securityToken == null || securityToken.getTokenValue() == null) {
             monitor.severe(LOG_ID + ": Token is missing in header");
             return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, notAuthenticated(header, connectorId)))
+                    .entity(createFormDataMultiPart(notAuthenticated(header, connectorId)))
                     .build());
         }
 
         // Check the security token type
         var tokenFormat = securityToken.getTokenFormat().getId().toString();
-        if (!TokenFormat.isValid(tokenFormat)) {
+        if (!isValid(tokenFormat)) {
             monitor.severe(LOG_ID + ": Invalid security token type: " + tokenFormat);
             return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                     .build());
         }
 
         // Validate DAT
         if (!validateToken(header)) {
             return new RequestValidationResponse(Response.status(Response.Status.FORBIDDEN)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, notAuthenticated(header, connectorId)))
+                    .entity(createFormDataMultiPart(notAuthenticated(header, connectorId)))
                     .build());
         }
 
@@ -257,7 +242,7 @@ public class MultipartController {
             } catch (NumberFormatException e) {
                 monitor.severe(LOG_ID + ": Invalid page number: " + page);
                 return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
         }
@@ -268,7 +253,7 @@ public class MultipartController {
             } catch (NumberFormatException e) {
                 monitor.severe(LOG_ID + ": Invalid page size: " + size);
                 return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
         }
@@ -279,7 +264,7 @@ public class MultipartController {
             } catch (IllegalArgumentException e) {
                 monitor.severe(LOG_ID + ": Invalid sort: " + sort);
                 return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
         }
@@ -290,7 +275,7 @@ public class MultipartController {
             } catch (DateTimeParseException e) {
                 monitor.severe(LOG_ID + ": Invalid dateFrom: " + dateFrom);
                 return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
         }
@@ -301,7 +286,7 @@ public class MultipartController {
             } catch (DateTimeParseException e) {
                 monitor.severe(LOG_ID + ": Invalid dateTo: " + dateTo);
                 return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                        .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
         }
@@ -320,13 +305,13 @@ public class MultipartController {
                 .build();
 
         // Send to handler processing
-        HandlerResponse handlerResponse;
+        MultipartResponse multipartResponse;
         try {
-            handlerResponse = multipartHandlers.stream()
+            multipartResponse = multipartHandlers.stream()
                     .filter(h -> h.canHandle(handlerRequest))
                     .findFirst()
                     .map(it -> it.handleRequest(handlerRequest))
-                    .orElseGet(() -> HandlerResponse.Builder.newInstance()
+                    .orElseGet(() -> MultipartResponse.Builder.newInstance()
                             .header(messageTypeNotSupported(header, connectorId))
                             .build()
                     );
@@ -334,27 +319,27 @@ public class MultipartController {
         } catch (Exception e) {
             monitor.severe(LOG_ID + ": Error in message handler processing", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, internalRecipientError(header, connectorId)))
+                    .entity(createFormDataMultiPart(internalRecipientError(header, connectorId)))
                     .build();
         }
 
         // Get the response token
-        if (!getResponseToken(header, handlerResponse)) {
+        if (!getResponseToken(header, multipartResponse)) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, internalRecipientError(header, connectorId)))
+                    .entity(createFormDataMultiPart(internalRecipientError(header, connectorId)))
                     .build();
         }
 
         // Build the response
-        if (handlerResponse.getHeader() instanceof RejectionMessage) {
-            var rejectionMessage = (RejectionMessage) handlerResponse.getHeader();
+        if (multipartResponse.getHeader() instanceof RejectionMessage) {
+            var rejectionMessage = (RejectionMessage) multipartResponse.getHeader();
 
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId)))
+                    .entity(createFormDataMultiPart(createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId)))
                     .build();
         } else {
             return Response.status(Response.Status.CREATED)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, handlerResponse.getHeader(), PAYLOAD, handlerResponse.getPayload()))
+                    .entity(createFormDataMultiPart(multipartResponse.getHeader(), multipartResponse.getPayload()))
                     .build();
         }
     }
@@ -381,9 +366,9 @@ public class MultipartController {
         }
     }
 
-    private boolean getResponseToken(Message header, HandlerResponse handlerResponse) {
+    private boolean getResponseToken(Message header, MultipartResponse multipartResponse) {
 
-        handlerResponse.getHeader().setSecurityToken(header.getSecurityToken());
+        multipartResponse.getHeader().setSecurityToken(header.getSecurityToken());
         return true;
 
         /*if ((header.getRecipientConnector() == null) || (header.getRecipientConnector().isEmpty())) {
@@ -408,6 +393,10 @@ public class MultipartController {
             monitor.severe(LOG_ID + ": Failed to get response token: " + tokenResult.getFailureDetail());
             return false;
         }*/
+    }
+
+    public static boolean isValid(String id) {
+        return id.equals(JWT_TOKEN_FORMAT_IDS) || id.equals(JWT_TOKEN_FORMAT_DSP);
     }
 
 }

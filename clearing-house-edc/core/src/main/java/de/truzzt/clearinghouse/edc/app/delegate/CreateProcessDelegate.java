@@ -13,20 +13,19 @@
  */
 package de.truzzt.clearinghouse.edc.app.delegate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.dto.*;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
 import okhttp3.ResponseBody;
+import org.eclipse.edc.spi.EdcException;
 
 public class CreateProcessDelegate implements AppSenderDelegate<CreateProcessResponse> {
 
-    private final TypeManagerUtil typeManagerUtil;
+    public CreateProcessDelegate() {
 
-    public CreateProcessDelegate(TypeManagerUtil typeManagerUtil) {
-        this.typeManagerUtil = typeManagerUtil;
     }
 
     public String buildRequestUrl(String baseUrl, HandlerRequest handlerRequest) {
@@ -42,7 +41,7 @@ public class CreateProcessDelegate implements AppSenderDelegate<CreateProcessRes
         var multipartSecurityToken = header.getSecurityToken();
         var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
         var securityToken = SecurityToken.Builder.newInstance().
-                type(multipartSecurityToken.getType()).
+                type(multipartSecurityToken.getClass().getSimpleName()).
                 id(multipartSecurityToken.getId()).
                 tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
                 tokenValue(multipartSecurityToken.getTokenValue()).
@@ -51,7 +50,7 @@ public class CreateProcessDelegate implements AppSenderDelegate<CreateProcessRes
         var requestHeader = Header.Builder.newInstance()
                 .context(context)
                 .id(header.getId())
-                .type(header.getType())
+                .type(header.getClass().getSimpleName())
                 .securityToken(securityToken)
                 .issuerConnector(header.getIssuerConnector())
                 .modelVersion(header.getModelVersion())
@@ -64,6 +63,10 @@ public class CreateProcessDelegate implements AppSenderDelegate<CreateProcessRes
 
     @Override
     public CreateProcessResponse parseResponseBody(ResponseBody responseBody) {
-        return typeManagerUtil.parse(responseBody.byteStream(), CreateProcessResponse.class);
+        try {
+            return new ObjectMapper().readValue(responseBody.byteStream(), CreateProcessResponse.class);
+        } catch (Exception e){
+            throw new EdcException("Error parsing byte to CreateProcessResponse", e);
+        }
     }
 }

@@ -2,7 +2,6 @@ package de.truzzt.clearinghouse.edc.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -14,14 +14,14 @@
  */
 package de.truzzt.clearinghouse.edc.multipart;
 
-import de.truzzt.clearinghouse.edc.handler.Handler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.handler.LogMessageHandler;
 import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.handler.QueryMessageHandler;
 import de.truzzt.clearinghouse.edc.handler.RequestMessageHandler;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import org.eclipse.edc.connector.api.management.configuration.ManagementApiConfiguration;
 import org.eclipse.edc.protocol.ids.api.configuration.IdsApiConfiguration;
+import org.eclipse.edc.protocol.ids.api.multipart.handler.Handler;
 import org.eclipse.edc.protocol.ids.jsonld.JsonLd;
 import org.eclipse.edc.protocol.ids.spi.service.DynamicAttributeTokenService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -70,18 +70,18 @@ public class MultipartExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         var monitor = context.getMonitor();
         var connectorId = resolveConnectorId(context);
-        var typeManagerUtil = new TypeManagerUtil(JsonLd.getObjectMapper());
+        var mapper = new ObjectMapper();
 
-        var clearingHouseAppSender = new AppSender(monitor, httpClient, typeManagerUtil);
+        var clearingHouseAppSender = new AppSender(monitor, httpClient);
 
         var handlers = new LinkedList<Handler>();
-        handlers.add(new RequestMessageHandler(connectorId, typeManagerUtil, clearingHouseAppSender, context));
-        handlers.add(new LogMessageHandler(connectorId, typeManagerUtil, clearingHouseAppSender, context));
-        handlers.add(new QueryMessageHandler(connectorId, typeManagerUtil, clearingHouseAppSender, context));
+        handlers.add(new RequestMessageHandler(connectorId, clearingHouseAppSender, context));
+        handlers.add(new LogMessageHandler(connectorId, clearingHouseAppSender, context));
+        handlers.add(new QueryMessageHandler(connectorId, clearingHouseAppSender, context));
 
         var multipartController = new MultipartController(monitor,
                 connectorId,
-                typeManagerUtil,
+                mapper,
                 tokenService,
                 idsApiConfiguration.getIdsWebhookAddress(),
                 handlers);
