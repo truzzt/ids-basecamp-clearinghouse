@@ -12,7 +12,7 @@ impl PostgresProcessStore {
             sqlx::query("TRUNCATE process_owners, clients, processes CASCADE")
                 .execute(&db)
                 .await
-                .unwrap();
+                .expect("Clearing databases 'process_owners', 'clients' and 'processes' failed.");
         }
 
         Self { db }
