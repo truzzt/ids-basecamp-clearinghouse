@@ -18,8 +18,6 @@ import static org.mockito.Mockito.spy;
 class QueryMessageDelegateTest {
 
     @Mock
-    private TypeManagerUtil typeManagerUtil;
-    @Mock
     private QueryMessageDelegate senderDelegate;
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -27,7 +25,7 @@ class QueryMessageDelegateTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        senderDelegate = spy(new QueryMessageDelegate(typeManagerUtil));
+        senderDelegate = spy(new QueryMessageDelegate());
     }
 
     @Test

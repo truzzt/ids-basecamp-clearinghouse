@@ -2,13 +2,12 @@ package de.truzzt.clearinghouse.edc.tests;
 
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.fraunhofer.iais.eis.Message;
 import de.truzzt.clearinghouse.edc.dto.*;
 import de.truzzt.clearinghouse.edc.types.Pagging;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
-import de.truzzt.clearinghouse.edc.types.ids.Message;
 import okhttp3.*;
 import org.eclipse.edc.spi.EdcException;
 
@@ -175,22 +174,19 @@ public class TestUtils extends BaseTestUtils {
     private static Header createRequestHeader(HandlerRequest handlerRequest) {
         var header = handlerRequest.getHeader();
 
-        var multipartContext = header.getContext();
-        var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
 
         var multipartSecurityToken = header.getSecurityToken();
         var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
         var securityToken = SecurityToken.Builder.newInstance().
-                type(multipartSecurityToken.getType()).
+                type(multipartSecurityToken.getClass().getSimpleName()).
                 id(multipartSecurityToken.getId()).
                 tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
                 tokenValue(multipartSecurityToken.getTokenValue()).
                 build();
 
         var requestHeader = Header.Builder.newInstance()
-                .context(context)
                 .id(header.getId())
-                .type(header.getType())
+                .type(header.getClass().getSimpleName())
                 .securityToken(securityToken)
                 .issuerConnector(header.getIssuerConnector())
                 .modelVersion(header.getModelVersion())

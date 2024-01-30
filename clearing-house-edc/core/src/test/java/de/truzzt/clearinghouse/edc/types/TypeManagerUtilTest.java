@@ -1,8 +1,8 @@
 package de.truzzt.clearinghouse.edc.types;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.fraunhofer.iais.eis.Message;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
-import de.truzzt.clearinghouse.edc.types.ids.Message;
 import org.eclipse.edc.spi.EdcException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,31 +23,27 @@ import static org.mockito.Mockito.mock;
 
 class TypeManagerUtilTest {
 
-    @Mock
-    private TypeManagerUtil typeManagerUtil;
-
     private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        typeManagerUtil = new TypeManagerUtil(mapper);
     }
 
     @Test
     void successfulParse() throws IOException {
         InputStream is = new FileInputStream(TestUtils.getValidHeaderFile());
 
-        Message msg = typeManagerUtil.parse(is, Message.class);
+        Message msg = mapper.readValue(is, Message.class);
         assertNotNull(msg);
-        assertEquals("ids:LogMessage", msg.getType());
+        assertEquals("ids:LogMessage", msg.getClass().getSimpleName());
     }
 
     @Test
     void typeErrorParse() {
         EdcException exception =
                 assertThrows(EdcException.class,
-                        () -> typeManagerUtil.parse(
+                        () -> mapper.readValue(
                                 new FileInputStream(TestUtils.getInvalidHeaderFile()),
                                 Message.class)
                 );
@@ -58,13 +54,13 @@ class TypeManagerUtilTest {
     void successfulToJson() throws IOException {
         Message msgBefore = mapper.readValue(TestUtils.getValidHeaderFile(), Message.class);
 
-        var json  = typeManagerUtil.toJson(msgBefore);
+        var json  = mapper.writeValueAsString(msgBefore);
         assertNotNull(json);
 
         InputStream is = new ByteArrayInputStream(json.getBytes());
-        Message msgAfter = typeManagerUtil.parse(is, Message.class);
+        Message msgAfter = mapper.readValue(is, Message.class);
 
-        assertEquals(msgBefore.getType(), msgAfter.getType());
+        assertEquals(msgBefore.getClass().getSimpleName(), msgAfter.getClass().getSimpleName());
     }
 
     @Test
@@ -74,11 +70,9 @@ class TypeManagerUtilTest {
         doThrow(new EdcException("Error converting to JSON"))
                 .when(mockedMapper).writeValueAsString(anyString());
 
-        typeManagerUtil = new TypeManagerUtil(mockedMapper);
-
         EdcException exception =
                 assertThrows(EdcException.class,
-                        () -> typeManagerUtil.toJson("fadsfsdafd")
+                        () -> mapper.writeValueAsString("fadsfsdafd")
                 );
 
         assertEquals("Error converting to JSON",exception.getMessage() );
