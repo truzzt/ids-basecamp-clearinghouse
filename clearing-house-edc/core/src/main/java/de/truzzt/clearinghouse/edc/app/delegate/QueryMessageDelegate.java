@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.QueryMessageRequest;
 import de.truzzt.clearinghouse.edc.dto.QueryMessageResponse;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
@@ -65,9 +64,6 @@ public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageRespo
     public QueryMessageRequest buildRequestBody(HandlerRequest handlerRequest) {
         var header = handlerRequest.getHeader();
 
-        var multipartContext = header.getContext();
-        var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
-
         var multipartSecurityToken = header.getSecurityToken();
         var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
         var securityToken = SecurityToken.Builder.newInstance().
@@ -78,7 +74,6 @@ public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageRespo
                 build();
 
         var requestHeader = Header.Builder.newInstance()
-                .context(context)
                 .id(header.getId())
                 .type(header.getClass().getSimpleName())
                 .securityToken(securityToken)

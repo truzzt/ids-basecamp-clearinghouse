@@ -20,16 +20,11 @@ import org.jetbrains.annotations.NotNull;
 public class Context {
     @JsonProperty("ids")
     @NotNull
-    private final String ids;
+    private final String ids = "https://w3id.org/idsa/core/";
 
     @JsonProperty("idsc")
     @NotNull
-    private final String idsc;
-
-    public Context(@NotNull String ids, @NotNull String idsc) {
-        this.ids = ids;
-        this.idsc = idsc;
-    }
+    private final String idsc = "https://w3id.org/idsa/code/";
 
     public String getIds() {
         return ids;

@@ -15,7 +15,6 @@ package de.truzzt.clearinghouse.edc.app.delegate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.dto.*;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
@@ -35,9 +34,6 @@ public class CreateProcessDelegate implements AppSenderDelegate<CreateProcessRes
     public CreateProcessRequest buildRequestBody(HandlerRequest handlerRequest) {
         var header = handlerRequest.getHeader();
 
-        var multipartContext = header.getContext();
-        var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
-
         var multipartSecurityToken = header.getSecurityToken();
         var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
         var securityToken = SecurityToken.Builder.newInstance().
@@ -48,7 +44,6 @@ public class CreateProcessDelegate implements AppSenderDelegate<CreateProcessRes
                 build();
 
         var requestHeader = Header.Builder.newInstance()
-                .context(context)
                 .id(header.getId())
                 .type(header.getClass().getSimpleName())
                 .securityToken(securityToken)

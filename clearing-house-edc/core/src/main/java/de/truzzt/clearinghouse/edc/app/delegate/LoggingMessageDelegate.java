@@ -13,21 +13,16 @@
  */
 package de.truzzt.clearinghouse.edc.app.delegate;
 
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageRequest;
 import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
 import okhttp3.ResponseBody;
 import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartRequest;
 import org.eclipse.edc.spi.EdcException;
-
-import java.io.IOException;
 
 public class LoggingMessageDelegate implements AppSenderDelegate<LoggingMessageResponse> {
 
@@ -43,9 +38,6 @@ public class LoggingMessageDelegate implements AppSenderDelegate<LoggingMessageR
         var handlerRequest = (HandlerRequest) multipartRequest;
         var header = handlerRequest.getHeader();
 
-        var multipartContext = header.getContext();
-        var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
-
         var multipartSecurityToken = header.getSecurityToken();
         var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
         var securityToken = SecurityToken.Builder.newInstance().
@@ -56,7 +48,6 @@ public class LoggingMessageDelegate implements AppSenderDelegate<LoggingMessageR
                 build();
 
         var requestHeader = Header.Builder.newInstance()
-                .context(context)
                 .id(header.getId())
                 .type(header.getClass().getSimpleName())
                 .securityToken(securityToken)

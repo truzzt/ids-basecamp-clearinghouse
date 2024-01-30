@@ -57,15 +57,14 @@ public class Header {
     @NotNull
     private final String senderAgent;
 
-    private Header(@NotNull Context context,
-                   @NotNull String id,
+    private Header(@NotNull String id,
                    @NotNull String type,
                    @NotNull SecurityToken securityToken,
                    @NotNull String issuerConnector,
                    @NotNull String modelVersion,
                    @NotNull XMLGregorianCalendar issued,
                    @NotNull String senderAgent) {
-        this.context = context;
+        this.context = new Context();
         this.id = id;
         this.type = type;
         this.securityToken = securityToken;
@@ -109,7 +108,6 @@ public class Header {
 
     public static class Builder {
 
-        private Context context;
         private String id;
         private String type;
         private SecurityToken securityToken;
@@ -123,11 +121,6 @@ public class Header {
 
         public static Builder newInstance() {
             return new Builder();
-        }
-
-        public Builder context(@NotNull Context context) {
-            this.context = context;
-            return this;
         }
 
         public Builder id(@NotNull URI id) {
@@ -166,7 +159,6 @@ public class Header {
         }
 
         public Header build() {
-            Objects.requireNonNull(context, "Logging message request header context null.");
             Objects.requireNonNull(id, "Logging message request header id is null.");
             Objects.requireNonNull(type, "Logging message request header type is null.");
             Objects.requireNonNull(securityToken, "Logging message request header security token is null.");
@@ -176,7 +168,7 @@ public class Header {
             Objects.requireNonNull(issued, "Logging message request header issued is null.");
             Objects.requireNonNull(senderAgent, "Logging message request header sender agent is null.");
 
-            return new Header(context, id, type, securityToken, issuerConnector, modelVersion, issued, senderAgent);
+            return new Header(id, type, securityToken, issuerConnector, modelVersion, issued, senderAgent);
         }
     }
 }
