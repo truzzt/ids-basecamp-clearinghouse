@@ -14,7 +14,7 @@
 package de.truzzt.clearinghouse.edc.handler;
 
 import de.truzzt.clearinghouse.edc.app.AppSender;
-import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
+import de.truzzt.clearinghouse.edc.app.delegate.CreateProcessDelegate;
 import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
@@ -25,32 +25,31 @@ import org.jetbrains.annotations.NotNull;
 
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.createMultipartResponse;
 import static de.truzzt.clearinghouse.edc.util.ResponseUtil.messageProcessedNotification;
-
-import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_SETTING;
 import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_DEFAULT_VALUE;
+import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_SETTING;
 
-public class LogMessageHandler implements Handler {
+public class RequestMessageHandler implements Handler {
 
     private final IdsId connectorId;
     private final AppSender appSender;
-    private final LoggingMessageDelegate senderDelegate;
+    private final CreateProcessDelegate senderDelegate;
 
     private final ServiceExtensionContext context;
 
-    public LogMessageHandler(IdsId connectorId,
-                             TypeManagerUtil typeManagerUtil,
-                             AppSender appSender,
-                             ServiceExtensionContext context) {
+    public RequestMessageHandler(IdsId connectorId,
+                                 TypeManagerUtil typeManagerUtil,
+                                 AppSender appSender,
+                                 ServiceExtensionContext context) {
         this.connectorId = connectorId;
         this.appSender = appSender;
         this.context = context;
 
-        this.senderDelegate = new LoggingMessageDelegate(typeManagerUtil);
+        this.senderDelegate = new CreateProcessDelegate(typeManagerUtil);
     }
 
     @Override
     public boolean canHandle(@NotNull HandlerRequest handlerRequest) {
-        return handlerRequest.getHeader().getType().equals("ids:LogMessage");
+        return handlerRequest.getHeader().getType().equals("ids:RequestMessage");
     }
 
     @Override
