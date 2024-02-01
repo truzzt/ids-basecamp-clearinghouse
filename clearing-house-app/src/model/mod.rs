@@ -1,7 +1,7 @@
+use std::ops::Add;
+
 pub mod claims;
 pub mod constants;
-pub(crate) mod crypto;
-pub(crate) mod doc_type;
 pub(crate) mod document;
 pub mod ids;
 pub mod process;
@@ -50,7 +50,7 @@ pub fn validate_and_sanitize_dates(
         &now, &date_from, &date_to
     );
 
-    let default_to_date = now;
+    let default_to_date = now.add(chrono::Duration::seconds(1));
     let default_from_date = default_to_date
         .date()
         .and_hms_opt(0, 0, 0)
@@ -67,6 +67,7 @@ pub fn validate_and_sanitize_dates(
 
 #[cfg(test)]
 mod test {
+    use std::ops::Add;
 
     #[test]
     fn validate_and_sanitize_dates() {
@@ -81,12 +82,12 @@ mod test {
 
         // # Good cases
         assert_eq!(
-            (date_from, date_now),
+            (date_from, date_now.add(chrono::Duration::seconds(1))),
             super::validate_and_sanitize_dates(None, None, Some(date_now))
                 .expect("Should be valid")
         );
         assert_eq!(
-            (date_from, date_now),
+            (date_from, date_now.add(chrono::Duration::seconds(1))),
             super::validate_and_sanitize_dates(Some(date_from), None, Some(date_now))
                 .expect("Should be valid")
         );

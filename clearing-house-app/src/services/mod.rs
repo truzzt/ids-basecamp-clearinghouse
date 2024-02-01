@@ -7,7 +7,6 @@
 use crate::model::document::Document;
 
 pub(crate) mod document_service;
-pub(crate) mod keyring_service;
 pub(crate) mod logging_service;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
@@ -18,9 +17,13 @@ pub struct DocumentReceipt {
 }
 
 impl DocumentReceipt {
-    pub fn new(timestamp: i64, pid: &str, doc_id: &str) -> DocumentReceipt {
+    pub fn new(
+        timestamp: chrono::DateTime<chrono::Local>,
+        pid: &str,
+        doc_id: &str,
+    ) -> DocumentReceipt {
         DocumentReceipt {
-            timestamp,
+            timestamp: timestamp.timestamp(),
             pid: pid.to_string(),
             doc_id: doc_id.to_string(),
         }

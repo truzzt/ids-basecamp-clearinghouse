@@ -15,10 +15,6 @@ export default () => {
     'ch-app GET jwks is status 200': (r) => r.status === 200,
   });
 
-  const doctypeRes = http.get(`${url}/doctype`);
-  check(doctypeRes, {
-    'ch-app GET doctype is status 200': (r) => r.status === 200,
-  });
 
   const logMessageRes = http.post(`${url}/messages/log/6`, JSON.stringify(logMessage(), null, 2), { headers: header() });
   check(logMessageRes, {

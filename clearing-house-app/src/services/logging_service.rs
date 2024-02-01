@@ -5,7 +5,7 @@ use crate::model::{
 };
 use std::sync::Arc;
 
-use crate::db::process_store::ProcessStore;
+use crate::db::{DocumentStore, ProcessStore};
 use crate::model::{
     ids::{message::IdsMessage, request::ClearingHouseMessage, IdsQueryResult},
     process::{DataTransaction, OwnerList, Receipt},
@@ -70,14 +70,14 @@ impl axum::response::IntoResponse for LoggingServiceError {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct LoggingService {
-    db: ProcessStore,
-    doc_api: Arc<DocumentService>,
+#[derive(Debug)]
+pub(crate) struct LoggingService<T, S> {
+    db: T,
+    doc_api: Arc<DocumentService<S>>,
 }
 
-impl LoggingService {
-    pub fn new(db: ProcessStore, doc_api: Arc<DocumentService>) -> LoggingService {
+impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
+    pub fn new(db: T, doc_api: Arc<DocumentService<S>>) -> LoggingService<T, S> {
         LoggingService { db, doc_api }
     }
 
@@ -128,10 +128,9 @@ impl LoggingService {
 
         // transform message to document
         debug!("transforming message to document...");
-        let doc = Document::try_from(m).map_err(LoggingServiceError::ParsingError)?;
+        let doc: Document = m.into();
 
         debug!("Storing document...");
-        // TODO: ChClaims usage check
         match self
             .doc_api
             .create_enc_document(ChClaims::new(user), doc.clone())
@@ -349,17 +348,5 @@ impl LoggingService {
                 })
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::LoggingService;
-    use crate::model::constants::DEFAULT_PROCESS_ID;
-
-    #[test]
-    fn check_for_default_pid() {
-        assert!(LoggingService::check_for_default_pid(DEFAULT_PROCESS_ID).is_err());
-        assert!(LoggingService::check_for_default_pid("not_default").is_ok());
     }
 }
