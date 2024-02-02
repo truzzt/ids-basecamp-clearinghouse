@@ -14,15 +14,15 @@
  */
 package de.truzzt.clearinghouse.edc.multipart;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.handler.LogMessageHandler;
 import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.handler.QueryMessageHandler;
 import de.truzzt.clearinghouse.edc.handler.RequestMessageHandler;
+import de.truzzt.clearinghouse.edc.multipart.controller.MultipartController;
 import org.eclipse.edc.connector.api.management.configuration.ManagementApiConfiguration;
 import org.eclipse.edc.protocol.ids.api.configuration.IdsApiConfiguration;
 import org.eclipse.edc.protocol.ids.api.multipart.handler.Handler;
-import org.eclipse.edc.protocol.ids.jsonld.JsonLd;
+import org.eclipse.edc.protocol.ids.serialization.IdsTypeManagerUtil;
 import org.eclipse.edc.protocol.ids.spi.service.DynamicAttributeTokenService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -68,9 +68,11 @@ public class MultipartExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var monitor = context.getMonitor();
         var connectorId = resolveConnectorId(context);
-        var mapper = new ObjectMapper();
+        var monitor = context.getMonitor();
+
+        IdsTypeManagerUtil.customizeTypeManager(context.getTypeManager());
+        var objectMapper = IdsTypeManagerUtil.getIdsObjectMapper(context.getTypeManager());
 
         var clearingHouseAppSender = new AppSender(monitor, httpClient);
 
@@ -81,7 +83,7 @@ public class MultipartExtension implements ServiceExtension {
 
         var multipartController = new MultipartController(monitor,
                 connectorId,
-                mapper,
+                objectMapper,
                 tokenService,
                 idsApiConfiguration.getIdsWebhookAddress(),
                 handlers);

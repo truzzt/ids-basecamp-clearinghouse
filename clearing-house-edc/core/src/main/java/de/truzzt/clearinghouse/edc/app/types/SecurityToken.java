@@ -12,9 +12,11 @@
  *       truzzt GmbH - EDC extension implementation
  *
  */
-package de.truzzt.clearinghouse.edc.types.clearinghouse;
+package de.truzzt.clearinghouse.edc.app.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.fraunhofer.iais.eis.*;
+import org.eclipse.edc.spi.EdcException;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
@@ -30,21 +32,15 @@ public class SecurityToken {
     @NotNull
     private final String id;
 
-    @JsonProperty("tokenFormat")
-    @NotNull
-    private final TokenFormat tokenFormat;
-
     @JsonProperty("tokenValue")
     @NotNull
     private final String tokenValue;
 
     private SecurityToken(@NotNull String type,
                          @NotNull String id,
-                         @NotNull TokenFormat tokenFormat,
                          @NotNull String tokenValue) {
         this.type = type;
         this.id = id;
-        this.tokenFormat = tokenFormat;
         this.tokenValue = tokenValue;
     }
 
@@ -56,10 +52,6 @@ public class SecurityToken {
         return id;
     }
 
-    public TokenFormat getTokenFormat() {
-        return tokenFormat;
-    }
-
     public String getTokenValue() {
         return tokenValue;
     }
@@ -68,7 +60,6 @@ public class SecurityToken {
 
         private String type;
         private String id;
-        private TokenFormat tokenFormat;
         private String tokenValue;
 
         private Builder() {
@@ -78,18 +69,17 @@ public class SecurityToken {
             return new Builder();
         }
 
-        public Builder type(@NotNull String type) {
-            this.type = type;
+        public Builder type(@NotNull Token token) {
+            if (token instanceof DynamicAttributeTokenImpl)
+                this.type = Constants.IDS_TYPE_PREFIX + DynamicAttributeToken.class.getSimpleName();
+            else
+                throw new EdcException("Unsupported Token Type:" + token.getClass().getSimpleName());
+
             return this;
         }
 
         public Builder id(@NotNull URI id) {
             this.id = id.toString();
-            return this;
-        }
-
-        public Builder tokenFormat(@NotNull TokenFormat tokenFormat) {
-            this.tokenFormat = tokenFormat;
             return this;
         }
 
@@ -101,10 +91,9 @@ public class SecurityToken {
         public SecurityToken build() {
             Objects.requireNonNull(type, "Security token type is null.");
             Objects.requireNonNull(id, "Security token id is null.");
-            Objects.requireNonNull(tokenFormat, "Security token tokenFormat is null.");
             Objects.requireNonNull(tokenValue, "Security token tokenValue is null.");
 
-            return new SecurityToken(type, id, tokenFormat, tokenValue);
+            return new SecurityToken(type, id, tokenValue);
         }
     }
 }

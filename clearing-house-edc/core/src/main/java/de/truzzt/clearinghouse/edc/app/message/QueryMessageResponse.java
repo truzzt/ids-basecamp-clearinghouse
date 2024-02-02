@@ -1,4 +1,4 @@
-package de.truzzt.clearinghouse.edc.dto;
+package de.truzzt.clearinghouse.edc.app.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.fraunhofer.iais.eis.LogMessage;

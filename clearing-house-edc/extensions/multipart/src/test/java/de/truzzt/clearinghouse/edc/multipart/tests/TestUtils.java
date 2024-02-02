@@ -2,7 +2,7 @@ package de.truzzt.clearinghouse.edc.multipart.tests;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iais.eis.Message;
-import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
+import de.truzzt.clearinghouse.edc.app.message.LoggingMessageResponse;
 import de.truzzt.clearinghouse.edc.tests.BaseTestUtils;
 
 import java.io.ByteArrayInputStream;

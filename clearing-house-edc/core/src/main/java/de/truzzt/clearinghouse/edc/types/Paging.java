@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 
-public class Pagging {
+public class Paging {
 
     private final Integer page;
     private final Integer size;
@@ -30,7 +30,7 @@ public class Pagging {
         ASC, DESC
     }
 
-    private Pagging(@NotNull Integer page, Integer size, Sort sort, LocalDate dateFrom, LocalDate dateTo) {
+    private Paging(@NotNull Integer page, Integer size, Sort sort, LocalDate dateFrom, LocalDate dateTo) {
         this.page = page;
         this.size = size;
         this.sort = sort;
@@ -99,8 +99,8 @@ public class Pagging {
             return this;
         }
 
-        public Pagging build() {
-            return new Pagging(page, size, sort, dateFrom, dateTo);
+        public Paging build() {
+            return new Paging(page, size, sort, dateFrom, dateTo);
         }
     }
 }

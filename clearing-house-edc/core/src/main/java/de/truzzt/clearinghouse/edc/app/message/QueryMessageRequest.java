@@ -1,7 +1,7 @@
-package de.truzzt.clearinghouse.edc.dto;
+package de.truzzt.clearinghouse.edc.app.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
+import de.truzzt.clearinghouse.edc.app.types.Header;
 import org.jetbrains.annotations.NotNull;
 
 public class QueryMessageRequest {

@@ -11,23 +11,23 @@
  *       truzzt GmbH - Initial implementation
  *
  */
-package de.truzzt.clearinghouse.edc.dto;
+package de.truzzt.clearinghouse.edc.app.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
+import de.truzzt.clearinghouse.edc.app.types.Header;
 import org.jetbrains.annotations.NotNull;
 
-public class LoggingMessageRequest {
+public class CreateProcessRequest {
 
     @JsonProperty("header")
     @NotNull
-    private Header header;
+    private final Header header;
 
     @JsonProperty("payload")
     @NotNull
-    private String payload;
+    private final String payload;
 
-    public LoggingMessageRequest(@NotNull Header header, @NotNull String payload) {
+    public CreateProcessRequest(@NotNull Header header, @NotNull String payload) {
         this.header = header;
         this.payload = payload;
     }

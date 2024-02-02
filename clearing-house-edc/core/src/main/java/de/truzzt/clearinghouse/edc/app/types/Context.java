@@ -12,24 +12,25 @@
  *       truzzt GmbH - EDC extension implementation
  *
  */
-package de.truzzt.clearinghouse.edc.types.clearinghouse;
+package de.truzzt.clearinghouse.edc.app.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.URI;
-
-public class TokenFormat {
-
-    @JsonProperty("@id")
+public class Context {
+    @JsonProperty("ids")
     @NotNull
-    private final String id;
+    private final String ids = "https://w3id.org/idsa/core/";
 
-    public TokenFormat(@NotNull URI id) {
-        this.id = id.toString();
+    @JsonProperty("idsc")
+    @NotNull
+    private final String idsc = "https://w3id.org/idsa/code/";
+
+    public String getIds() {
+        return ids;
     }
 
-    public String getId() {
-        return id;
+    public String getIdsc() {
+        return idsc;
     }
 }

@@ -1,9 +1,9 @@
 package de.truzzt.clearinghouse.edc.app.delegate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.LoggingMessageRequest;
-import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
+import de.truzzt.clearinghouse.edc.app.message.LoggingMessageRequest;
+import de.truzzt.clearinghouse.edc.app.message.LoggingMessageResponse;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import okhttp3.ResponseBody;
 import org.junit.jupiter.api.BeforeEach;

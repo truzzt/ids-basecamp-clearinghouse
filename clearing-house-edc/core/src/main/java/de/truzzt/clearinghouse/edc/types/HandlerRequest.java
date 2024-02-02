@@ -12,11 +12,10 @@
  *       truzzt GmbH - EDC extension implementation
  *
  */
-package de.truzzt.clearinghouse.edc.dto;
+package de.truzzt.clearinghouse.edc.types;
 
 import de.fraunhofer.iais.eis.Message;
 
-import de.truzzt.clearinghouse.edc.types.Pagging;
 import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartRequest;
 import org.jetbrains.annotations.NotNull;
 
@@ -25,20 +24,20 @@ import java.util.Objects;
 public class HandlerRequest extends MultipartRequest {
 
     private final String pid;
-    private final Pagging pagging;
+    private final Paging paging;
 
-    private HandlerRequest(@NotNull String pid, @NotNull Message header, String payload, Pagging pagging) {
+    private HandlerRequest(@NotNull String pid, @NotNull Message header, String payload, Paging paging) {
         super(header, payload, null);
         this.pid = pid;
-        this.pagging = pagging;
+        this.paging = paging;
     }
 
     public String getPid() {
         return pid;
     }
 
-    public Pagging getPagging() {
-        return pagging;
+    public Paging getPaging() {
+        return paging;
     }
 
     public static class Builder {
@@ -46,7 +45,7 @@ public class HandlerRequest extends MultipartRequest {
         private String pid;
         private Message header;
         private String payload;
-        private Pagging pagging;
+        private Paging paging;
 
         private Builder() {
         }
@@ -70,8 +69,8 @@ public class HandlerRequest extends MultipartRequest {
             return this;
         }
 
-        public Builder pagging(Pagging pagging) {
-            this.pagging = pagging;
+        public Builder paging(Paging paging) {
+            this.paging = paging;
             return this;
         }
 
@@ -79,7 +78,7 @@ public class HandlerRequest extends MultipartRequest {
             Objects.requireNonNull(pid, "Multipart request pid is null.");
             Objects.requireNonNull(header, "Multipart request header is null.");
 
-            return new HandlerRequest(pid, header, payload, pagging);
+            return new HandlerRequest(pid, header, payload, paging);
         }
     }
 }

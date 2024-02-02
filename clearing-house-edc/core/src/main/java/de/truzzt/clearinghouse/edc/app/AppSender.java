@@ -16,7 +16,7 @@ package de.truzzt.clearinghouse.edc.app;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.app.delegate.AppSenderDelegate;
-import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
+import de.truzzt.clearinghouse.edc.app.message.AppSenderRequest;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;

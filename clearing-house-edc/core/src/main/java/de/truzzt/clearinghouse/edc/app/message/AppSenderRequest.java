@@ -11,7 +11,7 @@
  *       truzzt GmbH - Initial implementation
  *
  */
-package de.truzzt.clearinghouse.edc.dto;
+package de.truzzt.clearinghouse.edc.app.message;
 
 import org.jetbrains.annotations.NotNull;
 

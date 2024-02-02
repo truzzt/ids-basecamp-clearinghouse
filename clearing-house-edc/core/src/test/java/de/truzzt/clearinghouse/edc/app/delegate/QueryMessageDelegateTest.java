@@ -1,8 +1,10 @@
 package de.truzzt.clearinghouse.edc.app.delegate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.dto.*;
+import de.truzzt.clearinghouse.edc.app.message.QueryMessageRequest;
+import de.truzzt.clearinghouse.edc.app.message.QueryMessageResponse;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
 import okhttp3.ResponseBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,8 +39,8 @@ class QueryMessageDelegateTest {
 
         assertNotNull(response);
         assertEquals(response, "http://localhost:8000/messages/query/" +request.getPid()+
-                "?page=1&size=1&sort=asc&dateFrom="+ request.getPagging().getDateFrom().toString()+
-                "&dateTo="+request.getPagging().getDateFrom().toString());
+                "?page=1&size=1&sort=asc&dateFrom="+ request.getPaging().getDateFrom().toString()+
+                "&dateTo="+request.getPaging().getDateFrom().toString());
     }
 
     @Test
@@ -74,7 +76,7 @@ class QueryMessageDelegateTest {
 
         assertNotNull(response);
         assertEquals(response, "http://localhost:8000/messages/query/" +request.getPid()+
-                "?dateFrom="+ request.getPagging().getDateFrom().toString());
+                "?dateFrom="+ request.getPaging().getDateFrom().toString());
     }
 
     @Test
@@ -86,7 +88,7 @@ class QueryMessageDelegateTest {
 
         assertNotNull(response);
         assertEquals(response, "http://localhost:8000/messages/query/" +request.getPid()+
-                "?dateTo="+ request.getPagging().getDateTo().toString());
+                "?dateTo="+ request.getPaging().getDateTo().toString());
     }
 
     @Test

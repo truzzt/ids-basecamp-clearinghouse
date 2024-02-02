@@ -1,12 +1,11 @@
 package de.truzzt.clearinghouse.edc.app.delegate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.QueryMessageRequest;
-import de.truzzt.clearinghouse.edc.dto.QueryMessageResponse;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
+import de.truzzt.clearinghouse.edc.app.message.QueryMessageRequest;
+import de.truzzt.clearinghouse.edc.app.message.QueryMessageResponse;
+import de.truzzt.clearinghouse.edc.app.types.Header;
+import de.truzzt.clearinghouse.edc.app.types.SecurityToken;
 import okhttp3.ResponseBody;
 import org.eclipse.edc.spi.EdcException;
 
@@ -16,45 +15,42 @@ public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageRespo
 
     private final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public QueryMessageDelegate() {
-    }
-
     public String buildRequestUrl(String baseUrl, HandlerRequest handlerRequest) {
 
         String queryParameters = "";
-        if (handlerRequest.getPagging() != null) {
-            var pagging = handlerRequest.getPagging();
+        if (handlerRequest.getPaging() != null) {
+            var paging = handlerRequest.getPaging();
 
-            if (pagging.getPage() != null) {
-                queryParameters += "?page=" + pagging.getSize();
+            if (paging.getPage() != null) {
+                queryParameters += "?page=" + paging.getSize();
             }
 
-            if (pagging.getSize() != null) {
+            if (paging.getSize() != null) {
                 if (queryParameters.isEmpty())
-                    queryParameters += "?size=" + pagging.getSize();
+                    queryParameters += "?size=" + paging.getSize();
                 else
-                    queryParameters += "&size=" + pagging.getSize();
+                    queryParameters += "&size=" + paging.getSize();
             }
 
-            if (pagging.getSort() != null) {
+            if (paging.getSort() != null) {
                 if (queryParameters.isEmpty())
-                    queryParameters += "?sort=" + pagging.getSort().toString().toLowerCase();
+                    queryParameters += "?sort=" + paging.getSort().toString().toLowerCase();
                 else
-                    queryParameters += "&sort=" + pagging.getSort().toString().toLowerCase();
+                    queryParameters += "&sort=" + paging.getSort().toString().toLowerCase();
             }
 
-            if (pagging.getDateFrom() != null) {
+            if (paging.getDateFrom() != null) {
                 if (queryParameters.isEmpty())
-                    queryParameters += "?dateFrom=" + dateFormat.format(pagging.getDateFrom());
+                    queryParameters += "?dateFrom=" + dateFormat.format(paging.getDateFrom());
                 else
-                    queryParameters += "&dateFrom=" + dateFormat.format(pagging.getDateFrom());
+                    queryParameters += "&dateFrom=" + dateFormat.format(paging.getDateFrom());
             }
 
-            if (pagging.getDateTo() != null) {
+            if (paging.getDateTo() != null) {
                 if (queryParameters.isEmpty())
-                    queryParameters += "?dateTo=" + dateFormat.format(pagging.getDateTo());
+                    queryParameters += "?dateTo=" + dateFormat.format(paging.getDateTo());
                 else
-                    queryParameters += "&dateTo=" + dateFormat.format(pagging.getDateTo());
+                    queryParameters += "&dateTo=" + dateFormat.format(paging.getDateTo());
             }
         }
 
@@ -65,17 +61,15 @@ public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageRespo
         var header = handlerRequest.getHeader();
 
         var multipartSecurityToken = header.getSecurityToken();
-        var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
         var securityToken = SecurityToken.Builder.newInstance().
-                type(multipartSecurityToken.getClass().getSimpleName()).
+                type(multipartSecurityToken).
                 id(multipartSecurityToken.getId()).
-                tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
                 tokenValue(multipartSecurityToken.getTokenValue()).
                 build();
 
         var requestHeader = Header.Builder.newInstance()
                 .id(header.getId())
-                .type(header.getClass().getSimpleName())
+                .type(header)
                 .securityToken(securityToken)
                 .issuerConnector(header.getIssuerConnector())
                 .modelVersion(header.getModelVersion())

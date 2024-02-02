@@ -11,19 +11,19 @@
  *       truzzt GmbH - Initial implementation
  *
  */
-package de.truzzt.clearinghouse.edc.dto;
+package de.truzzt.clearinghouse.edc.app.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jetbrains.annotations.NotNull;
 
-public class CreateProcessResponse {
+public class LoggingMessageResponse {
 
-    @JsonProperty("pid")
+    @JsonProperty("data")
     @NotNull
-    private String pid;
+    private String data;
 
-    public String getPid() {
-        return pid;
+    public String getData() {
+        return data;
     }
 
 }

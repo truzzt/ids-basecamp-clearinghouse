@@ -6,7 +6,7 @@ import de.fraunhofer.iais.eis.DynamicAttributeToken;
 import de.fraunhofer.iais.eis.LogMessage;
 import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
-import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import okhttp3.ResponseBody;
 import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartResponse;

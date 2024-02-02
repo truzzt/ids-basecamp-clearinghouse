@@ -11,7 +11,7 @@
  *       truzzt GmbH - Initial implementation
  *
  */
-package de.truzzt.clearinghouse.edc.multipart.dto;
+package de.truzzt.clearinghouse.edc.multipart.controller.dto;
 
 import de.fraunhofer.iais.eis.Message;
 import jakarta.ws.rs.core.Response;

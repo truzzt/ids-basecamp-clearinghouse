@@ -1,9 +1,9 @@
-package de.truzzt.clearinghouse.edc.multipart;
+package de.truzzt.clearinghouse.edc.multipart.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iais.eis.*;
-import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
+import de.truzzt.clearinghouse.edc.app.message.LoggingMessageResponse;
 import de.truzzt.clearinghouse.edc.handler.LogMessageHandler;
 import de.truzzt.clearinghouse.edc.handler.RequestMessageHandler;
 import de.truzzt.clearinghouse.edc.multipart.tests.TestUtils;
@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;

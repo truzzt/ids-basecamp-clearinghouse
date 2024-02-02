@@ -12,15 +12,14 @@
  *       truzzt GmbH - EDC extension implementation
  *
  */
-package de.truzzt.clearinghouse.edc.multipart;
+package de.truzzt.clearinghouse.edc.multipart.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iais.eis.*;
-import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.QueryMessageRequest;
-import de.truzzt.clearinghouse.edc.multipart.dto.PaggingValidationResponse;
-import de.truzzt.clearinghouse.edc.multipart.dto.RequestValidationResponse;
-import de.truzzt.clearinghouse.edc.types.Pagging;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
+import de.truzzt.clearinghouse.edc.multipart.controller.dto.PagingValidationResponse;
+import de.truzzt.clearinghouse.edc.multipart.controller.dto.RequestValidationResponse;
+import de.truzzt.clearinghouse.edc.types.Paging;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -62,14 +61,11 @@ public class MultipartController extends AbstractMultipartController {
 
     private static final DateTimeFormatter dateParser = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    private static final String LOG_ID = "InfrastructureController";
+    private static final String LOG_ID = "MultipartController";
 
     private static final String MESSAGES_LOG_PID = "messages/log/{pid}";
     private static final String PROCESS_PID = "process/{pid}";
     private static final String MESSAGES_QUERY_PID = "messages/query/{pid}";
-
-    public static final String JWT_TOKEN_FORMAT_IDS = "idsc:JWT";
-    public static final String JWT_TOKEN_FORMAT_DSP = "https://w3id.org/idsa/code/JWT";
 
     public MultipartController(@NotNull Monitor monitor,
                                @NotNull IdsId connectorId,
@@ -127,16 +123,14 @@ public class MultipartController extends AbstractMultipartController {
         if (requestValidation.fail())
             return requestValidation.getError();
 
-        var paggingValidation = validatePagging(page, size, sort, dateTo, dateFrom);
-        if (paggingValidation.fail())
-            return paggingValidation.getError();
+        var pagingValidation = validatePaging(page, size, sort, dateTo, dateFrom);
+        if (pagingValidation.fail())
+            return pagingValidation.getError();
 
-        return processRequest(pid, requestValidation.getHeader(), null, paggingValidation.getPagging());
+        return processRequest(pid, requestValidation.getHeader(), null, pagingValidation.getPaging());
     }
 
-    RequestValidationResponse validateRequest(String pid, InputStream headerInputStream, String endpoint){
-
-
+    RequestValidationResponse validateRequest(String pid, InputStream headerInputStream, String endpoint) {
 
         // Check if pid is missing
         if (pid == null) {
@@ -165,23 +159,22 @@ public class MultipartController extends AbstractMultipartController {
                     .build());
         }
 
-
-        if(endpoint == MESSAGES_LOG_PID){
+        if (endpoint == MESSAGES_LOG_PID) {
             if(!(header instanceof LogMessage)){
                 monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getClass().getSimpleName()));
                 return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                         .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
-        } else if(endpoint == PROCESS_PID){
-            if(!(header instanceof RequestMessage)){
+        } else if (endpoint == PROCESS_PID) {
+            if (!(header instanceof RequestMessage)) {
                 monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getClass().getSimpleName()));
                 return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                         .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
-        } else if(endpoint == MESSAGES_QUERY_PID){
-            if(!(header instanceof QueryMessageRequest)){
+        } else if (endpoint == MESSAGES_QUERY_PID) {
+            if (!(header instanceof QueryMessage)) {
                 monitor.severe(format(LOG_ID + ": Wrong endpoint for message: %s", header.getClass().getSimpleName()));
                 return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                         .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
@@ -214,15 +207,6 @@ public class MultipartController extends AbstractMultipartController {
                     .build());
         }
 
-        // Check the security token type
-        var tokenFormat = securityToken.getTokenFormat().getId().toString();
-        if (!isValid(tokenFormat)) {
-            monitor.severe(LOG_ID + ": Invalid security token type: " + tokenFormat);
-            return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
-                    .build());
-        }
-
         // Validate DAT
         if (!validateToken(header)) {
             return new RequestValidationResponse(Response.status(Response.Status.FORBIDDEN)
@@ -233,15 +217,15 @@ public class MultipartController extends AbstractMultipartController {
       return new RequestValidationResponse(header);
     }
 
-    PaggingValidationResponse validatePagging(String page, String size, String sort, String dateTo, String dateFrom) {
-        var builder = Pagging.Builder.newInstance();
+    PagingValidationResponse validatePaging(String page, String size, String sort, String dateTo, String dateFrom) {
+        var builder = Paging.Builder.newInstance();
 
         if (!StringUtils.isNullOrBlank(page)) {
             try {
                 builder =  builder.page(Integer.parseInt(page));
             } catch (NumberFormatException e) {
                 monitor.severe(LOG_ID + ": Invalid page number: " + page);
-                return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                return new PagingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                         .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
@@ -252,7 +236,7 @@ public class MultipartController extends AbstractMultipartController {
                 builder = builder.size(Integer.parseInt(size));
             } catch (NumberFormatException e) {
                 monitor.severe(LOG_ID + ": Invalid page size: " + size);
-                return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                return new PagingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                         .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
@@ -260,10 +244,10 @@ public class MultipartController extends AbstractMultipartController {
 
         if (sort != null) {
             try {
-                builder = builder.sort(Pagging.Sort.valueOf(sort.toUpperCase()));
+                builder = builder.sort(Paging.Sort.valueOf(sort.toUpperCase()));
             } catch (IllegalArgumentException e) {
                 monitor.severe(LOG_ID + ": Invalid sort: " + sort);
-                return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                return new PagingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                         .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
@@ -274,7 +258,7 @@ public class MultipartController extends AbstractMultipartController {
                 builder = builder.dateFrom(LocalDate.parse(dateFrom, dateParser));
             } catch (DateTimeParseException e) {
                 monitor.severe(LOG_ID + ": Invalid dateFrom: " + dateFrom);
-                return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                return new PagingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                         .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
@@ -285,23 +269,23 @@ public class MultipartController extends AbstractMultipartController {
                 builder = builder.dateTo(LocalDate.parse(dateTo, dateParser));
             } catch (DateTimeParseException e) {
                 monitor.severe(LOG_ID + ": Invalid dateTo: " + dateTo);
-                return new PaggingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                return new PagingValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                         .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                         .build());
             }
         }
 
-        return new PaggingValidationResponse(builder.build());
+        return new PagingValidationResponse(builder.build());
     }
 
-    Response processRequest(@NotNull String pid, @NotNull Message header, String payload, Pagging pagging) {
+    Response processRequest(@NotNull String pid, @NotNull Message header, String payload, Paging paging) {
 
         // Build the multipart request
         var handlerRequest = HandlerRequest.Builder.newInstance()
                 .pid(pid)
                 .header(header)
                 .payload(payload)
-                .pagging(pagging)
+                .paging(paging)
                 .build();
 
         // Send to handler processing
@@ -323,12 +307,8 @@ public class MultipartController extends AbstractMultipartController {
                     .build();
         }
 
-        // Get the response token
-        if (!getResponseToken(header, multipartResponse)) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(createFormDataMultiPart(internalRecipientError(header, connectorId)))
-                    .build();
-        }
+        // Set the response token
+        multipartResponse.getHeader().setSecurityToken(header.getSecurityToken());
 
         // Build the response
         if (multipartResponse.getHeader() instanceof RejectionMessage) {
@@ -365,38 +345,4 @@ public class MultipartController extends AbstractMultipartController {
             return true;
         }
     }
-
-    private boolean getResponseToken(Message header, MultipartResponse multipartResponse) {
-
-        multipartResponse.getHeader().setSecurityToken(header.getSecurityToken());
-        return true;
-
-        /*if ((header.getRecipientConnector() == null) || (header.getRecipientConnector().isEmpty())) {
-            monitor.severe(LOG_ID + ": Recipient connector is missing");
-            return false;
-        }
-
-        var recipient = header.getRecipientConnector().get(0);
-        var tokenResult = tokenService.obtainDynamicAttributeToken(recipient.toString());
-
-        if (tokenResult.succeeded()) {
-            var responseToken = tokenResult.getContent();
-            SecurityToken securityToken = new SecurityToken();
-            securityToken.setType(header.getSecurityToken().getType());
-            securityToken.setTokenFormat(header.getSecurityToken().getTokenFormat());
-            securityToken.setTokenValue(responseToken.getTokenValue());
-
-            handlerResponse.getHeader().setSecurityToken(securityToken);
-            return true;
-
-        } else {
-            monitor.severe(LOG_ID + ": Failed to get response token: " + tokenResult.getFailureDetail());
-            return false;
-        }*/
-    }
-
-    public static boolean isValid(String id) {
-        return id.equals(JWT_TOKEN_FORMAT_IDS) || id.equals(JWT_TOKEN_FORMAT_DSP);
-    }
-
 }

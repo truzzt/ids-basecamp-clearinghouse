@@ -13,11 +13,11 @@
  */
 package de.truzzt.clearinghouse.edc.handler;
 
-import de.fraunhofer.iais.eis.LogMessage;
+import de.fraunhofer.iais.eis.LogMessageImpl;
 import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
-import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
-import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
+import de.truzzt.clearinghouse.edc.app.message.AppSenderRequest;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
 import org.eclipse.edc.protocol.ids.api.multipart.handler.Handler;
 import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartRequest;
 import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartResponse;
@@ -50,7 +50,7 @@ public class LogMessageHandler extends AbstractHandler implements Handler {
 
     @Override
     public boolean canHandle(@NotNull MultipartRequest multipartRequest) {
-        return multipartRequest.getHeader() instanceof LogMessage;
+        return multipartRequest.getHeader().getClass().equals(LogMessageImpl.class);
     }
 
     @Override

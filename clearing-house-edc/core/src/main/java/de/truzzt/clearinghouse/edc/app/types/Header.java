@@ -12,10 +12,12 @@
  *       truzzt GmbH - EDC extension implementation
  *
  */
-package de.truzzt.clearinghouse.edc.types.clearinghouse;
+package de.truzzt.clearinghouse.edc.app.types;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.fraunhofer.iais.eis.*;
+import org.eclipse.edc.spi.EdcException;
 import org.jetbrains.annotations.NotNull;
 
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -48,7 +50,7 @@ public class Header {
     @NotNull
     private final String modelVersion;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSzzz")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = Constants.IDS_TIMESTAMP_FORMAT)
     @NotNull
     @JsonProperty("issued")
     private final XMLGregorianCalendar issued;
@@ -128,8 +130,16 @@ public class Header {
             return this;
         }
 
-        public Builder type(@NotNull String type) {
-            this.type = type;
+        public Builder type(@NotNull Message message) {
+            if (message instanceof RequestMessageImpl)
+                this.type = Constants.IDS_TYPE_PREFIX + RequestMessage.class.getSimpleName();
+            else if (message instanceof LogMessageImpl)
+                this.type = Constants.IDS_TYPE_PREFIX + LogMessage.class.getSimpleName();
+            else if (message instanceof QueryMessageImpl)
+                this.type = Constants.IDS_TYPE_PREFIX + QueryMessage.class.getSimpleName();
+            else
+                throw new EdcException("Unsupported Message Type:" + message.getClass().getSimpleName());
+
             return this;
         }
 

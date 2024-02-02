@@ -54,7 +54,7 @@ tasks.jacocoTestReport {
                             "**/dto/**",
                             "**/types/clearinghouse/*",
                             "**/types/ids/*",
-                            "**/types/Pagging*")
+                            "**/types/Paging*")
                 }
             })
     )

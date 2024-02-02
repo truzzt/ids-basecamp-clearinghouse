@@ -3,11 +3,11 @@ package de.truzzt.clearinghouse.edc.tests;
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iais.eis.Message;
-import de.truzzt.clearinghouse.edc.dto.*;
-import de.truzzt.clearinghouse.edc.types.Pagging;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
+import de.truzzt.clearinghouse.edc.app.message.*;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
+import de.truzzt.clearinghouse.edc.types.Paging;
+import de.truzzt.clearinghouse.edc.app.types.Header;
+import de.truzzt.clearinghouse.edc.app.types.SecurityToken;
 import okhttp3.*;
 import org.eclipse.edc.spi.EdcException;
 
@@ -21,7 +21,7 @@ public class TestUtils extends BaseTestUtils {
     public static final String TEST_BASE_URL = "http://localhost:8000";
 
     private static final String TEST_PAYLOAD = "Hello World";
-    private static final String TEST_CREATE_PROCCESS_PAYLOAD = "{ \"owners\": [\"1\", \"2\"]}";;
+    private static final String TEST_CREATE_PROCCESS_PAYLOAD = "{ \"owners\": [\"1\", \"2\"]}";
     private static final String VALID_HEADER_JSON = "headers/valid-header.json";
     private static final String VALID_QUERY_MESSAGE_HEADER_JSON = "headers/valid-query-message-header.json";
     private static final String VALID_CREATE_PROCESS_HEADER_JSON = "headers/valid-create-process-header.json";
@@ -49,35 +49,35 @@ public class TestUtils extends BaseTestUtils {
         return parseFile(mapper, Message.class, INVALID_TYPE_HEADER_JSON);
     }
 
-    public static Pagging getValidPagging(){
-        return Pagging.Builder.newInstance()
+    public static Paging getValidpaging(){
+        return Paging.Builder.newInstance()
                 .page(1)
                 .size(1)
-                .sort(Pagging.Sort.ASC)
+                .sort(Paging.Sort.ASC)
                 .dateFrom(LocalDate.now())
                 .dateTo(LocalDate.now())
                 .build();
     }
 
-    public static Pagging getValidPaggingOnlySize(){
-        return Pagging.Builder.newInstance()
+    public static Paging getValidpagingOnlySize(){
+        return Paging.Builder.newInstance()
                 .size(1)
                 .build();
     }
-    public static Pagging getValidPaggingOnlySort(){
-        return Pagging.Builder.newInstance()
-                .sort(Pagging.Sort.ASC)
+    public static Paging getValidpagingOnlySort(){
+        return Paging.Builder.newInstance()
+                .sort(Paging.Sort.ASC)
                 .build();
     }
 
-    public static Pagging getValidPaggingOnlyDateFrom(){
-        return Pagging.Builder.newInstance()
+    public static Paging getValidpagingOnlyDateFrom(){
+        return Paging.Builder.newInstance()
                 .dateFrom(LocalDate.now())
                 .build();
     }
 
-    public static Pagging getValidPaggingOnlyDateTo(){
-        return Pagging.Builder.newInstance()
+    public static Paging getValidpagingOnlyDateTo(){
+        return Paging.Builder.newInstance()
                 .dateTo(LocalDate.now())
                 .build();
     }
@@ -176,17 +176,15 @@ public class TestUtils extends BaseTestUtils {
 
 
         var multipartSecurityToken = header.getSecurityToken();
-        var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
         var securityToken = SecurityToken.Builder.newInstance().
-                type(multipartSecurityToken.getClass().getSimpleName()).
+                type(multipartSecurityToken).
                 id(multipartSecurityToken.getId()).
-                tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
                 tokenValue(multipartSecurityToken.getTokenValue()).
                 build();
 
         var requestHeader = Header.Builder.newInstance()
                 .id(header.getId())
-                .type(header.getClass().getSimpleName())
+                .type(header)
                 .securityToken(securityToken)
                 .issuerConnector(header.getIssuerConnector())
                 .modelVersion(header.getModelVersion())
@@ -216,7 +214,7 @@ public class TestUtils extends BaseTestUtils {
                 .pid(UUID.randomUUID().toString())
                 .header(getValidQueryMessageHeader(mapper))
                 .payload(TEST_PAYLOAD)
-                .pagging(getValidPagging()).build();
+                .paging(getValidpaging()).build();
     }
 
     public static HandlerRequest getValidHandlerQueryMessageOnlySizeRequest(ObjectMapper mapper){
@@ -224,7 +222,7 @@ public class TestUtils extends BaseTestUtils {
                 .pid(UUID.randomUUID().toString())
                 .header(getValidQueryMessageHeader(mapper))
                 .payload(TEST_PAYLOAD)
-                .pagging(getValidPaggingOnlySize()).build();
+                .paging(getValidpagingOnlySize()).build();
     }
 
     public static HandlerRequest getValidHandlerQueryMessageOnlySortRequest(ObjectMapper mapper){
@@ -232,7 +230,7 @@ public class TestUtils extends BaseTestUtils {
                 .pid(UUID.randomUUID().toString())
                 .header(getValidQueryMessageHeader(mapper))
                 .payload(TEST_PAYLOAD)
-                .pagging(getValidPaggingOnlySort()).build();
+                .paging(getValidpagingOnlySort()).build();
     }
 
     public static HandlerRequest getValidHandlerQueryMessageOnlyDateFromRequest(ObjectMapper mapper){
@@ -240,7 +238,7 @@ public class TestUtils extends BaseTestUtils {
                 .pid(UUID.randomUUID().toString())
                 .header(getValidQueryMessageHeader(mapper))
                 .payload(TEST_PAYLOAD)
-                .pagging(getValidPaggingOnlyDateFrom()).build();
+                .paging(getValidpagingOnlyDateFrom()).build();
     }
 
     public static HandlerRequest getValidHandlerQueryMessageOnlyDateToRequest(ObjectMapper mapper){
@@ -248,7 +246,7 @@ public class TestUtils extends BaseTestUtils {
                 .pid(UUID.randomUUID().toString())
                 .header(getValidQueryMessageHeader(mapper))
                 .payload(TEST_PAYLOAD)
-                .pagging(getValidPaggingOnlyDateTo()).build();
+                .paging(getValidpagingOnlyDateTo()).build();
     }
 
     public static HandlerRequest getValidHandlerCreateProcessRequest(ObjectMapper mapper){

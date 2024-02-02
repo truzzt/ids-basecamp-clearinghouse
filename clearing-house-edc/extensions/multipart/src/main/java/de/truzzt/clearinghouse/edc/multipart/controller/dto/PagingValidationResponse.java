@@ -11,30 +11,30 @@
  *       truzzt GmbH - Initial implementation
  *
  */
-package de.truzzt.clearinghouse.edc.multipart.dto;
+package de.truzzt.clearinghouse.edc.multipart.controller.dto;
 
-import de.truzzt.clearinghouse.edc.types.Pagging;
+import de.truzzt.clearinghouse.edc.types.Paging;
 import jakarta.ws.rs.core.Response;
 import org.jetbrains.annotations.NotNull;
 
-public class PaggingValidationResponse {
+public class PagingValidationResponse {
 
     private Response error;
-    private Pagging pagging;
+    private Paging paging;
 
-    public PaggingValidationResponse(@NotNull Response error) {
+    public PagingValidationResponse(@NotNull Response error) {
         this.error = error;
     }
-    public PaggingValidationResponse(@NotNull Pagging pagging) {
-        this.pagging = pagging;
+    public PagingValidationResponse(@NotNull Paging paging) {
+        this.paging = paging;
     }
 
     public Response getError() {
         return error;
     }
 
-    public Pagging getPagging() {
-        return pagging;
+    public Paging getPaging() {
+        return paging;
     }
 
     public Boolean fail() {
