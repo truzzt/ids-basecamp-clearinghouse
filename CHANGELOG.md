@@ -1,3 +1,19 @@
+# [1.0.0-alpha.8](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2024-02-03)
+
+
+### Bug Fixes
+
+* **ch-app:** Fix 3 vulnerabilitites: GHSA-rjhf-4mh8-9xjq, GHSA-xphf-cx8h-7q9g, GHSA-3mv5-343c-w2qg ([2ca4dfa](https://github.com/ids-basecamp/clearinghouse/commit/2ca4dfae59aa65061f818d579d81eb7f09325576))
+* changed repository in package.json ([5b0b15c](https://github.com/ids-basecamp/clearinghouse/commit/5b0b15cdf5f44ffe6e38b556c6573d19a9ffce7e))
+* **ci:** change docker image tag to reflect new repo and impl job matrix ([60379b4](https://github.com/ids-basecamp/clearinghouse/commit/60379b464c8e00591555462cce1d4820619b274f))
+* GITHUB_TOKEN permissions for release job ([b2678aa](https://github.com/ids-basecamp/clearinghouse/commit/b2678aaa49bb9d2d0259413567704b7670635bc1))
+
+
+### Features
+
+* **ch-app:** Add postgres implementation ([#96](https://github.com/ids-basecamp/clearinghouse/issues/96)) ([842ff00](https://github.com/ids-basecamp/clearinghouse/commit/842ff0058b0b6d1ca4b3d62a6747d0bfcf025bb8))
+* **ch-app:** Implement [#91](https://github.com/ids-basecamp/clearinghouse/issues/91) ([965b4c2](https://github.com/ids-basecamp/clearinghouse/commit/965b4c2cbba0580006f9e40834470f3e225354b6))
+
 # [1.0.0-alpha.7](https://github.com/truzzt/ids-basecamp-clearinghouse/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2023-12-04)
 
 
