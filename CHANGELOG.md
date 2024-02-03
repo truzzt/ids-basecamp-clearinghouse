@@ -1,3 +1,10 @@
+# [1.0.0-alpha.9](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2024-02-03)
+
+
+### Bug Fixes
+
+* **ch-app:** copy migrations in Dockerfile ([b91926c](https://github.com/ids-basecamp/clearinghouse/commit/b91926cd6dbde60e1e13813949587d3a6f3e3f4c))
+
 # [1.0.0-alpha.8](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2024-02-03)
 
 
