@@ -2,6 +2,7 @@ package de.truzzt.clearinghouse.edc.multipart.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iais.eis.*;
+import de.truzzt.clearinghouse.edc.app.message.CreateProcessResponse;
 import de.truzzt.clearinghouse.edc.types.HandlerRequest;
 import de.truzzt.clearinghouse.edc.app.message.LoggingMessageResponse;
 import de.truzzt.clearinghouse.edc.handler.LogMessageHandler;
@@ -62,7 +63,7 @@ public class MultipartControllerTest {
 
         var typeManager = new TypeManager();
         mapper = IdsTypeManagerUtil.getIdsObjectMapper(typeManager);
-        //mapper = new ObjectMapper();
+
         List<Handler> multipartHandlers = List.of(logMessageHandler, requestMessageHandler);
         controller = new MultipartController(monitor, connectorId, mapper, tokenService, IDS_WEBHOOK_ADDRESS, multipartHandlers);
     }
@@ -77,7 +78,7 @@ public class MultipartControllerTest {
 
         assertInstanceOf(String.class, header.getEntity());
         var entity = (String) header.getEntity();
-        return mapper.readValue(entity.getBytes(), type);
+        return mapper.readValue(entity, type);
     }
 
     private <T> T extractPayload(Response response, Class<T> type) throws IOException {
@@ -95,8 +96,8 @@ public class MultipartControllerTest {
 
     @Test
     public void logMessageSuccess() throws IOException {
-        var responseHeader = TestUtils.getValidResponseHeader(mapper);
-        var responsePayload = TestUtils.getValidResponsePayload(mapper);
+        var responseHeader = TestUtils.getValidLogMessageHeader(mapper);
+        var responsePayload = TestUtils.getValidLogMessageResponsePayload(mapper);
 
         doReturn(Result.success())
                 .when(tokenService).verifyDynamicAttributeToken(any(DynamicAttributeToken.class), any(URI.class), any(String.class));
@@ -106,7 +107,7 @@ public class MultipartControllerTest {
                 .when(logMessageHandler).handleRequest(any(HandlerRequest.class));
 
         var pid = UUID.randomUUID().toString();
-        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_LOG_MESSAGE_HEADER_JSON);
 
         var response = controller.logMessage(pid, header, PAYLOAD);
 
@@ -123,8 +124,8 @@ public class MultipartControllerTest {
 
     @Test
     public void createProcessSuccess() throws IOException {
-        var responseHeader = TestUtils.getResponseHeader(mapper, TestUtils.VALID_CREATE_PROCESS_HEADER_JSON);
-        var responsePayload = TestUtils.getValidResponsePayload(mapper);
+        var responseHeader = TestUtils.getCreateProcessResponseHeader(mapper);
+        var responsePayload = TestUtils.getValidCreateProcessResponsePayload(mapper);
 
         doReturn(Result.success())
                 .when(tokenService).verifyDynamicAttributeToken(any(DynamicAttributeToken.class), any(URI.class), any(String.class));
@@ -144,13 +145,13 @@ public class MultipartControllerTest {
         var message = extractHeader(response, Message.class);
         assertTrue(message instanceof RequestMessage);
 
-        var payload = extractPayload(response, LoggingMessageResponse.class);
-        assertNotNull(payload.getData());
+        var payload = extractPayload(response, CreateProcessResponse.class);
+        assertNotNull(payload.getPid());
     }
 
     @Test
     public void invalidMessageToEndpointError() throws IOException {
-        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_LOG_MESSAGE_HEADER_JSON);
         var pid = UUID.randomUUID().toString();
 
         var response = controller.validateRequest(pid, header, "messages/query/{pid}");
@@ -165,7 +166,7 @@ public class MultipartControllerTest {
 
     @Test
     public void missingPIDError() throws IOException {
-        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_LOG_MESSAGE_HEADER_JSON);
 
         var response = controller.validateRequest(null, header, "messages/log/{pid}");
 
@@ -266,7 +267,7 @@ public class MultipartControllerTest {
                 .when(tokenService).verifyDynamicAttributeToken(any(DynamicAttributeToken.class), any(URI.class), any(String.class));
 
         var pid = UUID.randomUUID().toString();
-        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_HEADER_JSON);
+        var header = TestUtils.getHeaderInputStream(TestUtils.VALID_LOG_MESSAGE_HEADER_JSON);
 
         var response = controller.logMessage(pid, header, null);
 
@@ -287,7 +288,7 @@ public class MultipartControllerTest {
                 .when(logMessageHandler).canHandle(any(HandlerRequest.class));
 
         var pid = UUID.randomUUID().toString();
-        var header = TestUtils.getResponseHeader(mapper, TestUtils.INVALID_TYPE_HEADER_JSON);
+        var header = TestUtils.getInvalidTypeMessageResponsePayload(mapper);
 
         var response = controller.processRequest(pid, header, PAYLOAD);
 
