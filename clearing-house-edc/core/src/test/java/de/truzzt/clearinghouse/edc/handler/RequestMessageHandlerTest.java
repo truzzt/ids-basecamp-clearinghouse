@@ -3,7 +3,7 @@ package de.truzzt.clearinghouse.edc.handler;
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iais.eis.DynamicAttributeToken;
-import de.fraunhofer.iais.eis.RequestMessage;
+import de.fraunhofer.iais.eis.MessageProcessedNotificationMessage;
 import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.app.delegate.CreateProcessDelegate;
 import de.truzzt.clearinghouse.edc.types.HandlerRequest;
@@ -86,7 +86,7 @@ class RequestMessageHandlerTest {
         MultipartResponse response = requestMessageHandler.handleRequest(request);
 
         assertNotNull(response);
-        var ok = response.getHeader() instanceof RequestMessage;
+        var ok = response.getHeader() instanceof MessageProcessedNotificationMessage;
         assertTrue(ok);
     }
 
