@@ -42,9 +42,15 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    - name: Build Project
+      run: |
+        cd clearing-house-edc \
+        ./gradlew clean build \
+        -Dorg.gradle.project.gitHubUserName=${{ github.actor }} \
+        -Dorg.gradle.project.gitHubUserPassword=${{ secrets.GITHUB_TOKEN }}
+
     - name: Run Unit Tests
       run: |
-        cd clearing-house-edc
         ./gradlew test jacocoTestReport
 
     - name: Add Coverage Report
