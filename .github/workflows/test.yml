@@ -51,6 +51,7 @@ jobs:
 
     - name: Run Unit Tests
       run: |
+        cd clearing-house-edc
         ./gradlew test jacocoTestReport
 
     - name: Add Coverage Report
