@@ -62,7 +62,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Set version variable
-        if: ${{ matrix.context == 'ch-edc'}}
+        if: ${{ needs.release.outputs.new_tag_version == 'ch-edc'}}
         run: |
           TAG=${{ github.ref_name }}
           echo "VERSION=${TAG#v}" >> $GITHUB_ENV
@@ -70,7 +70,7 @@ jobs:
       - name: Build project
         if: ${{ matrix.context == 'ch-edc'}}
         run: |
-          cd ${{ matrix.context }}
+          cd ${{ matrix.directory }}
           ./gradlew clean build \
           -PdefaultVersion=${VERSION} \
           -Dorg.gradle.project.gitHubUserName=${{ github.actor }} \
