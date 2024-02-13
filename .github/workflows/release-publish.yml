@@ -81,13 +81,13 @@ jobs:
 
       - name: Build Docker image
         env:
-          DOCKER_IMAGE_TAG: ${{ needs.release.outputs.new_tag_version }}
+          DOCKER_IMAGE_TAG: test-1.0
         run: |
           cd ${{ matrix.directory }}
           docker build -t ghcr.io/${{ github.repository }}/${{ matrix.context }}:$DOCKER_IMAGE_TAG -f ${{ matrix.dockerfile }} .
 
       - name: Push Docker image
         env:
-          DOCKER_IMAGE_TAG: ${{ needs.release.outputs.new_tag_version }}
+          DOCKER_IMAGE_TAG: test-1.0
         run: docker push ghcr.io/${{ github.repository }}/${{ matrix.context }}:$DOCKER_IMAGE_TAG 
 
