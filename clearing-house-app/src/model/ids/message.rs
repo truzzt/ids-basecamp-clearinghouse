@@ -189,6 +189,6 @@ fn autogen(message: &str) -> String {
     format!(
         "https://w3id.org/idsa/autogen/{}/{}",
         message,
-        Document::create_uuid()
+        uuid::Uuid::new_v4()
     )
 }

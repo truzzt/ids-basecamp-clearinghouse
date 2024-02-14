@@ -55,7 +55,7 @@ impl super::DocumentStore for PostgresDocumentStore {
         Ok(true)
     }
 
-    async fn exists_document(&self, id: &str) -> anyhow::Result<bool> {
+    async fn exists_document(&self, id: &uuid::Uuid) -> anyhow::Result<bool> {
         sqlx::query("SELECT id FROM documents WHERE id = $1")
             .bind(id)
             .fetch_optional(&self.db)
@@ -141,9 +141,8 @@ struct DocumentRow {
 
 impl From<Document> for DocumentRow {
     fn from(value: Document) -> Self {
-        use std::str::FromStr;
         Self {
-            id: uuid::Uuid::from_str(&value.id).unwrap(),
+            id: value.id,
             process_id: value.pid,
             created_at: value.ts.naive_utc(),
             model_version: value.content.model_version,
@@ -167,7 +166,7 @@ impl Into<Document> for DocumentRow {
         use chrono::TimeZone;
 
         Document {
-            id: self.id.to_string(),
+            id: self.id,
             pid: self.process_id,
             ts: chrono::Local.from_utc_datetime(&self.created_at),
             content: crate::model::ids::message::IdsMessage {

@@ -76,7 +76,7 @@ impl<T: DocumentStore> DocumentService<T> {
             }
             _ => {
                 // prepare the success result message
-                let receipt = DocumentReceipt::new(doc.ts, &doc.pid, &doc.id);
+                let receipt = DocumentReceipt::new(doc.ts, &doc.pid, &doc.id.to_string());
 
                 trace!("storing document ....");
                 // store document

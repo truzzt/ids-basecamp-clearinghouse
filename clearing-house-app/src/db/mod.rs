@@ -38,7 +38,7 @@ pub(crate) trait ProcessStore {
 
 pub(crate) trait DocumentStore {
     async fn add_document(&self, doc: Document) -> anyhow::Result<bool>;
-    async fn exists_document(&self, id: &str) -> anyhow::Result<bool>;
+    async fn exists_document(&self, id: &uuid::Uuid) -> anyhow::Result<bool>;
     async fn get_document(&self, id: &str, pid: &str) -> anyhow::Result<Option<Document>>;
     async fn get_documents_for_pid(
         &self,

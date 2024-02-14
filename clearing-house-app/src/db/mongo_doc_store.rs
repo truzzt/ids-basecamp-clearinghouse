@@ -266,16 +266,16 @@ impl super::DocumentStore for MongoDocumentStore {
     /// checks if the document exists
     /// document ids are globally unique
     #[tracing::instrument(skip_all)]
-    async fn exists_document(&self, id: &str) -> anyhow::Result<bool> {
-        debug!("Check if document with id '{}' exists...", id);
-        let query = doc! {format!("{}.{}", MONGO_DOC_ARRAY, MONGO_ID): id};
+    async fn exists_document(&self, id: &uuid::Uuid) -> anyhow::Result<bool> {
+        debug!("Check if document with id '{}' exists...", id.to_string());
+        let query = doc! {format!("{}.{}", MONGO_DOC_ARRAY, MONGO_ID): id.to_string()};
 
         let coll = self
             .database
             .collection::<Document>(MONGO_COLL_DOCUMENT_BUCKET);
         match coll.count_documents(Some(query), None).await? {
             0 => {
-                debug!("Document with id '{}' does not exist!", &id);
+                debug!("Document with id '{}' does not exist!", &id.to_string());
                 Ok(false)
             }
             _ => {
