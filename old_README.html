@@ -174,7 +174,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="ids-clearing-house"><a class="header" href="#ids-clearing-house">IDS Clearing House</a></h1>
-<p>The IDS Clearing House Service is a prototype implementation of the <a href="https://github.com/International-Data-Spaces-Association/IDS-RAM_4_0/blob/main/documentation/3_Layers_of_the_Reference_Architecture_Model/3_5_System_Layer/3_5_5_Clearing_House.md">Clearing House</a> component of the <a href="https://internationaldataspaces.org/">Industrial Data Space</a>. </p>
+<p>The IDS Clearing House Service is a prototype implementation of the <a href="https://github.com/International-Data-Spaces-Association/IDS-RAM_4_0/blob/main/documentation/3_Layers_of_the_Reference_Architecture_Model/3_5_System_Layer/3_5_5_Clearing_House.md">Clearing House</a> component of the <a href="https://internationaldataspaces.org/">Industrial Data Space</a>.</p>
 <p>Data in the Clearing House is stored encrypted and practically immutable. There are multiple ways in which the Clearing House enforces Data Immutability:</p>
 <ul>
 <li>Using the <code>Logging Service</code> there is no way to update an already existing log entry in the database</li>
@@ -219,7 +219,7 @@
 </ul>
 <h4 id="example-configuration-docker-compose"><a class="header" href="#example-configuration-docker-compose">Example Configuration (docker-compose)</a></h4>
 <pre><code>tc-core:
-    container_name: &quot;tc-core&quot;
+    container_name: "tc-core"
     image: fraunhoferaisec/trusted-connector-core:7.1.0
     tty: true
     stdin_open: true
@@ -238,9 +238,9 @@
         SERVICE_ID_LOG: &lt;logging-service-ic&gt;
 
     ports:
-        - &quot;8443:8443&quot;
-        - &quot;9999:9999&quot;
-        - &quot;29292:29292&quot;
+        - "8443:8443"
+        - "9999:9999"
+        - "29292:29292"
 </code></pre>
 <h2 id="docker-containers"><a class="header" href="#docker-containers">Docker Containers</a></h2>
 <p>The dockerfiles located <a href="docker/">here</a> can be used to create containers for the services of the <a href="clearing-house-app"><code>Clearing House App</code></a>. There are two types of dockerfiles:</p>
