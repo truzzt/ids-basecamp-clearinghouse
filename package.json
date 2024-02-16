@@ -11,7 +11,8 @@
     "test:app": "cd clearing-house-app && cargo test",
     "test:edc": "cd clearing-house-edc && ./gradlew test",
     "docs": "mdbook serve",
-    "start": "docker compose -f docker/docker-compose.yml up -d"
+    "start": "docker compose -f docker/docker-compose.yml up -d",
+    "test:app:smoke": "k6 run -e TOKEN=`node ./generateJWT.js | xargs` -e HOSTNAME=127.0.0.1:8000 tests/smoke.js"
   },
   "bugs": {
     "url": "https://github.com/ids-basecamp/clearinghouse/issues"
