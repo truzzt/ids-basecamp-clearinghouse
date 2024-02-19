@@ -11,6 +11,7 @@ import java.io.InputStream;
 public class TestUtils extends BaseTestUtils {
 
     public static final String VALID_HEADER_JSON = "headers/valid-header.json";
+    public static final String VALID_CREATE_PROCESS_HEADER_JSON = "headers/valid-create-process-header.json";
     public static final String INVALID_HEADER_JSON = "headers/invalid-header.json";
     public static final String INVALID_TYPE_HEADER_JSON = "headers/invalid-type.json";
     public static final String INVALID_TOKEN_HEADER_JSON = "headers/invalid-token.json";
@@ -23,6 +24,10 @@ public class TestUtils extends BaseTestUtils {
     public static InputStream getHeaderInputStream(String path) {
         var json = TestUtils.readFile(path);
         return new ByteArrayInputStream(json.getBytes());
+    }
+
+    public static Message getResponseHeader(ObjectMapper mapper, String path) {
+        return parseFile(mapper, Message.class, path);
     }
 
     public static Message getValidResponseHeader(ObjectMapper mapper) {

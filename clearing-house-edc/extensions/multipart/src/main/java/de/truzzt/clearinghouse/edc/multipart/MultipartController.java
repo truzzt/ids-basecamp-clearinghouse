@@ -18,6 +18,7 @@ import de.fraunhofer.iais.eis.DynamicAttributeTokenBuilder;
 import de.truzzt.clearinghouse.edc.handler.Handler;
 import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
 import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
+import de.truzzt.clearinghouse.edc.multipart.dto.RequestValidationResponse;
 import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import de.truzzt.clearinghouse.edc.types.ids.Message;
 
@@ -82,24 +83,51 @@ public class MultipartController {
 
     @POST
     @Path("messages/log/{pid}")
-    public Response request(@PathParam(PID) String pid,
-                            @FormDataParam(HEADER) InputStream headerInputStream,
-                            @FormDataParam(PAYLOAD) String payload) {
+    public Response logMessage(@PathParam(PID) String pid,
+                               @FormDataParam(HEADER) InputStream headerInputStream,
+                               @FormDataParam(PAYLOAD) String payload) {
+        var response = validaRequest(pid, headerInputStream);
+        if (response.fail())
+            return response.getError();
 
-        // Check if pid is missing
-        if (pid == null) {
-            monitor.severe(LOG_ID + ": PID is missing");
+        // Check if payload is missing
+        if (payload == null) {
+            monitor.severe(LOG_ID + ": Payload is missing");
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
                     .build();
         }
 
+        return processRequest(pid, response.getHeader(), payload);
+    }
+
+    @POST
+    @Path("process/{pid}")
+    public Response createProcess(@PathParam(PID) String pid,
+                                  @FormDataParam(HEADER) InputStream headerInputStream,
+                                  @FormDataParam(PAYLOAD) String payload){
+        var response = validaRequest(pid, headerInputStream);
+        if (response.fail())
+            return response.getError();
+
+        return processRequest(pid, response.getHeader(), payload);
+    }
+
+    RequestValidationResponse validaRequest(String pid, InputStream headerInputStream){
+        // Check if pid is missing
+        if (pid == null) {
+            monitor.severe(LOG_ID + ": PID is missing");
+            return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
+                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
+                    .build());
+        }
+
         // Check if header is missing
         if (headerInputStream == null) {
             monitor.severe(LOG_ID + ": Header is missing");
-            return Response.status(Response.Status.BAD_REQUEST)
+            return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
-                    .build();
+                    .build());
         }
 
         // Convert header to message
@@ -108,9 +136,9 @@ public class MultipartController {
             header = typeManagerUtil.parse(headerInputStream, Message.class);
         } catch (Exception e) {
             monitor.severe(format(LOG_ID + ": Header parsing failed: %s", e.getMessage()));
-            return Response.status(Response.Status.BAD_REQUEST)
+            return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
-                    .build();
+                    .build());
         }
 
         // Check if any required header field missing
@@ -124,43 +152,40 @@ public class MultipartController {
                 || header.getSenderAgent() == null
                 || (header.getSenderAgent() != null && StringUtils.isNullOrBlank(header.getSenderAgent().toString()))
         ) {
-            return Response.status(Response.Status.BAD_REQUEST)
+            return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(header, connectorId)))
-                    .build();
+                    .build());
         }
 
         // Check if security token is present
         var securityToken = header.getSecurityToken();
         if (securityToken == null || securityToken.getTokenValue() == null) {
             monitor.severe(LOG_ID + ": Token is missing in header");
-            return Response.status(Response.Status.BAD_REQUEST)
+            return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, notAuthenticated(header, connectorId)))
-                    .build();
+                    .build());
         }
 
         // Check the security token type
         var tokenFormat = securityToken.getTokenFormat().getId().toString();
-        if (!tokenFormat.equals(TokenFormat.JWT_TOKEN_FORMAT)) {
+        if (!TokenFormat.isValid(tokenFormat)) {
             monitor.severe(LOG_ID + ": Invalid security token type: " + tokenFormat);
-            return Response.status(Response.Status.BAD_REQUEST)
+            return new RequestValidationResponse(Response.status(Response.Status.BAD_REQUEST)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
-                    .build();
-        }
-
-        // Check if payload is missing
-        if (payload == null) {
-            monitor.severe(LOG_ID + ": Payload is missing");
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(createFormDataMultiPart(typeManagerUtil, HEADER, malformedMessage(null, connectorId)))
-                    .build();
+                    .build());
         }
 
         // Validate DAT
         if (!validateToken(header)) {
-            return Response.status(Response.Status.FORBIDDEN)
+            return new RequestValidationResponse(Response.status(Response.Status.FORBIDDEN)
                     .entity(createFormDataMultiPart(typeManagerUtil, HEADER, notAuthenticated(header, connectorId)))
-                    .build();
+                    .build());
         }
+
+      return new RequestValidationResponse(header);
+    }
+
+    Response processRequest(String pid, Message header, String payload){
 
         // Build the multipart request
         var multipartRequest = HandlerRequest.Builder.newInstance()

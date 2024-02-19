@@ -1,4 +1,5 @@
-.settings/*
+/**/.settings
+/**/.classpath
 .project
 target
 data
@@ -9,3 +10,4 @@ node_modules/
 .vscode/
 book/
 ca/
+.DS_Store

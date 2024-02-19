@@ -8,6 +8,7 @@ WORKDIR /usr/src/chapp
 COPY Cargo.toml Cargo.lock config.toml  ./
 
 # Copy the source code into the container
+COPY migrations ./migrations
 COPY src ./src
 
 # Build the Rust application with dependencies (this helps to cache dependencies)

@@ -1,9 +1,7 @@
 /// Represents the configuration for the application
 #[derive(Debug, serde::Deserialize)]
 pub(crate) struct CHConfig {
-    pub(crate) process_database_url: String,
-    pub(crate) keyring_database_url: String,
-    pub(crate) document_database_url: String,
+    pub(crate) database_url: String,
     pub(crate) clear_db: bool,
     #[serde(default)]
     pub(crate) log_level: Option<LogLevel>,
@@ -101,23 +99,17 @@ mod test {
     #[test]
     #[serial]
     fn test_read_config_from_env() {
-        std::env::set_var("CH_APP_PROCESS_DATABASE_URL", "mongodb://localhost:27117");
-        std::env::set_var("CH_APP_KEYRING_DATABASE_URL", "mongodb://localhost:27118");
-        std::env::set_var("CH_APP_DOCUMENT_DATABASE_URL", "mongodb://localhost:27119");
+        std::env::set_var("CH_APP_DATABASE_URL", "mongodb://localhost:27117");
         std::env::set_var("CH_APP_CLEAR_DB", "true");
         std::env::set_var("CH_APP_LOG_LEVEL", "INFO");
 
         let conf = super::read_config(None);
-        assert_eq!(conf.process_database_url, "mongodb://localhost:27117");
-        assert_eq!(conf.keyring_database_url, "mongodb://localhost:27118");
-        assert_eq!(conf.document_database_url, "mongodb://localhost:27119");
+        assert_eq!(conf.database_url, "mongodb://localhost:27117");
         assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Info));
 
         // Cleanup
-        std::env::remove_var("CH_APP_PROCESS_DATABASE_URL");
-        std::env::remove_var("CH_APP_KEYRING_DATABASE_URL");
-        std::env::remove_var("CH_APP_DOCUMENT_DATABASE_URL");
+        std::env::remove_var("CH_APP_DATABASE_URL");
         std::env::remove_var("CH_APP_CLEAR_DB");
         std::env::remove_var("CH_APP_LOG_LEVEL");
     }
@@ -130,9 +122,7 @@ mod test {
         let file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
 
         // Write config to file
-        let toml = r#"process_database_url = "mongodb://localhost:27019"
-keyring_database_url = "mongodb://localhost:27020"
-document_database_url = "mongodb://localhost:27017"
+        let toml = r#"database_url = "mongodb://localhost:27019"
 clear_db = true
 log_level = "ERROR"
 "#;
@@ -144,9 +134,7 @@ log_level = "ERROR"
         let conf = super::read_config(Some(file.path()));
 
         // Test
-        assert_eq!(conf.process_database_url, "mongodb://localhost:27019");
-        assert_eq!(conf.keyring_database_url, "mongodb://localhost:27020");
-        assert_eq!(conf.document_database_url, "mongodb://localhost:27017");
+        assert_eq!(conf.database_url, "mongodb://localhost:27019");
         assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Error));
     }
