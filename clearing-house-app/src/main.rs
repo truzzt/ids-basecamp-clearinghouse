@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 #![warn(clippy::unwrap_used)]
 
-use std::net::SocketAddr;
+use tokio::net::TcpListener;
 
 /// Main function: Reading config, initializing application state, starting server
 #[tokio::main]
@@ -16,10 +16,9 @@ async fn main() -> Result<(), anyhow::Error> {
     let app = clearing_house_app::app().await?;
 
     // Bind port and start server
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
-    tracing::info!("Starting server: Listening on {}", addr);
-    Ok(axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = TcpListener::bind("0.0.0.0:8000").await?;
+    tracing::info!("Starting server: Listening on 0.0.0.0:8000");
+    Ok(axum::serve(listener, app.into_make_service())
         .with_graceful_shutdown(clearing_house_app::util::shutdown_signal())
         .await?)
 }

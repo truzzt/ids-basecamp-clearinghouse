@@ -43,13 +43,11 @@ impl biscuit::CompactJson for DataTransaction {}
 
 impl DataTransaction {
     pub fn sign(&self, key_path: &str) -> Receipt {
-        use crate::model::claims::get_fingerprint;
-
         let jws = biscuit::jws::Compact::new_decoded(
             biscuit::jws::Header::from_registered_header(biscuit::jws::RegisteredHeader {
                 algorithm: biscuit::jwa::SignatureAlgorithm::PS512,
                 media_type: None,
-                key_id: get_fingerprint(key_path),
+                key_id: crate::model::claims::get_fingerprint(key_path),
                 ..Default::default()
             }),
             self.clone(),
@@ -62,28 +60,6 @@ impl DataTransaction {
             data: jws
                 .into_encoded(&keypair)
                 .expect("Encoded JWS with keypair"),
-        }
-    }
-}
-
-// convenience method for testing
-#[cfg(test)]
-impl From<Receipt> for DataTransaction {
-    // TODO: It would be better to implement the TryFrom trait instead of this error DataTransaction
-    fn from(r: Receipt) -> Self {
-        match r.data.unverified_payload() {
-            Ok(d) => d,
-            Err(e) => {
-                println!("Error occurred: {:#?}", e);
-                DataTransaction {
-                    timestamp: 0,
-                    process_id: "error".to_string(),
-                    document_id: "error".to_string(),
-                    payload: "error".to_string(),
-                    client_id: "error".to_string(),
-                    clearing_house_version: "error".to_string(),
-                }
-            }
         }
     }
 }

@@ -1,15 +1,10 @@
-use crate::db::doc_store::DataStore;
+use crate::db::DocumentStore;
 use crate::model::claims::ChClaims;
-use crate::model::constants::{
-    DEFAULT_DOC_TYPE, DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES, PAYLOAD_PART,
-};
-use crate::model::crypto::{KeyCt, KeyCtList};
+use crate::model::constants::{DEFAULT_NUM_RESPONSE_ENTRIES, MAX_NUM_RESPONSE_ENTRIES};
 use crate::model::document::Document;
 use crate::model::{parse_date, validate_and_sanitize_dates, SortingOrder};
-use crate::services::keyring_service::KeyringService;
 use crate::services::{DocumentReceipt, QueryResult};
 use std::convert::TryFrom;
-use std::sync::Arc;
 
 /// Error type for DocumentService
 #[derive(thiserror::Error, Debug)]
@@ -23,16 +18,10 @@ pub enum DocumentServiceError {
         source: anyhow::Error,
         description: String,
     },
-    #[error("Error while retrieving keys from keyring!")]
-    KeyringServiceError(#[from] crate::services::keyring_service::KeyringServiceError),
     #[error("Invalid dates in query!")]
     InvalidDates,
     #[error("Document not found!")]
     NotFound,
-    #[error("Key Ciphertext corrupted!")]
-    CorruptedCiphertext(#[from] hex::FromHexError),
-    #[error("Error while encrypting!")]
-    EncryptionError,
 }
 
 impl axum::response::IntoResponse for DocumentServiceError {
@@ -51,28 +40,20 @@ impl axum::response::IntoResponse for DocumentServiceError {
                 format!("{}: {}", description, source),
             )
                 .into_response(),
-            Self::KeyringServiceError(e) => e.into_response(),
             Self::InvalidDates => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::NotFound => (StatusCode::NOT_FOUND, self.to_string()).into_response(),
-            Self::CorruptedCiphertext(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
-            }
-            Self::EncryptionError => {
-                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
-            }
         }
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct DocumentService {
-    db: DataStore,
-    key_api: Arc<KeyringService>,
+pub struct DocumentService<T> {
+    db: T,
 }
 
-impl DocumentService {
-    pub fn new(db: DataStore, key_api: Arc<KeyringService>) -> Self {
-        Self { db, key_api }
+impl<T: DocumentStore> DocumentService<T> {
+    pub fn new(db: T) -> Self {
+        Self { db }
     }
 
     #[tracing::instrument(skip_all)]
@@ -83,19 +64,7 @@ impl DocumentService {
     ) -> Result<DocumentReceipt, DocumentServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         // data validation
-        let payload: Vec<String> = doc
-            .parts
-            .iter()
-            .filter(|p| *PAYLOAD_PART == p.name)
-            .map(|p| p.content.clone())
-            .collect();
-
-        // If the document contains more than 1 payload we panic. This should never happen!
-        assert!(
-            payload.len() <= 1,
-            "Document contains two or more payloads!"
-        );
-        if payload.is_empty() {
+        if doc.content.payload.is_none() {
             return Err(DocumentServiceError::MissingPayload);
         }
 
@@ -106,42 +75,12 @@ impl DocumentService {
                 Err(DocumentServiceError::DocumentAlreadyExists)
             }
             _ => {
-                trace!("getting keys");
-
-                // TODO: This needs some attention, because keyring api called `create_service_token` on `ch_claims`
-                let keys = match self
-                    .key_api
-                    .generate_keys(ch_claims, doc.pid.clone(), doc.dt_id.clone())
-                    .await
-                {
-                    Ok(key_map) => {
-                        debug!("got keys");
-                        Ok(key_map)
-                    }
-                    Err(e) => {
-                        error!("Error while retrieving keys: {:?}", e);
-                        Err(DocumentServiceError::KeyringServiceError(e))
-                    }
-                }?;
-
-                debug!("start encryption");
-                let enc_doc = match doc.encrypt(keys) {
-                    Ok(ct) => {
-                        debug!("got ct");
-                        Ok(ct)
-                    }
-                    Err(e) => {
-                        error!("Error while encrypting: {:?}", e);
-                        Err(DocumentServiceError::EncryptionError)
-                    }
-                }?;
-
                 // prepare the success result message
-                let receipt = DocumentReceipt::new(enc_doc.ts, &enc_doc.pid, &enc_doc.id);
+                let receipt = DocumentReceipt::new(doc.ts, &doc.pid, &doc.id.to_string());
 
                 trace!("storing document ....");
                 // store document
-                match self.db.add_document(enc_doc).await {
+                match self.db.add_document(doc).await {
                     Ok(_b) => Ok(receipt),
                     Err(e) => {
                         error!("Error while adding: {:?}", e);
@@ -165,14 +104,10 @@ impl DocumentService {
         (date_from, date_to): (Option<String>, Option<String>),
         pid: String,
     ) -> Result<QueryResult, DocumentServiceError> {
-        debug!("Trying to retrieve documents for pid '{}'...", &pid);
+        debug!("Trying to retrieve documents for pid '{pid}'...");
         trace!("...user '{:?}'", &ch_claims.client_id);
-        debug!(
-            "...page: {:#?}, size:{:#?} and sort:{:#?}",
-            page, size, sort
-        );
+        debug!("...page: {page:?}, size:{size:?} and sort:{sort:?}");
 
-        let dt_id = String::from(DEFAULT_DOC_TYPE);
         let sanitized_page = Self::sanitize_page(page);
         let sanitized_size = Self::sanitize_size(size);
 
@@ -198,10 +133,9 @@ impl DocumentService {
             sanitized_page, sanitized_size, &sanitized_sort
         );
 
-        let cts = match self
+        let docs = match self
             .db
             .get_documents_for_pid(
-                &dt_id,
                 &pid,
                 sanitized_page,
                 sanitized_size,
@@ -210,7 +144,7 @@ impl DocumentService {
             )
             .await
         {
-            Ok(cts) => cts,
+            Ok(docs) => docs,
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
                 return Err(DocumentServiceError::DatabaseError {
@@ -237,54 +171,11 @@ impl DocumentService {
         );
 
         // The db might contain no documents in which case we get an empty vector
-        if cts.is_empty() {
+        if docs.is_empty() {
             debug!("Queried empty pid: {}", &pid);
             Ok(result)
         } else {
-            // Documents found for pid, now decrypting them
-            debug!(
-                "Found {} documents. Getting keys from keyring...",
-                cts.len()
-            );
-            let key_cts: Vec<KeyCt> = cts
-                .iter()
-                .map(|e| KeyCt::new(e.id.clone(), e.keys_ct.clone()))
-                .collect();
-            // caution! we currently only support a single dt per call, so we use the first dt we found
-            let key_cts_list = KeyCtList::new(cts[0].dt_id.clone(), key_cts);
-            // decrypt cts
-            // TODO: This method needs some attention, because keyring api called `create_service_token` on `ch_claims`
-            let key_maps = match self
-                .key_api
-                .decrypt_multiple_keys(ch_claims, Some(pid), &key_cts_list)
-                .await
-            {
-                Ok(key_map) => key_map,
-                Err(e) => {
-                    error!("Error while retrieving keys from keyring: {:?}", e);
-                    return Err(DocumentServiceError::KeyringServiceError(e));
-                }
-            };
-            debug!("... keys received. Starting decryption...");
-            let pts_bulk: Vec<Document> = cts
-                .iter()
-                .zip(key_maps.iter())
-                .filter_map(|(ct, key_map)| {
-                    if ct.id != key_map.id {
-                        error!("Document and map don't match");
-                    };
-                    match ct.decrypt(key_map.map.keys.clone()) {
-                        Ok(d) => Some(d),
-                        Err(e) => {
-                            warn!("Got empty document from decryption! {:?}", e);
-                            None
-                        }
-                    }
-                })
-                .collect();
-            debug!("...done.");
-
-            result.documents = pts_bulk;
+            result.documents = docs;
             Ok(result)
         }
     }
@@ -298,53 +189,13 @@ impl DocumentService {
         hash: Option<String>,
     ) -> Result<Document, DocumentServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
-        trace!(
-            "trying to retrieve document with id '{}' for pid '{}'",
-            &id,
-            &pid
-        );
+        trace!("trying to retrieve document with id '{id}' for pid '{pid}'");
         if let Some(hash) = hash {
             debug!("integrity check with hash: {}", hash);
         }
 
         match self.db.get_document(&id, &pid).await {
-            //TODO: would like to send "{}" instead of "null" when dt is not found
-            Ok(Some(ct)) => {
-                match hex::decode(&ct.keys_ct) {
-                    Ok(key_ct) => {
-                        // TODO: This method needs some attention, because keyring api called `create_service_token` on `ch_claims`
-                        match self
-                            .key_api
-                            .decrypt_key_map(
-                                ch_claims,
-                                hex::encode_upper(key_ct),
-                                Some(pid),
-                                ct.dt_id.clone(),
-                            )
-                            .await
-                        {
-                            Ok(key_map) => {
-                                //TODO check the hash
-                                match ct.decrypt(key_map.keys) {
-                                    Ok(d) => Ok(d),
-                                    Err(e) => {
-                                        warn!("Got empty document from decryption! {:?}", e);
-                                        Err(DocumentServiceError::NotFound)
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                error!("Error while retrieving keys from keyring: {:?}", e);
-                                Err(DocumentServiceError::KeyringServiceError(e))
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        error!("Error while decoding ciphertext: {:?}", e);
-                        Err(DocumentServiceError::CorruptedCiphertext(e)) // InternalError
-                    }
-                }
-            }
+            Ok(Some(ct)) => Ok(ct),
             Ok(None) => {
                 debug!("Nothing found in db!");
                 Err(DocumentServiceError::NotFound) // NotFound

@@ -14,10 +14,10 @@
     "start": "docker compose -f docker/docker-compose.yml up -d"
   },
   "bugs": {
-    "url": "https://github.com/truzzt/ids-basecamp-clearinghouse/issues"
+    "url": "https://github.com/ids-basecamp/clearinghouse/issues"
   },
   "keywords": [],
-  "repository": "https://github.com/truzzt/ids-basecamp-clearinghouse",
+  "repository": "https://github.com/ids-basecamp/clearinghouse",
   "author": "Maximilian Schönenberg, Daniel Hommen",
   "license": "Apache-2.0",
   "devDependencies": {
