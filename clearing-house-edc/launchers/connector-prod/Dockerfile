@@ -10,9 +10,9 @@ ENV GITHUB_TOKEN $GITHUB_TOKEN
 COPY --chown=gradle:gradle . /home/gradle/project/
 WORKDIR /home/gradle/project/
 RUN ./gradlew clean build \
-  -PdefaultVersion=${VERSION} \
-  -Dorg.gradle.project.gitHubUserName=${GITHUB_USER} \
-  -Dorg.gradle.project.gitHubUserPassword=${GITHUB_TOKEN}
+-PdefaultVersion="${VERSION}" \
+-Dorg.gradle.project.gitHubUserName="${GITHUB_USER}" \
+-Dorg.gradle.project.gitHubUserPassword="${GITHUB_TOKEN}"
 
 FROM openjdk:17-slim-buster
 
