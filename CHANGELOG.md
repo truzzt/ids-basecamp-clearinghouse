@@ -1,3 +1,22 @@
+# [1.0.0-beta.2](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2024-02-19)
+
+
+### Bug Fixes
+
+* **ch-app:** copy migrations in Dockerfile ([b91926c](https://github.com/ids-basecamp/clearinghouse/commit/b91926cd6dbde60e1e13813949587d3a6f3e3f4c))
+* **ch-app:** Fix 3 vulnerabilitites: GHSA-rjhf-4mh8-9xjq, GHSA-xphf-cx8h-7q9g, GHSA-3mv5-343c-w2qg ([2ca4dfa](https://github.com/ids-basecamp/clearinghouse/commit/2ca4dfae59aa65061f818d579d81eb7f09325576))
+* **ch-app:** Fixed uuid <-> str mismatch in document, which resulted in failed query ([0571bd1](https://github.com/ids-basecamp/clearinghouse/commit/0571bd1d720d89d9c3b9d3758d70197faca4f04c))
+* changed repository in package.json ([5b0b15c](https://github.com/ids-basecamp/clearinghouse/commit/5b0b15cdf5f44ffe6e38b556c6573d19a9ffce7e))
+* **ci:** change docker image tag to reflect new repo and impl job matrix ([60379b4](https://github.com/ids-basecamp/clearinghouse/commit/60379b464c8e00591555462cce1d4820619b274f))
+* disable tokenFormat check ([c920b82](https://github.com/ids-basecamp/clearinghouse/commit/c920b825219edeae317d874f6cb723d1016ecabc))
+* GITHUB_TOKEN permissions for release job ([b2678aa](https://github.com/ids-basecamp/clearinghouse/commit/b2678aaa49bb9d2d0259413567704b7670635bc1))
+
+
+### Features
+
+* **ch-app:** Add postgres implementation ([#96](https://github.com/ids-basecamp/clearinghouse/issues/96)) ([842ff00](https://github.com/ids-basecamp/clearinghouse/commit/842ff0058b0b6d1ca4b3d62a6747d0bfcf025bb8))
+* **ch-app:** Implement [#91](https://github.com/ids-basecamp/clearinghouse/issues/91) ([965b4c2](https://github.com/ids-basecamp/clearinghouse/commit/965b4c2cbba0580006f9e40834470f3e225354b6))
+
 # 1.0.0-beta.1 (2023-11-23)
 
 
