@@ -109,21 +109,27 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
         }?;
 
         // Check if process exists and if the user is authorized to access the process
-        if let Err(LoggingServiceError::ProcessDoesNotExist(_)) =
-            self.get_process_and_check_authorized(&pid, user).await
+        match self.get_process_and_check_authorized(&pid, user).await
         {
-            // convenience: if process does not exist, we create it but only if no error occurred before
-            info!("Requested pid '{}' does not exist. Creating...", &pid);
-            // create a new process
-            let new_process = Process::new(pid.clone(), vec![user.clone()]);
+            Err(LoggingServiceError::ProcessDoesNotExist(_)) => {
+                // convenience: if process does not exist, we create it but only if no error occurred before
+                info!("Requested pid '{}' does not exist. Creating...", &pid);
+                // create a new process
+                let new_process = Process::new(pid.clone(), vec![user.clone()]);
 
-            if let Err(e) = self.db.store_process(new_process).await {
-                error!("Error while creating process '{}'", &pid);
-                return Err(LoggingServiceError::DatabaseError {
-                    source: e,
-                    description: "Creating process failed".to_string(),
-                }); // InternalError
+                if let Err(e) = self.db.store_process(new_process).await {
+                    error!("Error while creating process '{}'", & pid);
+                    return Err(LoggingServiceError::DatabaseError {
+                        source: e,
+                        description: "Creating process failed".to_string(),
+                    }); // InternalError
+                }
             }
+            Err(e) => {
+                warn!("Error while checking process: {:?}", e);
+                return Err(e);
+            }
+            Ok(_) => {}
         }
 
         // transform message to document
