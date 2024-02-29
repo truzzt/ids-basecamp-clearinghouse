@@ -2,4 +2,4 @@
 
 Prerequisites:
 
-- MongoDB running on `localhost:27017`
+- Docker Deamon running and Docker CLI installed

@@ -60,6 +60,8 @@ serial_test = "3"
 tempfile = "3.8"
 tower = { version = "0.4", features = ["util"] }
 hyper = { version = "1", features = ["full"] }
+testcontainers = "0.15.0"
+testcontainers-modules = { version = "0.3.4", features = ["postgres"] }
 
 [features]
 default = ["postgres"]
