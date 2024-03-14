@@ -50,7 +50,7 @@ public interface Handler {
 
         var tokenValue = securityToken.getTokenValue();
         var decodedToken = JWT.decode(tokenValue);
-        
+
         var referringConnector = decodedToken.getClaim("referringConnector").asString();
         if (referringConnector == null) {
             throw new EdcException("JWT Token referringConnector is missing");
