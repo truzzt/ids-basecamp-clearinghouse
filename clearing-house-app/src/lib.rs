@@ -1,3 +1,7 @@
+#![forbid(unsafe_code)]
+#![warn(clippy::all, clippy::pedantic, clippy::unwrap_used)]
+#![allow(clippy::module_name_repetitions)]
+
 #[macro_use]
 extern crate tracing;
 
@@ -35,22 +39,25 @@ pub(crate) struct AppState {
 }
 
 impl AppState {
+
+    /// Connect to the database and execute database migrations
+    async fn setup_postgres(conf: &config::CHConfig) -> anyhow::Result<sqlx::PgPool> {
+        info!("Connecting to database");
+        let pool = sqlx::PgPool::connect(&conf.database_url).await?;
+
+        info!("Migrating database");
+        sqlx::migrate!()
+            .run(&pool)
+            .await
+            .expect("Failed to migrate database!");
+
+        Ok(pool)
+    }
+
     /// Initialize the application state from config
     async fn init(conf: &config::CHConfig) -> anyhow::Result<Self> {
         #[cfg(feature = "postgres")]
-        let pool = async {
-            info!("Connecting to database");
-            let pool = sqlx::PgPool::connect(&conf.database_url).await.unwrap();
-
-            info!("Migrating database");
-            sqlx::migrate!()
-                .run(&pool)
-                .await
-                .expect("Failed to migrate database!");
-
-            pool
-        }
-        .await;
+        let pool = Self::setup_postgres(conf).await?;
 
         trace!("Initializing Process store");
         #[cfg(feature = "mongodb")]
@@ -85,7 +92,7 @@ impl AppState {
         ));
 
         let service_config = Arc::new(util::init_service_config(
-            ENV_LOGGING_SERVICE_ID.to_string(),
+            ENV_LOGGING_SERVICE_ID,
         )?);
         let signing_key = util::init_signing_key(conf.signing_key.as_deref())?;
 
@@ -97,6 +104,11 @@ impl AppState {
     }
 }
 
+/// Initialize the application
+/// 
+/// # Errors
+/// 
+/// Throws an error if the `AppState` cannot be initialized
 pub async fn app() -> anyhow::Result<axum::Router> {
     // Read configuration
     let conf = config::read_config(None);

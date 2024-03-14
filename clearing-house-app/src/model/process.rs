@@ -5,10 +5,12 @@ pub struct Process {
 }
 
 impl Process {
+    #[must_use]
     pub fn new(id: String, owners: Vec<String>) -> Self {
         Self { id, owners }
     }
 
+    #[must_use]
     pub fn is_authorized(&self, owner: &str) -> bool {
         self.owners.contains(&owner.to_string())
     }
@@ -42,6 +44,11 @@ pub struct DataTransaction {
 impl biscuit::CompactJson for DataTransaction {}
 
 impl DataTransaction {
+    /// Signs a `DataTransaction` with a given key on the `key_path` and returns a `Receipt`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the key at `key_path` is not a valid RSA keypair or does not exist
     pub fn sign(&self, key_path: &str) -> Receipt {
         let jws = biscuit::jws::Compact::new_decoded(
             biscuit::jws::Header::from_registered_header(biscuit::jws::RegisteredHeader {

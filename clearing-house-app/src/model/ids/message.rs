@@ -107,10 +107,10 @@ impl Default for IdsMessage {
             type_message: MessageType::Message,
             id: Some(autogen("MessageProcessedNotification")),
             pid: None,
-            model_version: "".to_string(),
+            model_version: String::new(),
             correlation_message: None,
             issued: InfoModelDateTime::default(),
-            issuer_connector: InfoModelId::new("".to_string()),
+            issuer_connector: InfoModelId::new(String::new()),
             sender_agent: "https://w3id.org/idsa/core/ClearingHouse".to_string(),
             recipient_connector: None,
             recipient_agent: None,
@@ -124,55 +124,55 @@ impl Default for IdsMessage {
     }
 }
 
-/// Conversion from Document to IdsMessage
+/// Conversion from `Document` to `IdsMessage`
 ///
-/// note: Documents are converted into LogMessages. The LogMessage contains
-/// the payload and payload type, which is the data that was stored previously.
-/// All other fields of the LogMessage are meta data about the logging, e.g.
+/// note: Documents are converted into `LogMessage`'s. The `LogMessage` contains
+/// the `payload` and `payload_type`, which is the data that was stored previously.
+/// All other fields of the `LogMessage` are `metadata` about the logging, e.g.
 /// when the message was logged, etc.
 ///
-/// meta data that we also need to store
-/// - message_id
-/// - pid
-/// - model_version
-/// - correlation_message
-/// - issued
-/// - issuer_connector
-/// - sender_agent
-/// - transfer_contract
-/// - content_version
-/// - security_token
-/// - authorization_token
-/// - payload
-/// - payload_type
+/// metadata that we also need to store
+/// - `message_id`
+/// - `pid`
+/// - `model_version`
+/// - `correlation_message`
+/// - `issued`
+/// - `issuer_connector`
+/// - `sender_agent`
+/// - `transfer_contract`
+/// - `content_version`
+/// - `security_token`
+/// - `authorization_token`
+/// - `payload`
+/// - `payload_type`
 impl From<Document> for IdsMessage {
     fn from(doc: Document) -> Self {
         doc.content.clone()
     }
 }
 
-/// Conversion from IdsMessage to Document
+/// Conversion from `IdsMessage` to `Document`
 ///
 /// most important part to store:
-/// payload and payload type
+/// `payload` and `payload_type`
 ///
-/// meta data that we also need to store
-/// - message_id
-/// - pid
-/// - model_version
-/// - correlation_message
-/// - issued
-/// - issuer_connector
-/// - sender_agent
-/// - transfer_contract
-/// - content_version
-/// - security_token
-/// - authorization_token
-/// - payload
-/// - payload_type
-impl Into<Document> for IdsMessage {
-    fn into(self) -> Document {
-        let mut m = self.clone();
+/// metadata that we also need to store
+/// - `message_id`
+/// - `pid`
+/// - `model_version`
+/// - `correlation_message`
+/// - `issued`
+/// - `issuer_connector`
+/// - `sender_agent`
+/// - `transfer_contract`
+/// - `content_version`
+/// - `security_token`
+/// - `authorization_token`
+/// - `payload`
+/// - `payload_type`
+impl From<IdsMessage> for Document {
+    fn from(value: IdsMessage) -> Self {
+        let mut m = value.clone();
 
         m.id = Some(m.id.unwrap_or_else(|| autogen("Message")));
 

@@ -6,7 +6,7 @@ use crate::model::{parse_date, validate_and_sanitize_dates, SortingOrder};
 use crate::services::{DocumentReceipt, QueryResult};
 use std::convert::TryFrom;
 
-/// Error type for DocumentService
+/// Error type for `DocumentService`
 #[derive(thiserror::Error, Debug)]
 pub enum DocumentServiceError {
     #[error("Document already exists!")]
@@ -28,19 +28,15 @@ impl axum::response::IntoResponse for DocumentServiceError {
     fn into_response(self) -> axum::response::Response {
         use axum::http::StatusCode;
         match self {
-            Self::DocumentAlreadyExists => {
-                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
-            }
-            Self::MissingPayload => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            Self::DocumentAlreadyExists | Self::MissingPayload | Self::InvalidDates => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::DatabaseError {
                 source,
                 description,
             } => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("{}: {}", description, source),
+                format!("{description}: {source}"),
             )
                 .into_response(),
-            Self::InvalidDates => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::NotFound => (StatusCode::NOT_FOUND, self.to_string()).into_response(),
         }
     }
@@ -69,26 +65,23 @@ impl<T: DocumentStore> DocumentService<T> {
         }
 
         // check if doc id already exists
-        match self.db.exists_document(&doc.id).await {
-            Ok(true) => {
-                warn!("Document exists already!");
-                Err(DocumentServiceError::DocumentAlreadyExists)
-            }
-            _ => {
-                // prepare the success result message
-                let receipt = DocumentReceipt::new(doc.ts, &doc.pid, &doc.id.to_string());
+        if let Ok(true) = self.db.exists_document(&doc.id).await {
+            warn!("Document exists already!");
+            Err(DocumentServiceError::DocumentAlreadyExists)
+        } else {
+            // prepare the success result message
+            let receipt = DocumentReceipt::new(doc.ts, &doc.pid, &doc.id.to_string());
 
-                trace!("storing document ....");
-                // store document
-                match self.db.add_document(doc).await {
-                    Ok(_b) => Ok(receipt),
-                    Err(e) => {
-                        error!("Error while adding: {:?}", e);
-                        Err(DocumentServiceError::DatabaseError {
-                            source: e,
-                            description: "Error while adding document".to_string(),
-                        })
-                    }
+            trace!("storing document ....");
+            // store document
+            match self.db.add_document(doc).await {
+                Ok(_b) => Ok(receipt),
+                Err(e) => {
+                    error!("Error while adding: {:?}", e);
+                    Err(DocumentServiceError::DatabaseError {
+                        source: e,
+                        description: "Error while adding document".to_string(),
+                    })
                 }
             }
         }
