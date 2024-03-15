@@ -1,3 +1,18 @@
+# [1.0.0-beta.3](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2024-03-15)
+
+
+### Bug Fixes
+
+* change tests for `referringConnector` test ([25cd379](https://github.com/ids-basecamp/clearinghouse/commit/25cd379c969c8747f618fc5166e97957631504e8))
+
+
+### Features
+
+* **ch-app:** Add create_process test and fix an issue ([8cfb5e1](https://github.com/ids-basecamp/clearinghouse/commit/8cfb5e18feea759aeb4425cb900453f86f07c15f))
+* **ch-app:** Add testcontainers for Integration tests with database ([679b06b](https://github.com/ids-basecamp/clearinghouse/commit/679b06b95d8e7ac58019fd21e678c6725c79083e))
+* enable pedantic linter and fix clippy findings where appropiate ([df0a5d4](https://github.com/ids-basecamp/clearinghouse/commit/df0a5d40ed50ea45f90383c21666b51fb89bdddd))
+* uses now `referringConnector` instead of `SKI:AKI` ([b472344](https://github.com/ids-basecamp/clearinghouse/commit/b472344d7bb9e9f63dc4c97bbf3545e7d761d8f6))
+
 # [1.0.0-beta.2](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2024-02-19)
 
 
