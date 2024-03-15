@@ -29,6 +29,7 @@ impl std::fmt::Display for InfoModelComplexId {
 }
 
 impl InfoModelComplexId {
+    #[must_use]
     pub fn new(id: String) -> InfoModelComplexId {
         InfoModelComplexId { id: Some(id) }
     }
@@ -48,6 +49,7 @@ pub enum InfoModelId {
 }
 
 impl InfoModelId {
+    #[must_use]
     pub fn new(id: String) -> InfoModelId {
         InfoModelId::SimpleId(id)
     }
@@ -96,9 +98,9 @@ impl std::fmt::Display for InfoModelDateTime {
 pub struct InfoModelTimeStamp {
     //IDS name
     #[serde(
-        rename = "@type",
-        alias = "type",
-        skip_serializing_if = "Option::is_none"
+    rename = "@type",
+    alias = "type",
+    skip_serializing_if = "Option::is_none"
     )]
     pub format: Option<String>,
     //IDS name
@@ -118,7 +120,7 @@ impl Default for InfoModelTimeStamp {
 impl std::fmt::Display for InfoModelTimeStamp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match serde_json::to_string(&self) {
-            Ok(result) => write!(f, "{}", result),
+            Ok(result) => write!(f, "{result}"),
             Err(e) => {
                 error!("could not convert DateTimeStamp to json: {}", e);
                 write!(f, "")
@@ -362,6 +364,12 @@ pub struct IdsQueryResult {
 }
 
 impl IdsQueryResult {
+    /// Create a new `IdsQueryResult`
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `date_from` or `date_to` seconds are out of reach for `chrono::NaiveDateTime::from_timestamp_opt`
+    #[must_use]
     pub fn new(
         date_from: i64,
         date_to: i64,

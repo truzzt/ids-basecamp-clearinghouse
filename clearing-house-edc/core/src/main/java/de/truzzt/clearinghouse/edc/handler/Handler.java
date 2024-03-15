@@ -51,9 +51,9 @@ public interface Handler {
         var tokenValue = securityToken.getTokenValue();
         var decodedToken = JWT.decode(tokenValue);
 
-        var subject = decodedToken.getSubject();
-        if (subject == null) {
-            throw new EdcException("JWT Token subject is missing");
+        var referringConnector = decodedToken.getClaim("referringConnector").asString();
+        if (referringConnector == null) {
+            throw new EdcException("JWT Token referringConnector is missing");
         }
 
         var issuedAt = LocalDateTime.now();
@@ -63,7 +63,7 @@ public interface Handler {
         var jwtToken = JWT.create()
                 .withAudience(context.getSetting(JWT_AUDIENCE_SETTING, JWT_AUDIENCE_DEFAULT_VALUE))
                 .withIssuer(context.getSetting(JWT_ISSUER_SETTING, JWT_ISSUER_DEFAULT_VALUE))
-                .withClaim("client_id", subject)
+                .withClaim("client_id", referringConnector)
                 .withIssuedAt(convertLocalDateTime(issuedAt))
                 .withExpiresAt(convertLocalDateTime(expiresAt));
 

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 /// Represents the configuration for the application
 #[derive(Debug, serde::Deserialize)]
 pub(crate) struct CHConfig {
@@ -33,15 +35,16 @@ impl From<LogLevel> for tracing::Level {
     }
 }
 
-impl ToString for LogLevel {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for LogLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
             LogLevel::Trace => String::from("TRACE"),
             LogLevel::Debug => String::from("DEBUG"),
             LogLevel::Info => String::from("INFO"),
             LogLevel::Warn => String::from("WARN"),
             LogLevel::Error => String::from("ERROR"),
-        }
+        };
+        write!(f, "{str}")
     }
 }
 
@@ -119,7 +122,7 @@ mod test {
     #[serial]
     fn test_read_config_from_toml() {
         // Create tempfile
-        let file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
+        let file = tempfile::Builder::new().suffix(".toml").tempfile().expect("Failure to create tempfile");
 
         // Write config to file
         let toml = r#"database_url = "mongodb://localhost:27019"

@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-#![warn(clippy::unwrap_used)]
+#![warn(clippy::all, clippy::pedantic, clippy::unwrap_used)]
 
 use tokio::net::TcpListener;
 
