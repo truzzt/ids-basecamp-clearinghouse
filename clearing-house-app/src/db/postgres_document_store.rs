@@ -25,14 +25,14 @@ impl super::DocumentStore for PostgresDocumentStore {
         let doc = DocumentRow::from(doc);
 
         sqlx::query(
-            r#"INSERT INTO documents
+            r"INSERT INTO documents
         (id, process_id, created_at, model_version, correlation_message,
         transfer_contract, issued, issuer_connector, content_version, recipient_connector,
         sender_agent, recipient_agent, payload, payload_type, message_id)
         VALUES
         ($1, (SELECT id from processes where process_id = $2), $3, $4, $5,
         $6, $7, $8, $9, $10,
-        $11, $12, $13, $14, $15)"#,
+        $11, $12, $13, $14, $15)",
         )
         .bind(doc.id) // 1
         .bind(doc.process_id) // 2
@@ -61,26 +61,32 @@ impl super::DocumentStore for PostgresDocumentStore {
             .fetch_optional(&self.db)
             .await
             .map(|r| r.is_some())
-            .map_err(|e| e.into())
+            .map_err(std::convert::Into::into)
     }
 
     async fn get_document(&self, id: &str, pid: &str) -> anyhow::Result<Option<Document>> {
         sqlx::query_as::<_, DocumentRow>(
-            r#"SELECT documents.id, processes.process_id, documents.created_at, model_version, correlation_message,
+            r"SELECT documents.id, processes.process_id, documents.created_at, model_version, correlation_message,
         transfer_contract, issued, issuer_connector, content_version, recipient_connector,
         sender_agent, recipient_agent, payload, payload_type, message_id
         FROM documents
         LEFT JOIN processes ON processes.id = documents.process_id
-        WHERE id = $1 AND processes.process_id = $2"#,
+        WHERE id = $1 AND processes.process_id = $2",
         )
-        .bind(id)
-        .bind(pid)
-        .fetch_optional(&self.db)
-        .await
-        .map(|r| r.map(DocumentRow::into))
-        .map_err(|e| e.into())
+            .bind(id)
+            .bind(pid)
+            .fetch_optional(&self.db)
+            .await
+            .map(|r| r.map(DocumentRow::into))
+            .map_err(std::convert::Into::into)
     }
 
+    /// Get documents for a process
+    ///
+    /// # Lints
+    ///
+    /// Disabled `clippy::cast_possible_wrap` because cast is handled
+    #[allow(clippy::cast_possible_wrap)]
     async fn get_documents_for_pid(
         &self,
         pid: &str,
@@ -96,27 +102,35 @@ impl super::DocumentStore for PostgresDocumentStore {
 
         sqlx::query_as::<_, DocumentRow>(
             format!(
-                r#"SELECT documents.id, processes.process_id, documents.created_at, model_version, correlation_message,
+                r"SELECT documents.id, processes.process_id, documents.created_at, model_version, correlation_message,
         transfer_contract, issued, issuer_connector, content_version, recipient_connector,
         sender_agent, recipient_agent, payload, payload_type, message_id
         FROM documents
         LEFT JOIN processes ON processes.id = documents.process_id
         WHERE processes.process_id = $1 AND documents.created_at BETWEEN $2 AND $3
-        ORDER BY created_at {}
-        LIMIT $4 OFFSET $5"#,
-                sort_order
-            )
-            .as_str(),
+        ORDER BY created_at {sort_order}
+        LIMIT $4 OFFSET $5")
+                .as_str(),
         )
-        .bind(pid)
-        .bind(date_from)
-        .bind(date_to)
-        .bind(size as i64)
-        .bind(((page - 1) * size) as i64)
-        .fetch_all(&self.db)
-        .await
-        .map(|r| r.into_iter().map(DocumentRow::into).collect())
-        .map_err(|e| e.into())
+            .bind(pid)
+            .bind(date_from)
+            .bind(date_to)
+            .bind(cast_i64(size)?)
+            .bind(cast_i64((page - 1) * size)?)
+            .fetch_all(&self.db)
+            .await
+            .map(|r| r.into_iter().map(DocumentRow::into).collect())
+            .map_err(std::convert::Into::into)
+    }
+}
+
+/// Cast u64 to i64 with out-of-range check
+fn cast_i64(value: u64) -> anyhow::Result<i64> {
+    if value > i64::MAX as u64 {
+        Err(anyhow::anyhow!("size out-of-range"))
+    } else {
+        #[allow(clippy::cast_possible_wrap)]
+        Ok(value as i64)
     }
 }
 
@@ -161,29 +175,29 @@ impl From<Document> for DocumentRow {
     }
 }
 
-impl Into<Document> for DocumentRow {
-    fn into(self) -> Document {
+impl From<DocumentRow> for Document {
+    fn from(value: DocumentRow) -> Self {
         use chrono::TimeZone;
 
-        Document {
-            id: self.id,
-            pid: self.process_id,
-            ts: chrono::Local.from_utc_datetime(&self.created_at),
+        Self {
+            id: value.id,
+            pid: value.process_id,
+            ts: chrono::Local.from_utc_datetime(&value.created_at),
             content: crate::model::ids::message::IdsMessage {
-                model_version: self.model_version,
-                correlation_message: self.correlation_message,
-                transfer_contract: self.transfer_contract,
-                issued: self.issued.0,
-                issuer_connector: self.issuer_connector.0,
-                content_version: self.content_version,
-                recipient_connector: self.recipient_connector.map(|s| s.0),
-                sender_agent: self.sender_agent,
-                recipient_agent: self.recipient_agent.map(|s| s.0),
-                payload: self
+                model_version: value.model_version,
+                correlation_message: value.correlation_message,
+                transfer_contract: value.transfer_contract,
+                issued: value.issued.0,
+                issuer_connector: value.issuer_connector.0,
+                content_version: value.content_version,
+                recipient_connector: value.recipient_connector.map(|s| s.0),
+                sender_agent: value.sender_agent,
+                recipient_agent: value.recipient_agent.map(|s| s.0),
+                payload: value
                     .payload
                     .map(|s| String::from_utf8_lossy(s.as_ref()).to_string()),
-                payload_type: self.payload_type,
-                id: self.message_id,
+                payload_type: value.payload_type,
+                id: value.message_id,
                 ..Default::default()
             },
         }

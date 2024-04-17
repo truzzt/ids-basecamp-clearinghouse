@@ -12,8 +12,9 @@ pub struct ChClaims {
 }
 
 impl ChClaims {
-    pub fn new(client_id: &str) -> ChClaims {
-        ChClaims {
+    #[must_use]
+    pub fn new(client_id: &str) -> Self {
+        Self {
             client_id: client_id.to_string(),
         }
     }
@@ -29,9 +30,9 @@ pub struct ExtractChClaims(pub ChClaims);
 
 #[async_trait::async_trait]
 impl<S> axum::extract::FromRequestParts<S> for ExtractChClaims
-where
-    S: Send + Sync,
-    AppState: FromRef<S>,
+    where
+        S: Send + Sync,
+        AppState: FromRef<S>,
 {
     type Rejection = axum::response::Response;
 
@@ -42,7 +43,7 @@ where
         let axum::extract::State(app_state) =
             axum::extract::State::<AppState>::from_request_parts(parts, state)
                 .await
-                .map_err(|err| err.into_response())?;
+                .map_err(axum::response::IntoResponse::into_response)?;
         if let Some(token) = parts.headers.get(SERVICE_HEADER) {
             let token = token.to_str().map_err(|_| {
                 (
@@ -69,6 +70,12 @@ where
     }
 }
 
+/// Returns the `JWKSet` for the RSA keypair at `key_path`
+///
+/// # Panics
+///
+/// Panics if the key at `key_path` is not a valid RSA keypair or does not exist.
+#[must_use]
 pub fn get_jwks(key_path: &str) -> Option<biscuit::jwk::JWKSet<biscuit::Empty>> {
     let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path)
         .unwrap_or_else(|_| panic!("Failed to load keyfile from path {key_path}"));
@@ -107,6 +114,12 @@ pub fn get_jwks(key_path: &str) -> Option<biscuit::jwk::JWKSet<biscuit::Empty>> 
     None
 }
 
+/// Returns the fingerprint of the RSA keypair at `key_path`
+///
+/// # Panics
+///
+/// Panics if the key at `key_path` is not a valid RSA keypair or does not exist.
+#[must_use]
 pub fn get_fingerprint(key_path: &str) -> Option<String> {
     use ring::signature::KeyPair;
     let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path)
@@ -132,6 +145,11 @@ pub fn get_fingerprint(key_path: &str) -> Option<String> {
     }
 }
 
+/// Creates a JWT token with the given `issuer`, `audience` and `private_claims`
+///
+/// # Panics
+///
+/// Panics if the `ENV_SHARED_SECRET` is not set
 pub fn create_token<
     T: std::fmt::Display + Clone + serde::Serialize + for<'de> serde::Deserialize<'de>,
 >(
@@ -139,15 +157,8 @@ pub fn create_token<
     audience: &str,
     private_claims: &T,
 ) -> String {
-    let signing_secret = match env::var(ENV_SHARED_SECRET) {
-        Ok(secret) => biscuit::jws::Secret::Bytes(secret.to_string().into_bytes()),
-        Err(_) => {
-            panic!(
-                "Shared Secret not configured. Please configure environment variable {}",
-                ENV_SHARED_SECRET
-            );
-        }
-    };
+    let secret = env::var(ENV_SHARED_SECRET).unwrap_or_else(|_| panic!("Shared Secret not configured. Please configure environment variable {ENV_SHARED_SECRET}"));
+    let signing_secret = biscuit::jws::Secret::Bytes(secret.to_string().into_bytes());
     let expiration_date = chrono::Utc::now() + chrono::Duration::minutes(5);
 
     let claims = biscuit::ClaimsSet::<T> {
@@ -171,11 +182,16 @@ pub fn create_token<
     );
 
     jwt.into_encoded(&signing_secret)
-        .unwrap()
+        .expect("Encoded JWT with the signing secret")
         .unwrap_encoded()
         .to_string()
 }
 
+/// Decodes the given `token` and validates it against the given `audience`
+///
+/// # Errors
+///
+/// Returns an error if the token is invalid or the audience is not as expected.
 pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'de>>(
     token: &str,
     audience: &str,
@@ -226,7 +242,7 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
 mod test {
     #[test]
     fn get_fingerprint() {
-        let fingerprint = super::get_fingerprint("keys/private_key.der").unwrap();
+        let fingerprint = super::get_fingerprint("keys/private_key.der").expect("Fingerprint can be generated");
         assert_eq!(fingerprint, "Qra//29Frxbj5hh5Azef+G36SeiOm9q7s8+w8uGLD28");
     }
 }

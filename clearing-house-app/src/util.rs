@@ -5,8 +5,8 @@ pub struct ServiceConfig {
     pub service_id: String,
 }
 
-pub(super) fn init_service_config(service_id: String) -> anyhow::Result<ServiceConfig> {
-    match std::env::var(&service_id) {
+pub(super) fn init_service_config(service_id: &str) -> anyhow::Result<ServiceConfig> {
+    match std::env::var(service_id) {
         Ok(id) => Ok(ServiceConfig { service_id: id }),
         Err(_e) => {
             anyhow::bail!(
@@ -29,6 +29,10 @@ pub(super) fn init_signing_key(signing_key_path: Option<&str>) -> anyhow::Result
 }
 
 /// Signal handler to catch a Ctrl+C and initiate a graceful shutdown
+///
+/// # Panics
+///
+/// May panic if the signal handler cannot be installed
 pub async fn shutdown_signal() {
     let ctrl_c = async {
         tokio::signal::ctrl_c()
@@ -37,7 +41,7 @@ pub async fn shutdown_signal() {
     };
 
     #[cfg(unix)]
-    let terminate = async {
+        let terminate = async {
         tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
@@ -45,17 +49,18 @@ pub async fn shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
+        let terminate = std::future::pending::<()>();
 
     tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
+        () = ctrl_c => {},
+        () = terminate => {},
     }
 
     info!("signal received, starting graceful shutdown");
 }
 
 /// Returns a new UUID as a string with hyphens.
+#[must_use]
 pub fn new_uuid() -> String {
     use uuid::Uuid;
     Uuid::new_v4().hyphenated().to_string()

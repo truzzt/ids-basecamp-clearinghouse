@@ -22,15 +22,15 @@ impl PostgresProcessStore {
 impl super::ProcessStore for PostgresProcessStore {
     async fn get_processes(&self) -> anyhow::Result<Vec<Process>> {
         sqlx::query_as::<_, ProcessRow>(
-            r#"SELECT p.process_id, p.created_at, ARRAY_AGG(c.client_id) AS owners FROM processes p
+            r"SELECT p.process_id, p.created_at, ARRAY_AGG(c.client_id) AS owners FROM processes p
         LEFT JOIN process_owners po ON p.id = po.process_id
         LEFT JOIN clients c ON po.client_id = c.id
-        GROUP BY p.process_id, p.created_at"#,
+        GROUP BY p.process_id, p.created_at",
         )
-        .fetch_all(&self.db)
-        .await
-        .map(|r| r.into_iter().map(|p| p.into()).collect())
-        .map_err(|e| e.into())
+            .fetch_all(&self.db)
+            .await
+            .map(|r| r.into_iter().map(std::convert::Into::into).collect())
+            .map_err(std::convert::Into::into)
     }
 
     async fn delete_process(&self, pid: &str) -> anyhow::Result<bool> {
@@ -39,7 +39,7 @@ impl super::ProcessStore for PostgresProcessStore {
             .execute(&self.db)
             .await
             .map(|r| r.rows_affected() == 1)
-            .map_err(|e| e.into())
+            .map_err(std::convert::Into::into)
     }
 
     async fn exists_process(&self, pid: &str) -> anyhow::Result<bool> {
@@ -48,22 +48,22 @@ impl super::ProcessStore for PostgresProcessStore {
             .fetch_optional(&self.db)
             .await
             .map(|r| r.is_some())
-            .map_err(|e| e.into())
+            .map_err(std::convert::Into::into)
     }
 
     async fn get_process(&self, pid: &str) -> anyhow::Result<Option<Process>> {
         sqlx::query_as::<_, ProcessRow>(
-            r#"SELECT p.process_id, p.created_at, ARRAY_AGG(c.client_id) AS owners FROM processes p
+            r"SELECT p.process_id, p.created_at, ARRAY_AGG(c.client_id) AS owners FROM processes p
         LEFT JOIN process_owners po ON p.id = po.process_id
         LEFT JOIN clients c ON po.client_id = c.id
         WHERE p.process_id = $1
-        GROUP BY p.process_id, p.created_at"#,
+        GROUP BY p.process_id, p.created_at",
         )
-        .bind(pid)
-        .fetch_optional(&self.db)
-        .await
-        .map(|r| r.map(|p| p.into()))
-        .map_err(|e| e.into())
+            .bind(pid)
+            .fetch_optional(&self.db)
+            .await
+            .map(|r| r.map(std::convert::Into::into))
+            .map_err(std::convert::Into::into)
     }
 
     async fn store_process(&self, process: Process) -> anyhow::Result<()> {
@@ -72,7 +72,7 @@ impl super::ProcessStore for PostgresProcessStore {
 
         // Create a process
         let process_row =
-            sqlx::query(r#"INSERT INTO processes (process_id) VALUES ($1) RETURNING id"#)
+            sqlx::query(r"INSERT INTO processes (process_id) VALUES ($1) RETURNING id")
                 .bind(&process.process_id)
                 .fetch_one(&mut *tx)
                 .await?;
@@ -81,7 +81,7 @@ impl super::ProcessStore for PostgresProcessStore {
 
         for o in process.owners {
             // Check if client exists
-            let client_row = sqlx::query(r#"SELECT id FROM clients WHERE client_id = $1"#)
+            let client_row = sqlx::query(r"SELECT id FROM clients WHERE client_id = $1")
                 .bind(&o)
                 .fetch_optional(&mut *tx)
                 .await?;
@@ -90,7 +90,7 @@ impl super::ProcessStore for PostgresProcessStore {
             let client_row = match client_row {
                 Some(crow) => crow,
                 None => {
-                    sqlx::query(r#"INSERT INTO clients (client_id) VALUES ($1) RETURNING id"#)
+                    sqlx::query(r"INSERT INTO clients (client_id) VALUES ($1) RETURNING id")
                         .bind(&o)
                         .fetch_one(&mut *tx)
                         .await?
@@ -98,12 +98,12 @@ impl super::ProcessStore for PostgresProcessStore {
             };
 
             // Get id of client
-            let oid = client_row.get::<i32, _>("id");
+            let client_id = client_row.get::<i32, _>("id");
 
             // Create process owner
-            sqlx::query(r#"INSERT INTO process_owners (process_id, client_id) VALUES ($1, $2)"#)
+            sqlx::query(r"INSERT INTO process_owners (process_id, client_id) VALUES ($1, $2)")
                 .bind(pid)
-                .bind(oid)
+                .bind(client_id)
                 .execute(&mut *tx)
                 .await?;
         }
@@ -129,8 +129,8 @@ impl From<Process> for ProcessRow {
     }
 }
 
-impl Into<Process> for ProcessRow {
-    fn into(self) -> Process {
-        Process::new(self.process_id, self.owners)
+impl From<ProcessRow> for Process {
+    fn from(value: ProcessRow) -> Self {
+        Self::new(value.process_id, value.owners)
     }
 }

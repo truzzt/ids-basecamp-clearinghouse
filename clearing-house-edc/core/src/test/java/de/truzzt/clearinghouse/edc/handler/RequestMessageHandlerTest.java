@@ -91,13 +91,13 @@ class RequestMessageHandlerTest {
     }
 
     @Test
-    public void missingSubjectBuildJwtToken() {
+    public void missingReferringConnectorBuildJwtToken() {
         EdcException exception = assertThrows(EdcException.class, () -> requestMessageHandler.buildJWTToken(
                 TestUtils.getInvalidTokenHandlerRequest(mapper)
                         .getHeader()
                         .getSecurityToken(), context));
 
-        assertEquals("JWT Token subject is missing",exception.getMessage());
+        assertEquals("JWT Token referringConnector is missing",exception.getMessage());
     }
     @Test
     public void successfulBuildJwtToken() {
