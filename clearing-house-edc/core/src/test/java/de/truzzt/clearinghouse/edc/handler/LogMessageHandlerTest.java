@@ -95,7 +95,7 @@ class LogMessageHandlerTest {
                         .getHeader()
                         .getSecurityToken(), context));
 
-        assertEquals("JWT Token referringConnector is missing",exception.getMessage());
+        assertEquals("JWT Token subject is missing",exception.getMessage());
     }
     @Test
     public void successfulBuildJwtToken() {
