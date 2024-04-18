@@ -1,3 +1,27 @@
+# [1.0.0-beta.4](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2024-04-18)
+
+
+### Bug Fixes
+
+* clearing house edc docker build ([ae6a9c4](https://github.com/ids-basecamp/clearinghouse/commit/ae6a9c46e5e1e4fd60a37ddf35cd5ff4a8ca6e25))
+* **edc:** docker build ([936754b](https://github.com/ids-basecamp/clearinghouse/commit/936754bb00a6f811815abe1d07f808edecea502c))
+* fixing test workflow ([7fe976f](https://github.com/ids-basecamp/clearinghouse/commit/7fe976ffd0312b295a18fbbcdf59904390694185))
+* fixing test workflow ([c04c22f](https://github.com/ids-basecamp/clearinghouse/commit/c04c22ff9abc5aa8a943cfb4dd3a90e505fe393e))
+* fixing test workflow ([c195e2c](https://github.com/ids-basecamp/clearinghouse/commit/c195e2cdfaeb3288a5d263b3417de975152803fd))
+* upgrading edc fork version ([0219b6a](https://github.com/ids-basecamp/clearinghouse/commit/0219b6a604f88c1cab94b72d36da668e5be46158))
+
+
+### Features
+
+* Delete infomodel and edc classes to use classes from forked projects ([8571093](https://github.com/ids-basecamp/clearinghouse/commit/857109395a21ad6b3152421abe66e8747d521537))
+* Included pagging tests for the query endpoint ([177cbee](https://github.com/ids-basecamp/clearinghouse/commit/177cbeed72f37f706e808b0fe1b722427311c285))
+* removing duplicated infomodel and edc classes ([0c3b7d6](https://github.com/ids-basecamp/clearinghouse/commit/0c3b7d6780ebd800b7f312cb21a0dc580e9279f7))
+* removing duplicated infomodel and edc classes ([946550e](https://github.com/ids-basecamp/clearinghouse/commit/946550e8849e220c3e4f3241884825c3ff3b0568))
+* Update project to use edc-fork classes ([53364d4](https://github.com/ids-basecamp/clearinghouse/commit/53364d4f484b177dac3914c471c8b8c08c4e9ff1))
+* updates to run tests ([0e25281](https://github.com/ids-basecamp/clearinghouse/commit/0e252812c2764bd4b063d1936fba2396118c8f74))
+* updates to run tests ([9fd4abd](https://github.com/ids-basecamp/clearinghouse/commit/9fd4abd13c45fe4429149082618e1e708f27955e))
+* updating to use forked edc and gradle-plugins ([75bc25c](https://github.com/ids-basecamp/clearinghouse/commit/75bc25c826ef91fb7a147093e328d03d6d963556))
+
 # [1.0.0-beta.3](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2024-03-15)
 
 
