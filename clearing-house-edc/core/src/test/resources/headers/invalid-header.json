@@ -3,6 +3,7 @@
     "ids" : "https://w3id.org/idsa/core/",
     "idsc" : "https://w3id.org/idsa/code/"
   },
+  "@type":"ids:genericMessage",
   "@id":"https://w3id.org/idsa/autogen/logMessage/9fdba4ad-f750-4bbc-a7f0-f648ac853508",
   "ids:securityToken": {
     "@type" : "ids:DynamicAttributeToken",

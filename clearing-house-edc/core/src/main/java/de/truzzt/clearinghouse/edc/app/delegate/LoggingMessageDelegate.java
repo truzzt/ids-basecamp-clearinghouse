@@ -13,47 +13,37 @@
  */
 package de.truzzt.clearinghouse.edc.app.delegate;
 
-import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.LoggingMessageRequest;
-import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
+import de.truzzt.clearinghouse.edc.app.message.LoggingMessageRequest;
+import de.truzzt.clearinghouse.edc.app.message.LoggingMessageResponse;
+import de.truzzt.clearinghouse.edc.app.types.Header;
+import de.truzzt.clearinghouse.edc.app.types.SecurityToken;
 import okhttp3.ResponseBody;
+import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartRequest;
+import org.eclipse.edc.spi.EdcException;
 
 public class LoggingMessageDelegate implements AppSenderDelegate<LoggingMessageResponse> {
 
-    private final TypeManagerUtil typeManagerUtil;
-
-    public LoggingMessageDelegate(TypeManagerUtil typeManagerUtil) {
-        this.typeManagerUtil = typeManagerUtil;
-    }
 
     public String buildRequestUrl(String baseUrl, HandlerRequest handlerRequest) {
         return baseUrl + "/messages/log/" + handlerRequest.getPid();
     }
 
-    public LoggingMessageRequest buildRequestBody(HandlerRequest handlerRequest) {
+    public LoggingMessageRequest buildRequestBody(MultipartRequest multipartRequest) {
+        var handlerRequest = (HandlerRequest) multipartRequest;
         var header = handlerRequest.getHeader();
 
-        var multipartContext = header.getContext();
-        var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
-
         var multipartSecurityToken = header.getSecurityToken();
-        var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
         var securityToken = SecurityToken.Builder.newInstance().
-                type(multipartSecurityToken.getType()).
+                type(multipartSecurityToken).
                 id(multipartSecurityToken.getId()).
-                tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
                 tokenValue(multipartSecurityToken.getTokenValue()).
                 build();
 
         var requestHeader = Header.Builder.newInstance()
-                .context(context)
                 .id(header.getId())
-                .type(header.getType())
+                .type(header)
                 .securityToken(securityToken)
                 .issuerConnector(header.getIssuerConnector())
                 .modelVersion(header.getModelVersion())
@@ -66,6 +56,10 @@ public class LoggingMessageDelegate implements AppSenderDelegate<LoggingMessageR
 
     @Override
     public LoggingMessageResponse parseResponseBody(ResponseBody responseBody) {
-        return typeManagerUtil.parse(responseBody.byteStream(), LoggingMessageResponse.class);
+        try {
+            return new ObjectMapper().readValue(responseBody.byteStream(), LoggingMessageResponse.class);
+        } catch (Exception e) {
+            throw new EdcException("Error reading byte to LoggingMessageResponse", e);
+        }
     }
 }
