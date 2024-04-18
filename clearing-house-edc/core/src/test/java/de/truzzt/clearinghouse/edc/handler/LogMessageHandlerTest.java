@@ -2,14 +2,14 @@ package de.truzzt.clearinghouse.edc.handler;
 
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.tests.TestUtils;
+import de.fraunhofer.iais.eis.DynamicAttributeToken;
+import de.fraunhofer.iais.eis.MessageProcessedNotificationMessage;
 import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
-import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.HandlerResponse;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
-import de.truzzt.clearinghouse.edc.types.ids.SecurityToken;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
+import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import okhttp3.ResponseBody;
+import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartResponse;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -29,8 +29,6 @@ class LogMessageHandlerTest {
     @Mock
     private IdsId connectorId;
     @Mock
-    private TypeManagerUtil typeManagerUtil;
-    @Mock
     private AppSender appSender;
     @Mock
     private ServiceExtensionContext context;
@@ -44,8 +42,8 @@ class LogMessageHandlerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        senderDelegate = spy(new LoggingMessageDelegate(typeManagerUtil));
-        logMessageHandler = spy(new LogMessageHandler(connectorId, typeManagerUtil, appSender, context));
+        senderDelegate = spy(new LoggingMessageDelegate());
+        logMessageHandler = spy(new LogMessageHandler(connectorId, appSender, context));
     }
 
     @Test
@@ -74,7 +72,7 @@ class LogMessageHandlerTest {
     public void successfulHandleRequest(){
         HandlerRequest request = TestUtils.getValidHandlerRequest(mapper);
         doReturn(JWT.create().toString())
-                .when(logMessageHandler).buildJWTToken(any(SecurityToken.class), any(ServiceExtensionContext.class));
+                .when(logMessageHandler).buildJWTToken(any(DynamicAttributeToken.class), any(ServiceExtensionContext.class));
         doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
                 .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
         doReturn(APP_BASE_URL_DEFAULT_VALUE+ "/headers/log/" + request.getPid())
@@ -83,10 +81,11 @@ class LogMessageHandlerTest {
         doReturn(TestUtils.getValidLoggingMessageRequest(request))
                 .when(senderDelegate).buildRequestBody(any(HandlerRequest.class));
 
-        HandlerResponse response = logMessageHandler.handleRequest(request);
+        MultipartResponse response = logMessageHandler.handleRequest(request);
 
         assertNotNull(response);
-        assertEquals(response.getHeader().getType(), "ids:MessageProcessedNotificationMessage");
+        var ok = response.getHeader() instanceof MessageProcessedNotificationMessage;
+        assertTrue(ok);
     }
 
     @Test
@@ -96,7 +95,7 @@ class LogMessageHandlerTest {
                         .getHeader()
                         .getSecurityToken(), context));
 
-        assertEquals("JWT Token referringConnector is missing",exception.getMessage());
+        assertEquals("JWT Token subject is missing",exception.getMessage());
     }
     @Test
     public void successfulBuildJwtToken() {

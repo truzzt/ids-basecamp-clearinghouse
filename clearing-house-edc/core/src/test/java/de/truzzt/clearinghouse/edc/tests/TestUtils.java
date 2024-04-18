@@ -2,22 +2,18 @@ package de.truzzt.clearinghouse.edc.tests;
 
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
-import de.truzzt.clearinghouse.edc.dto.CreateProcessRequest;
-import de.truzzt.clearinghouse.edc.dto.CreateProcessResponse;
-import de.truzzt.clearinghouse.edc.dto.HandlerRequest;
-import de.truzzt.clearinghouse.edc.dto.LoggingMessageRequest;
-import de.truzzt.clearinghouse.edc.dto.LoggingMessageResponse;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Context;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.Header;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.SecurityToken;
-import de.truzzt.clearinghouse.edc.types.clearinghouse.TokenFormat;
-import de.truzzt.clearinghouse.edc.types.ids.Message;
+import de.fraunhofer.iais.eis.Message;
+import de.truzzt.clearinghouse.edc.app.message.*;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
+import de.truzzt.clearinghouse.edc.types.Paging;
+import de.truzzt.clearinghouse.edc.app.types.Header;
+import de.truzzt.clearinghouse.edc.app.types.SecurityToken;
 import okhttp3.*;
 import org.eclipse.edc.spi.EdcException;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public class TestUtils extends BaseTestUtils {
@@ -25,8 +21,9 @@ public class TestUtils extends BaseTestUtils {
     public static final String TEST_BASE_URL = "http://localhost:8000";
 
     private static final String TEST_PAYLOAD = "Hello World";
-    private static final String TEST_CREATE_PROCCESS_PAYLOAD = "{ \"owners\": [\"1\", \"2\"]}";;
+    private static final String TEST_CREATE_PROCCESS_PAYLOAD = "{ \"owners\": [\"1\", \"2\"]}";
     private static final String VALID_HEADER_JSON = "headers/valid-header.json";
+    private static final String VALID_QUERY_MESSAGE_HEADER_JSON = "headers/valid-query-message-header.json";
     private static final String VALID_CREATE_PROCESS_HEADER_JSON = "headers/valid-create-process-header.json";
     private static final String INVALID_HEADER_JSON = "headers/invalid-header.json";
     private static final String INVALID_TYPE_HEADER_JSON = "headers/invalid-type.json";
@@ -34,6 +31,10 @@ public class TestUtils extends BaseTestUtils {
 
     public static Message getValidHeader(ObjectMapper mapper) {
         return parseFile(mapper, Message.class, VALID_HEADER_JSON);
+    }
+
+    public static Message getValidQueryMessageHeader(ObjectMapper mapper) {
+        return parseFile(mapper, Message.class, VALID_QUERY_MESSAGE_HEADER_JSON);
     }
 
     public static Message getValidCreateProcessHeader(ObjectMapper mapper) {
@@ -46,6 +47,39 @@ public class TestUtils extends BaseTestUtils {
 
     public static Message getInvalidTypeHeader(ObjectMapper mapper) {
         return parseFile(mapper, Message.class, INVALID_TYPE_HEADER_JSON);
+    }
+
+    public static Paging getValidpaging(){
+        return Paging.Builder.newInstance()
+                .page(1)
+                .size(1)
+                .sort(Paging.Sort.ASC)
+                .dateFrom(LocalDate.now())
+                .dateTo(LocalDate.now())
+                .build();
+    }
+
+    public static Paging getValidpagingOnlySize(){
+        return Paging.Builder.newInstance()
+                .size(1)
+                .build();
+    }
+    public static Paging getValidpagingOnlySort(){
+        return Paging.Builder.newInstance()
+                .sort(Paging.Sort.ASC)
+                .build();
+    }
+
+    public static Paging getValidpagingOnlyDateFrom(){
+        return Paging.Builder.newInstance()
+                .dateFrom(LocalDate.now())
+                .build();
+    }
+
+    public static Paging getValidpagingOnlyDateTo(){
+        return Paging.Builder.newInstance()
+                .dateTo(LocalDate.now())
+                .build();
     }
 
     public static Response getValidResponse(String url) {
@@ -98,6 +132,15 @@ public class TestUtils extends BaseTestUtils {
         }
     }
 
+    public static QueryMessageResponse getValidQueryMessageResponse(String url, ObjectMapper mapper) {
+        try {
+            return mapper.readValue(getValidResponse(url).body().byteStream(), QueryMessageResponse.class);
+
+        } catch (IOException e) {
+            throw new EdcException("Error parsing response", e);
+        }
+    }
+
     public static CreateProcessResponse getValidCreateProcessResponse(String url, ObjectMapper mapper) {
         try {
             return mapper.readValue(getValidResponse(url).body().byteStream(), CreateProcessResponse.class);
@@ -109,54 +152,39 @@ public class TestUtils extends BaseTestUtils {
 
     public static LoggingMessageRequest getValidLoggingMessageRequest(HandlerRequest handlerRequest) {
 
-        var header = handlerRequest.getHeader();
-
-        var multipartContext = header.getContext();
-        var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
-
-        var multipartSecurityToken = header.getSecurityToken();
-        var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
-        var securityToken = SecurityToken.Builder.newInstance().
-                type(multipartSecurityToken.getType()).
-                id(multipartSecurityToken.getId()).
-                tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
-                tokenValue(multipartSecurityToken.getTokenValue()).
-                build();
-
-        var requestHeader = Header.Builder.newInstance()
-                .context(context)
-                .id(header.getId())
-                .type(header.getType())
-                .securityToken(securityToken)
-                .issuerConnector(header.getIssuerConnector())
-                .modelVersion(header.getModelVersion())
-                .issued(header.getIssued())
-                .senderAgent(header.getSenderAgent())
-                .build();
+        var requestHeader = createRequestHeader(handlerRequest);
 
         return new LoggingMessageRequest(requestHeader, handlerRequest.getPayload());
     }
 
+    public static QueryMessageRequest getValidQueryMessageRequest(HandlerRequest handlerRequest) {
+
+        var requestHeader = createRequestHeader(handlerRequest);
+
+        return new QueryMessageRequest(requestHeader);
+    }
+
     public static CreateProcessRequest getValidCreateProcessRequest(HandlerRequest handlerRequest) {
 
+        var requestHeader = createRequestHeader(handlerRequest);
+
+        return new CreateProcessRequest(requestHeader, handlerRequest.getPayload());
+    }
+
+    private static Header createRequestHeader(HandlerRequest handlerRequest) {
         var header = handlerRequest.getHeader();
 
-        var multipartContext = header.getContext();
-        var context = new Context(multipartContext.getIds(), multipartContext.getIdsc());
 
         var multipartSecurityToken = header.getSecurityToken();
-        var multipartTokenFormat = multipartSecurityToken.getTokenFormat();
         var securityToken = SecurityToken.Builder.newInstance().
-                type(multipartSecurityToken.getType()).
+                type(multipartSecurityToken).
                 id(multipartSecurityToken.getId()).
-                tokenFormat(new TokenFormat(multipartTokenFormat.getId())).
                 tokenValue(multipartSecurityToken.getTokenValue()).
                 build();
 
         var requestHeader = Header.Builder.newInstance()
-                .context(context)
                 .id(header.getId())
-                .type(header.getType())
+                .type(header)
                 .securityToken(securityToken)
                 .issuerConnector(header.getIssuerConnector())
                 .modelVersion(header.getModelVersion())
@@ -164,7 +192,7 @@ public class TestUtils extends BaseTestUtils {
                 .senderAgent(header.getSenderAgent())
                 .build();
 
-        return new CreateProcessRequest(requestHeader, handlerRequest.getPayload());
+        return requestHeader;
     }
 
     public static ResponseBody getValidResponseBody(){
@@ -179,6 +207,46 @@ public class TestUtils extends BaseTestUtils {
                 .pid(UUID.randomUUID().toString())
                 .header(getValidHeader(mapper))
                 .payload(TEST_PAYLOAD).build();
+    }
+
+    public static HandlerRequest getValidHandlerQueryMessageRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidQueryMessageHeader(mapper))
+                .payload(TEST_PAYLOAD)
+                .paging(getValidpaging()).build();
+    }
+
+    public static HandlerRequest getValidHandlerQueryMessageOnlySizeRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidQueryMessageHeader(mapper))
+                .payload(TEST_PAYLOAD)
+                .paging(getValidpagingOnlySize()).build();
+    }
+
+    public static HandlerRequest getValidHandlerQueryMessageOnlySortRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidQueryMessageHeader(mapper))
+                .payload(TEST_PAYLOAD)
+                .paging(getValidpagingOnlySort()).build();
+    }
+
+    public static HandlerRequest getValidHandlerQueryMessageOnlyDateFromRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidQueryMessageHeader(mapper))
+                .payload(TEST_PAYLOAD)
+                .paging(getValidpagingOnlyDateFrom()).build();
+    }
+
+    public static HandlerRequest getValidHandlerQueryMessageOnlyDateToRequest(ObjectMapper mapper){
+        return HandlerRequest.Builder.newInstance()
+                .pid(UUID.randomUUID().toString())
+                .header(getValidQueryMessageHeader(mapper))
+                .payload(TEST_PAYLOAD)
+                .paging(getValidpagingOnlyDateTo()).build();
     }
 
     public static HandlerRequest getValidHandlerCreateProcessRequest(ObjectMapper mapper){
@@ -204,6 +272,13 @@ public class TestUtils extends BaseTestUtils {
 
     public static AppSenderRequest getValidAppSenderRequest(ObjectMapper mapper){
         return new AppSenderRequest(TEST_BASE_URL+ "/headers/log/" + UUID.randomUUID(),
+                JWT.create().toString(),
+                getValidHandlerRequest(mapper)
+        );
+    }
+
+    public static AppSenderRequest getValidQueryAppSenderRequest(ObjectMapper mapper){
+        return new AppSenderRequest(TEST_BASE_URL+ "/headers/query/" + UUID.randomUUID(),
                 JWT.create().toString(),
                 getValidHandlerRequest(mapper)
         );

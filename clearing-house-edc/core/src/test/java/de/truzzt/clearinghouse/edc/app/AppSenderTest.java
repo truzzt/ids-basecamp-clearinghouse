@@ -3,7 +3,6 @@ package de.truzzt.clearinghouse.edc.app;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
 import okhttp3.Request;
 import okhttp3.ResponseBody;
 import org.eclipse.edc.spi.EdcException;
@@ -29,8 +28,6 @@ public class AppSenderTest {
     @Mock
     private Monitor monitor;
     @Mock
-    private TypeManagerUtil typeManagerUtil;
-    @Mock
     private LoggingMessageDelegate senderDelegate;
     @Mock
     private EdcHttpClient httpClient;
@@ -40,15 +37,13 @@ public class AppSenderTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        senderDelegate = spy(new LoggingMessageDelegate(typeManagerUtil));
-        sender = new AppSender(monitor, httpClient ,typeManagerUtil);
+        senderDelegate = spy(new LoggingMessageDelegate());
+        sender = new AppSender(monitor, httpClient);
     }
 
     @Test
     public void sendSuccessful() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest(mapper).toString())
-                .when(typeManagerUtil).toJson(any(Object.class));
         doReturn(TestUtils.getValidResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
         doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
@@ -60,10 +55,7 @@ public class AppSenderTest {
     }
 
     @Test
-    public void sendWithHttpRequestError() throws IOException {
-
-        doReturn(TestUtils.getValidHandlerRequest(mapper).toString())
-                .when(typeManagerUtil).toJson(any(Object.class));
+    public void sendWithHttpRequestError() {
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 sender.send(TestUtils.getInvalidUrlAppSenderRequest(mapper), senderDelegate));
@@ -74,8 +66,6 @@ public class AppSenderTest {
     @Test
     public void sendWithUnsuccessfulResponseBodyError() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest(mapper).toString())
-                .when(typeManagerUtil).toJson(any(Object.class));
         doReturn(TestUtils.getUnsuccessfulResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
         doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
@@ -90,8 +80,6 @@ public class AppSenderTest {
     @Test
     public void sendWithNullResponseBodyError() throws IOException {
 
-        doReturn(TestUtils.getValidHandlerRequest(mapper).toString())
-                .when(typeManagerUtil).toJson(any(Object.class));
         doReturn(TestUtils.getResponseWithoutBody(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
         doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))

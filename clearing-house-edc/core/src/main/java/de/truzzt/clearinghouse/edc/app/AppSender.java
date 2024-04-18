@@ -13,9 +13,10 @@
  */
 package de.truzzt.clearinghouse.edc.app;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.app.delegate.AppSenderDelegate;
-import de.truzzt.clearinghouse.edc.dto.AppSenderRequest;
-import de.truzzt.clearinghouse.edc.types.TypeManagerUtil;
+import de.truzzt.clearinghouse.edc.app.message.AppSenderRequest;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -31,29 +32,27 @@ public class AppSender {
 
     private final Monitor monitor;
     private final EdcHttpClient httpClient;
-    private final TypeManagerUtil typeManagerUtil;
 
     public AppSender(Monitor monitor,
-                     EdcHttpClient httpClient,
-                     TypeManagerUtil typeManagerUtil) {
+                     EdcHttpClient httpClient) {
         this.monitor = monitor;
         this.httpClient = httpClient;
-        this.typeManagerUtil = typeManagerUtil;
     }
 
     public <R, P> P send(AppSenderRequest request, AppSenderDelegate<P> appSenderDelegate) {
 
-        var json = typeManagerUtil.toJson(request.getBody());
-        var requestBody = RequestBody.create(json, MediaType.get(JSON_CONTENT_TYPE));
+        try{
+            var json = new ObjectMapper().writeValueAsString(request.getBody());
+            var requestBody = RequestBody.create(json, MediaType.get(JSON_CONTENT_TYPE));
 
-        var httpRequest = new Request.Builder()
-                .url(request.getUrl())
-                .addHeader("Ch-Service", request.getToken())
-                .addHeader("Content-Type", JSON_CONTENT_TYPE)
-                .post(requestBody)
-                .build();
+            var httpRequest = new Request.Builder()
+                    .url(request.getUrl())
+                    .addHeader("Ch-Service", request.getToken())
+                    .addHeader("Content-Type", JSON_CONTENT_TYPE)
+                    .post(requestBody)
+                    .build();
 
-        try (Response response = httpClient.execute(httpRequest)) {
+            Response response = httpClient.execute(httpRequest);
             monitor.debug("Response received from Clearing House App. Status: " + response.code());
 
             if (response.isSuccessful()) {
@@ -67,10 +66,13 @@ public class AppSender {
                     throw new EdcException("Error reading Clearing House App response body", e);
                 }
             } else {
-                throw new EdcException(format("Received an error from Clearing House App. Status: %s, message: %s", response.code(), response.message()));
+                throw new EdcException(format("Received an error from Clearing House App. Status: %s, message: %s",
+                        response.code(), response.message()));
             }
+        } catch (JsonProcessingException jpe){
+            throw new EdcException("Error parsing request to Json", jpe);
         } catch (java.io.IOException e) {
-            throw new EdcException("Error sending request to Clearing House App", e);
-        }
+             throw new EdcException("Error sending request to Clearing House App", e);
+         }
     }
 }
