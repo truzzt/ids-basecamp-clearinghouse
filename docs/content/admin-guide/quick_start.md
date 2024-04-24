@@ -41,7 +41,7 @@ version: "3.8"
 
 services:
     ch-app:
-        image: ghcr.io/truzzt/ids-basecamp-clearing/ch-app:$VERSION 
+        image: ghcr.io/ids-basecamp/clearing/ch-app:$VERSION 
         environment:
             CH_APP_DATABASE_URL: $DATABASE_URL
             SERVICE_ID_LOG: $SERVICE_ID
@@ -50,7 +50,7 @@ services:
             - ./YOUR_PRIVATE_KEY.der:/app/keys/private_key.der:ro
 
     ch-edc:
-        image: ghcr.io/truzzt/ids-basecamp-clearing/ch-edc:$VERSION
+        image: ghcr.io/ids-basecamp/clearing/ch-edc:$VERSION
         environment:
             WEB_HTTP_PORT: 11001
             WEB_HTTP_PATH: /
