@@ -1,3 +1,10 @@
+# [1.0.0-beta.5](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2024-05-03)
+
+
+### Features
+
+* updating edc version ([c246d4e](https://github.com/ids-basecamp/clearinghouse/commit/c246d4eb6d6d4baae31490c5655c91c1b92bd7fa))
+
 # [1.0.0-beta.4](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2024-04-18)
 
 
