@@ -20,7 +20,7 @@ openssl genpkey -algorithm RSA \
 
 ### Environment
 ```.env
-VERSION=1.0.0-beta.1
+VERSION=1.0.0-beta.3
 SERVICE_ID=1
 SHARED_SECRET=changethis
 KEY_PASSWORD=password
@@ -28,6 +28,7 @@ DAPS_URL=
 DAPS_JWKS_URL=
 API_KEY=changethis
 CLIENT_ID=
+DATABASE_URL=postgres://
 ```
 
 ## docker-compose.yml
@@ -40,27 +41,19 @@ version: "3.8"
 
 services:
     ch-app:
-        image: ghcr.io/truzzt/ids-basecamp-clearing/ch-app:$VERSION 
+        image: ghcr.io/ids-basecamp/clearinghouse/ch-app:$VERSION 
         environment:
-            CH_APP_PROCESS_DATABASE_URL: mongodb://mongodb:27017 
-            CH_APP_KEYRING_DATABASE_URL: mongodb://mongodb:27017
-            CH_APP_DOCUMENT_DATABASE_URL: mongodb://mongodb:27017
-            CH_APP_CLEAR_DB: false
-            CH_APP_LOG_LEVEL: INFO
+            CH_APP_DATABASE_URL: $DATABASE_URL
             SERVICE_ID_LOG: $SERVICE_ID
             SHARED_SECRET: $SHARED_SECRET
         volumes:
             - ./YOUR_PRIVATE_KEY.der:/app/keys/private_key.der:ro
 
     ch-edc:
-        image: ghcr.io/truzzt/ids-basecamp-clearing/ch-edc:$VERSION
+        image: ghcr.io/ids-basecamp/clearinghouse/ch-edc:$VERSION
         environment:
-            WEB_HTTP_MANAGEMENT_PORT: 11001
-            WEB_HTTP_MANAGEMENT_PATH: /
-            WEB_HTTP_DATA_PORT: 11002
-            WEB_HTTP_DATA_PATH: /api/v1/data
-            WEB_HTTP_IDS_PORT: 11003
-            WEB_HTTP_IDS_PATH: /api/v1/ids
+            WEB_HTTP_PORT: 11001
+            WEB_HTTP_PATH: /
             EDC_IDS_ID: urn:connector:example-connector
             EDC_IDS_TITLE: 'truzzt Test EDC Connector'
             EDC_IDS_DESCRIPTION: 'Minimally configured Open Source EDC built by truzzt.'
@@ -92,7 +85,5 @@ services:
             - ./YOUR_PRIVATE_KEY.jks:/resources/vault/edc/keystore.jks
             - ./vault.properties:/resources/vault/edc/vault.properties
 
-    mongodb:
-        image: mongo
 ```
 
