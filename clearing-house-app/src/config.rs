@@ -9,6 +9,8 @@ pub(crate) struct CHConfig {
     pub(crate) log_level: Option<LogLevel>,
     #[serde(default)]
     pub(crate) signing_key: Option<String>,
+    #[serde(default)]
+    pub(crate) static_process_owner: Option<String>,
     performance_tracing: Option<bool>,
 }
 
@@ -105,16 +107,19 @@ mod test {
         std::env::set_var("CH_APP_DATABASE_URL", "mongodb://localhost:27117");
         std::env::set_var("CH_APP_CLEAR_DB", "true");
         std::env::set_var("CH_APP_LOG_LEVEL", "INFO");
+        std::env::set_var("CH_APP_STATIC_PROCESS_OWNER", "ABC");
 
         let conf = super::read_config(None);
         assert_eq!(conf.database_url, "mongodb://localhost:27117");
         assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Info));
+        assert_eq!(conf.static_process_owner, Some("ABC".to_string()));
 
         // Cleanup
         std::env::remove_var("CH_APP_DATABASE_URL");
         std::env::remove_var("CH_APP_CLEAR_DB");
         std::env::remove_var("CH_APP_LOG_LEVEL");
+        std::env::remove_var("CH_APP_STATIC_PROCESS_OWNER");
     }
 
     /// Test reading config from toml file
@@ -128,6 +133,7 @@ mod test {
         let toml = r#"database_url = "mongodb://localhost:27019"
 clear_db = true
 log_level = "ERROR"
+static_process_owner = "ABC"
 "#;
 
         // Write to file
@@ -140,5 +146,6 @@ log_level = "ERROR"
         assert_eq!(conf.database_url, "mongodb://localhost:27019");
         assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Error));
+        assert_eq!(conf.static_process_owner, Some("ABC".to_string()));
     }
 }

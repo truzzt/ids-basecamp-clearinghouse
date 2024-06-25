@@ -155,8 +155,8 @@ impl<T: DocumentStore> DocumentService<T> {
         };
 
         let mut result = QueryResult::new(
-            sanitized_date_from.timestamp(),
-            sanitized_date_to.timestamp(),
+            sanitized_date_from.and_utc().timestamp(),
+            sanitized_date_to.and_utc().timestamp(),
             result_page,
             result_size,
             result_sort,

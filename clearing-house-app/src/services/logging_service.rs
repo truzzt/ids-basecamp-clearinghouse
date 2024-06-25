@@ -65,12 +65,13 @@ impl axum::response::IntoResponse for LoggingServiceError {
 #[derive(Debug)]
 pub(crate) struct LoggingService<T, S> {
     db: T,
+    static_process_owner: Option<String>,
     doc_api: Arc<DocumentService<S>>,
 }
 
 impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
-    pub fn new(db: T, doc_api: Arc<DocumentService<S>>) -> LoggingService<T, S> {
-        LoggingService { db, doc_api }
+    pub fn new(db: T, doc_api: Arc<DocumentService<S>>, static_process_owner: Option<String>) -> LoggingService<T, S> {
+        LoggingService { db, doc_api, static_process_owner }
     }
 
     pub async fn log(
@@ -172,6 +173,9 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
 
         // validate payload
         let mut owners = vec![user.clone()];
+        if let Some(static_process_owner) = &self.static_process_owner {
+            owners.push(static_process_owner.clone());
+        } 
         match m.payload {
             Some(ref payload) if !payload.is_empty() => {
                 trace!("OwnerList: '{:#?}'", &payload);
