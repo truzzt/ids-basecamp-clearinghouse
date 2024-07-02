@@ -159,7 +159,7 @@ pub fn create_token<
 ) -> String {
     let secret = env::var(ENV_SHARED_SECRET).unwrap_or_else(|_| panic!("Shared Secret not configured. Please configure environment variable {ENV_SHARED_SECRET}"));
     let signing_secret = biscuit::jws::Secret::Bytes(secret.to_string().into_bytes());
-    let expiration_date = chrono::Utc::now() + chrono::Duration::minutes(5);
+    let expiration_date = chrono::Utc::now() + chrono::TimeDelta::try_minutes(5).expect("5 minutes is a valid time delta");
 
     let claims = biscuit::ClaimsSet::<T> {
         registered: biscuit::RegisteredClaims {

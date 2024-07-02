@@ -378,11 +378,11 @@ impl IdsQueryResult {
         order: String,
         documents: Vec<IdsMessage>,
     ) -> IdsQueryResult {
-        let date_from = chrono::NaiveDateTime::from_timestamp_opt(date_from, 0)
+        let date_from = chrono::DateTime::from_timestamp(date_from, 0)
             .expect("Invalid date_from seconds")
             .format("%Y-%m-%d %H:%M:%S")
             .to_string();
-        let date_to = chrono::NaiveDateTime::from_timestamp_opt(date_to, 0)
+        let date_to = chrono::DateTime::from_timestamp(date_to, 0)
             .expect("Invalid date_to seconds")
             .format("%Y-%m-%d %H:%M:%S")
             .to_string();

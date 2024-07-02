@@ -2,4 +2,5 @@ log_level = "INFO" # TRACE, DEBUG, INFO, WARN, ERROR
 database_url= "postgres://my_user:my_password@localhost:5432/ch"
 clear_db = true
 signing_key = "keys/private_key.der" # Optional
+static_process_owner = "MDS" # Optional
 performance_tracing = false

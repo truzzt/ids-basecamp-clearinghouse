@@ -28,6 +28,7 @@ async fn log_message() {
     std::env::set_var("SHARED_SECRET", "test");
     std::env::set_var("CH_APP_LOG_LEVEL", "TRACE");
     std::env::set_var("CH_APP_CLEAR_DB", "false");
+    std::env::set_var("CH_APP_STATIC_PROCESS_OWNER", "MDS_EDC_CONNECTOR");
     std::env::set_var("CH_APP_DATABASE_URL", connection_string);
 
     let app = clearing_house_app::app().await.unwrap();
@@ -217,12 +218,16 @@ async fn log_message() {
 
     // Send log message
     let log_response_unauth = app
+        .clone()
         .oneshot(
             Request::builder()
                 .uri(format!("/messages/log/{}", pid))
                 .method("POST")
                 .header("Content-Type", "application/json")
-                .header(SERVICE_HEADER, create_token("test", "test", &unauthorized_claims))
+                .header(
+                    SERVICE_HEADER,
+                    create_token("test", "test", &unauthorized_claims),
+                )
                 .body(serde_json::to_string(&log_msg).unwrap())
                 .unwrap(),
         )
@@ -230,4 +235,68 @@ async fn log_message() {
         .unwrap();
 
     assert_eq!(log_response_unauth.status(), StatusCode::FORBIDDEN);
+
+    // ---------------------------------------------------------------------------------------------
+
+    // Send log message from static_process_owner
+    let static_process_owner_claims = ChClaims::new("MDS_EDC_CONNECTOR");
+
+    // Send log message
+    let log_response_unauth = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(format!("/messages/log/{}", pid))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header(
+                    SERVICE_HEADER,
+                    create_token("test", "test", &static_process_owner_claims),
+                )
+                .body(serde_json::to_string(&log_msg).unwrap())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(log_response_unauth.status(), StatusCode::CREATED);
+
+    // ---------------------------------------------------------------------------------------------
+
+    // Query as static_process_owner
+    let query_resp = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(format!("/messages/query/{}", pid))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header(
+                    SERVICE_HEADER,
+                    create_token("test", "test", &static_process_owner_claims),
+                )
+                .body(serde_json::to_string(&log_msg).unwrap())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(query_resp.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(query_resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    assert!(!body.is_empty());
+
+    let ids_message = serde_json::from_slice::<IdsQueryResult>(&body).unwrap();
+    println!("IDS Query Result: {:?}", ids_message);
+    let query_docs = ids_message.documents;
+
+    // Check the only document in the result
+    assert_eq!(query_docs.len(), 2);
+    let doc = query_docs
+        .first()
+        .expect("Document is there, just checked")
+        .to_owned();
+    assert_eq!(doc.payload.expect("Payload is there"), "test".to_string());
+    assert_eq!(doc.model_version, "test".to_string());
 }
