@@ -19,6 +19,7 @@ docker run -d \
     -e CH_APP_DOCUMENT_DATABASE_URL='mongodb://mongohost:27017' \
     -e CH_APP_CLEAR_DB='false' \
     -e CH_APP_LOG_LEVEL='INFO' \
+    -e CH_APP_STATIC_PROCESS_OWNER='MDS_ID' \
     -e SERVICE_ID_LOG='1' \
     -e SHARED_SECRET='123' \
     --name ch-app \
@@ -41,6 +42,7 @@ docker run -d \
     -e CH_APP_DOCUMENT_DATABASE_URL='mongodb://mongohost:27017' \
     -e CH_APP_CLEAR_DB='false' \
     -e CH_APP_LOG_LEVEL='INFO' \
+    -e CH_APP_STATIC_PROCESS_OWNER='MDS_ID' \
     -e SERVICE_ID_LOG='1' \
     -e SHARED_SECRET='123' \
     --name ch-app \

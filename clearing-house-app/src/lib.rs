@@ -89,6 +89,7 @@ impl AppState {
         let logging_service = Arc::new(services::logging_service::LoggingService::new(
             process_store,
             doc_service.clone(),
+            conf.static_process_owner.clone(),
         ));
 
         let service_config = Arc::new(util::init_service_config(

@@ -72,11 +72,11 @@ pub fn validate_and_sanitize_dates(
         &now, &date_from, &date_to
     );
 
-    let default_to_date = now.add(chrono::Duration::seconds(1));
+    let default_to_date = now.add(chrono::TimeDelta::try_seconds(1).expect("1 Second is a valid time delta"));
     let default_from_date = default_to_date
         .date()
         .and_time(start_of_day())
-        - chrono::Duration::weeks(2);
+        - chrono::Duration::try_weeks(2).expect("2 weeks is a valid duration");
 
     match (date_from, date_to) {
         (Some(from), None) if from < now => Ok((from, default_to_date)),
@@ -98,17 +98,17 @@ mod test {
         let date_now_midnight = date_now
             .date()
             .and_time(start_of_day());
-        let date_from = date_now_midnight - chrono::Duration::weeks(2);
-        let date_to = date_now_midnight - chrono::Duration::weeks(1);
+        let date_from = date_now_midnight - chrono::TimeDelta::try_weeks(2).expect("2 weeks is a valid duration");
+        let date_to = date_now_midnight - chrono::TimeDelta::try_weeks(1).expect("1 week is a valid duration");
 
         // # Good cases
         assert_eq!(
-            (date_from, date_now.add(chrono::Duration::seconds(1))),
+            (date_from, date_now.add(chrono::TimeDelta::try_seconds(1).expect("1 Second is a valid time delta"))),
             super::validate_and_sanitize_dates(None, None, Some(date_now))
                 .expect("Should be valid")
         );
         assert_eq!(
-            (date_from, date_now.add(chrono::Duration::seconds(1))),
+            (date_from, date_now.add(chrono::TimeDelta::try_seconds(1).expect("1 Second is a valid time delta"))),
             super::validate_and_sanitize_dates(Some(date_from), None, Some(date_now))
                 .expect("Should be valid")
         );
