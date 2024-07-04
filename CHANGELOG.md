@@ -1,3 +1,10 @@
+# [1.0.0-beta.6](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.5...v1.0.0-beta.6) (2024-07-04)
+
+
+### Features
+
+* **app:** add 'static_process_owner' for processes ([#117](https://github.com/ids-basecamp/clearinghouse/issues/117)) ([33cd21a](https://github.com/ids-basecamp/clearinghouse/commit/33cd21a3f3fdb5d7ac14d612ca1f18b0af0d9831))
+
 # [1.0.0-beta.5](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2024-05-03)
 
 
