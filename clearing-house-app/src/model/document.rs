@@ -16,7 +16,6 @@ pub struct Document {
 
 /// Documents should have a globally unique id, setting the id manually is discouraged.
 impl Document {
-
     #[must_use]
     pub fn new(pid: String, content: IdsMessage) -> Self {
         Self {

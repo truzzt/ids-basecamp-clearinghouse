@@ -42,9 +42,11 @@ impl axum::response::IntoResponse for LoggingServiceError {
     fn into_response(self) -> axum::response::Response {
         use axum::http::StatusCode;
         match self {
-            Self::EmptyPayloadReceived | Self::AttemptedAccessToDefaultPid | Self::InvalidRequest | Self::ProcessAlreadyExists | Self::ParsingError(_) => {
-                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
-            }
+            Self::EmptyPayloadReceived
+            | Self::AttemptedAccessToDefaultPid
+            | Self::InvalidRequest
+            | Self::ProcessAlreadyExists
+            | Self::ParsingError(_) => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::DatabaseError {
                 source,
                 description,
@@ -70,8 +72,16 @@ pub(crate) struct LoggingService<T, S> {
 }
 
 impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
-    pub fn new(db: T, doc_api: Arc<DocumentService<S>>, static_process_owner: Option<String>) -> LoggingService<T, S> {
-        LoggingService { db, doc_api, static_process_owner }
+    pub fn new(
+        db: T,
+        doc_api: Arc<DocumentService<S>>,
+        static_process_owner: Option<String>,
+    ) -> LoggingService<T, S> {
+        LoggingService {
+            db,
+            doc_api,
+            static_process_owner,
+        }
     }
 
     pub async fn log(
@@ -102,8 +112,7 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
         }?;
 
         // Check if process exists and if the user is authorized to access the process
-        match self.get_process_and_check_authorized(&pid, user).await
-        {
+        match self.get_process_and_check_authorized(&pid, user).await {
             Err(LoggingServiceError::ProcessDoesNotExist(_)) => {
                 // convenience: if process does not exist, we create it but only if no error occurred before
                 info!("Requested pid '{}' does not exist. Creating...", &pid);
@@ -111,11 +120,24 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
                 let new_process = Process::new(pid.clone(), vec![user.clone()]);
 
                 if let Err(e) = self.db.store_process(new_process).await {
-                    error!("Error while creating process '{}'", & pid);
-                    return Err(LoggingServiceError::DatabaseError {
-                        source: e,
-                        description: "Creating process failed".to_string(),
-                    }); // InternalError
+                    error!("Error while creating process '{}' automatically for log message (could have been created in the meantime)", &pid);
+
+                    match self.get_process_and_check_authorized(&pid, user).await {
+                        Ok(_) => {}
+                        Err(LoggingServiceError::ProcessDoesNotExist(_)) => {
+                            error!(
+                                "Process still not exists (failing with Database error now): {e:?}",
+                            );
+                            return Err(LoggingServiceError::DatabaseError {
+                                source: e,
+                                description: "Creating process failed".to_string(),
+                            }); // InternalError
+                        }
+                        Err(e) => {
+                            warn!("Error while checking process: {:?}", e);
+                            return Err(e);
+                        }
+                    }
                 }
             }
             Err(e) => {
@@ -175,7 +197,7 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
         let mut owners = vec![user.clone()];
         if let Some(static_process_owner) = &self.static_process_owner {
             owners.push(static_process_owner.clone());
-        } 
+        }
         match m.payload {
             Some(ref payload) if !payload.is_empty() => {
                 trace!("OwnerList: '{:#?}'", &payload);
@@ -207,10 +229,9 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
                 }
             }
             Ok(None) => {
-                info!("Requested pid '{}' will have {} owners", &pid, owners.len());
+                info!("Requested pid '{}' does not exist and will have {} owners. Creating...", &pid, owners.len());
 
                 // create process
-                info!("Requested pid '{}' does not exist. Creating...", &pid);
                 let new_process = Process::new(pid.clone(), owners);
 
                 match self.db.store_process(new_process).await {
@@ -286,7 +307,7 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
     }
 
     /// Query a single message by its `id` and `pid`
-    /// 
+    ///
     /// `_message` is required because the `ClearingHouseMessage` as request body is required by the route
     #[allow(clippy::no_effect_underscore_binding)]
     pub(crate) async fn query_id(
