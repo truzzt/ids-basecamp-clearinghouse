@@ -57,9 +57,9 @@ pub fn parse_date(date: Option<String>, to_date: bool) -> Option<chrono::NaiveDa
 }
 
 /// Validates the provided dates. `date_now` is optional and defaults to `chrono::Local::now().naive_local()`.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Throws an error if `date_from` is `Option::None` and `date_to` is `Option::Some()`.
 pub fn validate_and_sanitize_dates(
     date_from: Option<chrono::NaiveDateTime>,
@@ -72,10 +72,9 @@ pub fn validate_and_sanitize_dates(
         &now, &date_from, &date_to
     );
 
-    let default_to_date = now.add(chrono::TimeDelta::try_seconds(1).expect("1 Second is a valid time delta"));
-    let default_from_date = default_to_date
-        .date()
-        .and_time(start_of_day())
+    let default_to_date =
+        now.add(chrono::TimeDelta::try_seconds(1).expect("1 Second is a valid time delta"));
+    let default_from_date = default_to_date.date().and_time(start_of_day())
         - chrono::Duration::try_weeks(2).expect("2 weeks is a valid duration");
 
     match (date_from, date_to) {
@@ -88,27 +87,37 @@ pub fn validate_and_sanitize_dates(
 
 #[cfg(test)]
 mod test {
-    use std::ops::Add;
     use crate::model::{end_of_day, start_of_day};
+    use std::ops::Add;
 
     #[test]
     fn validate_and_sanitize_dates() {
         // Setup dates for testing
         let date_now = chrono::Local::now().naive_local();
-        let date_now_midnight = date_now
-            .date()
-            .and_time(start_of_day());
-        let date_from = date_now_midnight - chrono::TimeDelta::try_weeks(2).expect("2 weeks is a valid duration");
-        let date_to = date_now_midnight - chrono::TimeDelta::try_weeks(1).expect("1 week is a valid duration");
+        let date_now_midnight = date_now.date().and_time(start_of_day());
+        let date_from = date_now_midnight
+            - chrono::TimeDelta::try_weeks(2).expect("2 weeks is a valid duration");
+        let date_to = date_now_midnight
+            - chrono::TimeDelta::try_weeks(1).expect("1 week is a valid duration");
 
         // # Good cases
         assert_eq!(
-            (date_from, date_now.add(chrono::TimeDelta::try_seconds(1).expect("1 Second is a valid time delta"))),
+            (
+                date_from,
+                date_now.add(
+                    chrono::TimeDelta::try_seconds(1).expect("1 Second is a valid time delta")
+                )
+            ),
             super::validate_and_sanitize_dates(None, None, Some(date_now))
                 .expect("Should be valid")
         );
         assert_eq!(
-            (date_from, date_now.add(chrono::TimeDelta::try_seconds(1).expect("1 Second is a valid time delta"))),
+            (
+                date_from,
+                date_now.add(
+                    chrono::TimeDelta::try_seconds(1).expect("1 Second is a valid time delta")
+                )
+            ),
             super::validate_and_sanitize_dates(Some(date_from), None, Some(date_now))
                 .expect("Should be valid")
         );

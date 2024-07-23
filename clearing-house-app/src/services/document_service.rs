@@ -28,7 +28,9 @@ impl axum::response::IntoResponse for DocumentServiceError {
     fn into_response(self) -> axum::response::Response {
         use axum::http::StatusCode;
         match self {
-            Self::DocumentAlreadyExists | Self::MissingPayload | Self::InvalidDates => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            Self::DocumentAlreadyExists | Self::MissingPayload | Self::InvalidDates => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
             Self::DatabaseError {
                 source,
                 description,
