@@ -98,9 +98,9 @@ impl std::fmt::Display for InfoModelDateTime {
 pub struct InfoModelTimeStamp {
     //IDS name
     #[serde(
-    rename = "@type",
-    alias = "type",
-    skip_serializing_if = "Option::is_none"
+        rename = "@type",
+        alias = "type",
+        skip_serializing_if = "Option::is_none"
     )]
     pub format: Option<String>,
     //IDS name

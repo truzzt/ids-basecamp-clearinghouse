@@ -39,7 +39,6 @@ pub(crate) struct AppState {
 }
 
 impl AppState {
-
     /// Connect to the database and execute database migrations
     async fn setup_postgres(conf: &config::CHConfig) -> anyhow::Result<sqlx::PgPool> {
         info!("Connecting to database");
@@ -92,9 +91,7 @@ impl AppState {
             conf.static_process_owner.clone(),
         ));
 
-        let service_config = Arc::new(util::init_service_config(
-            ENV_LOGGING_SERVICE_ID,
-        )?);
+        let service_config = Arc::new(util::init_service_config(ENV_LOGGING_SERVICE_ID)?);
         let signing_key = util::init_signing_key(conf.signing_key.as_deref())?;
 
         Ok(Self {
@@ -106,9 +103,9 @@ impl AppState {
 }
 
 /// Initialize the application
-/// 
+///
 /// # Errors
-/// 
+///
 /// Throws an error if the `AppState` cannot be initialized
 pub async fn app() -> anyhow::Result<axum::Router> {
     // Read configuration

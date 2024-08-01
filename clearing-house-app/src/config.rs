@@ -127,7 +127,10 @@ mod test {
     #[serial]
     fn test_read_config_from_toml() {
         // Create tempfile
-        let file = tempfile::Builder::new().suffix(".toml").tempfile().expect("Failure to create tempfile");
+        let file = tempfile::Builder::new()
+            .suffix(".toml")
+            .tempfile()
+            .expect("Failure to create tempfile");
 
         // Write config to file
         let toml = r#"database_url = "mongodb://localhost:27019"

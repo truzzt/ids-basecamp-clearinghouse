@@ -30,9 +30,9 @@ pub struct ExtractChClaims(pub ChClaims);
 
 #[async_trait::async_trait]
 impl<S> axum::extract::FromRequestParts<S> for ExtractChClaims
-    where
-        S: Send + Sync,
-        AppState: FromRef<S>,
+where
+    S: Send + Sync,
+    AppState: FromRef<S>,
 {
     type Rejection = axum::response::Response;
 
@@ -159,7 +159,8 @@ pub fn create_token<
 ) -> String {
     let secret = env::var(ENV_SHARED_SECRET).unwrap_or_else(|_| panic!("Shared Secret not configured. Please configure environment variable {ENV_SHARED_SECRET}"));
     let signing_secret = biscuit::jws::Secret::Bytes(secret.to_string().into_bytes());
-    let expiration_date = chrono::Utc::now() + chrono::TimeDelta::try_minutes(5).expect("5 minutes is a valid time delta");
+    let expiration_date = chrono::Utc::now()
+        + chrono::TimeDelta::try_minutes(5).expect("5 minutes is a valid time delta");
 
     let claims = biscuit::ClaimsSet::<T> {
         registered: biscuit::RegisteredClaims {
@@ -242,7 +243,8 @@ pub fn decode_token<T: Clone + serde::Serialize + for<'de> serde::Deserialize<'d
 mod test {
     #[test]
     fn get_fingerprint() {
-        let fingerprint = super::get_fingerprint("keys/private_key.der").expect("Fingerprint can be generated");
+        let fingerprint =
+            super::get_fingerprint("keys/private_key.der").expect("Fingerprint can be generated");
         assert_eq!(fingerprint, "Qra//29Frxbj5hh5Azef+G36SeiOm9q7s8+w8uGLD28");
     }
 }
