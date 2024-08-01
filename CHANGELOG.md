@@ -1,3 +1,11 @@
+# [1.0.0-beta.7](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.6...v1.0.0-beta.7) (2024-08-01)
+
+
+### Bug Fixes
+
+* **app:** Bump dependencies ([3c34b8a](https://github.com/ids-basecamp/clearinghouse/commit/3c34b8adf906cfae0da1e167bed024d0be509d39))
+* **app:** Possible race condition when log and create_process are executed at the same time; Formatting ([024812d](https://github.com/ids-basecamp/clearinghouse/commit/024812df05587c4cb220a7b322f8cd08069edcc7))
+
 # [1.0.0-beta.6](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.5...v1.0.0-beta.6) (2024-07-04)
 
 
