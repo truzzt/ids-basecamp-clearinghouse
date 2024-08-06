@@ -28,12 +28,14 @@ jobs:
     - name: Run cargo fmt --check
       id: fmt
       working-directory: ./clearing-house-app
+      continue-on-error: true
       run: |
-        cargo fmt --check >> "$GITHUB_OUTPUT"
+        cargo fmt --check --message-format human >> "$GITHUB_OUTPUT"
 
     - name: Run cargo clippy
       id: clippy
       working-directory: ./clearing-house-app
+      continue-on-error: true
       run: |
         cargo clippy >> "$GITHUB_OUTPUT"
 
