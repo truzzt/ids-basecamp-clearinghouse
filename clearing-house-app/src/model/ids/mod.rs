@@ -56,7 +56,7 @@ impl InfoModelId {
 }
 
 impl std::fmt::Display for InfoModelId {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             InfoModelId::SimpleId(id) => fmt.write_str(id)?,
             InfoModelId::ComplexId(id) => fmt.write_str(&id.to_string())?,
@@ -85,7 +85,7 @@ impl Default for InfoModelDateTime {
 }
 
 impl std::fmt::Display for InfoModelDateTime {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             InfoModelDateTime::Time(value) => fmt.write_str(&value.to_string())?,
             InfoModelDateTime::ComplexTime(value) => fmt.write_str(&value.to_string())?,

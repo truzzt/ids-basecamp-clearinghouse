@@ -3,6 +3,7 @@
 use axum::http::{Request, StatusCode};
 use biscuit::jwa::SignatureAlgorithm::PS512;
 use biscuit::jwk::JWKSet;
+use testcontainers::runners::AsyncRunner;
 use clearing_house_app::model::claims::{get_fingerprint, ChClaims};
 use clearing_house_app::model::ids::message::IdsMessage;
 use clearing_house_app::model::ids::request::ClearingHouseMessage;
@@ -15,18 +16,24 @@ use tower::ServiceExt;
 #[tokio::test]
 async fn log_message() {
     // Start testcontainer: Postgres
-    let docker = testcontainers::clients::Cli::default();
-    let postgres_instance = docker.run(testcontainers_modules::postgres::Postgres::default());
+    let postgres_instance = testcontainers_modules::postgres::Postgres::default()
+        .start()
+        .await
+        .expect("Failed to start Postgres container");
     let connection_string = format!(
-        "postgres://postgres:postgres@127.0.0.1:{}/postgres",
-        postgres_instance.get_host_port_ipv4(5432)
+        "postgres://postgres:postgres@{}:{}/postgres",
+        postgres_instance.get_host().await.expect("Failed to get host"),
+        postgres_instance.get_host_port_ipv4(5432).await.expect("Failed to get port")
     );
 
-    std::env::set_var("SERVICE_ID_LOG", "test");
-    std::env::set_var("SHARED_SECRET", "test");
-    std::env::set_var("CH_APP_LOG_LEVEL", "TRACE");
-    std::env::set_var("CH_APP_CLEAR_DB", "false");
-    std::env::set_var("CH_APP_DATABASE_URL", connection_string);
+    #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
+    unsafe {
+        std::env::set_var("SERVICE_ID_LOG", "test");
+        std::env::set_var("SHARED_SECRET", "test");
+        std::env::set_var("CH_APP_LOG_LEVEL", "TRACE");
+        std::env::set_var("CH_APP_CLEAR_DB", "false");
+        std::env::set_var("CH_APP_DATABASE_URL", connection_string);
+    }
 
     let app = clearing_house_app::app().await.unwrap();
 

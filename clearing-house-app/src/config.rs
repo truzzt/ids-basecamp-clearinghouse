@@ -79,7 +79,10 @@ pub(crate) fn read_config(config_file_override: Option<&std::path::Path>) -> CHC
 pub(crate) fn configure_logging(config: &CHConfig) {
     if std::env::var("RUST_LOG").is_err() {
         if let Some(level) = &config.log_level {
-            std::env::set_var("RUST_LOG", level.to_string());
+            #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
+            unsafe { 
+                std::env::set_var("RUST_LOG", level.to_string()); 
+            }
         }
     }
 
@@ -104,10 +107,13 @@ mod test {
     #[test]
     #[serial]
     fn test_read_config_from_env() {
-        std::env::set_var("CH_APP_DATABASE_URL", "mongodb://localhost:27117");
-        std::env::set_var("CH_APP_CLEAR_DB", "true");
-        std::env::set_var("CH_APP_LOG_LEVEL", "INFO");
-        std::env::set_var("CH_APP_STATIC_PROCESS_OWNER", "ABC");
+        #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
+        unsafe {
+            std::env::set_var("CH_APP_DATABASE_URL", "mongodb://localhost:27117");
+            std::env::set_var("CH_APP_CLEAR_DB", "true");
+            std::env::set_var("CH_APP_LOG_LEVEL", "INFO");
+            std::env::set_var("CH_APP_STATIC_PROCESS_OWNER", "ABC");
+        }
 
         let conf = super::read_config(None);
         assert_eq!(conf.database_url, "mongodb://localhost:27117");
@@ -116,10 +122,13 @@ mod test {
         assert_eq!(conf.static_process_owner, Some("ABC".to_string()));
 
         // Cleanup
-        std::env::remove_var("CH_APP_DATABASE_URL");
-        std::env::remove_var("CH_APP_CLEAR_DB");
-        std::env::remove_var("CH_APP_LOG_LEVEL");
-        std::env::remove_var("CH_APP_STATIC_PROCESS_OWNER");
+        #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
+        unsafe {
+            std::env::remove_var("CH_APP_DATABASE_URL");
+            std::env::remove_var("CH_APP_CLEAR_DB");
+            std::env::remove_var("CH_APP_LOG_LEVEL");
+            std::env::remove_var("CH_APP_STATIC_PROCESS_OWNER");
+        }
     }
 
     /// Test reading config from toml file
