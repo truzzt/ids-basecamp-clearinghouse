@@ -25,6 +25,8 @@ jobs:
       working-directory: ./clearing-house-app
       continue-on-error: true
       run: |
+        set +e
+
         cargo fmt --check --message-format human >> cargo_fmt_output.txt
         exit_code=$?
 
@@ -32,8 +34,6 @@ jobs:
         echo "text<<EOF" >> $GITHUB_OUTPUT
         cat cargo_fmt_output.txt >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-
-        exit 0
 
     - name: Build
       id: build
@@ -49,6 +49,8 @@ jobs:
       env:
         NO_COLOR: true
       run: |
+        set +e
+
         cargo test &>> cargo_test_output.txt
         exit_code=$?
 
@@ -62,6 +64,8 @@ jobs:
       working-directory: ./clearing-house-app
       continue-on-error: true
       run: |
+        set +e
+
         cargo clippy >> cargo_clippy_output.txt
         exit_code=$?
         
@@ -119,7 +123,7 @@ jobs:
 
           ## Linter report ("cargo clippy"):
 
-          Exit code: ${{ steps.linter.outputs.code }}
+          Exit code: ${{ steps.clippy.outputs.code }}
           
           ${linterComment}
 
