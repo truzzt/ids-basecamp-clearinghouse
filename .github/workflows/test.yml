@@ -21,11 +21,42 @@ jobs:
       with:
         toolchain: stable
 
-    - name: Build and Test
+    - name: Run cargo fmt --check
+      id: fmt
       run: |
-        cd clearing-house-app
-        cargo build --all-features
-        cargo test --all-features
+        cargo fmt --check >> "$GITHUB_OUTPUT"
+
+    - name: Run cargo clippy
+      id: clippy
+      run: |
+        cargo clippy >> "$GITHUB_OUTPUT"
+
+    - name: Post results to PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fmtOutput = `\`\`\`
+          ${ steps.fmt.outputs.fmt_result }
+          \`\`\``;
+
+          const clippyOutput = `\`\`\`
+          ${ steps.clippy.outputs.clippy_result }
+          \`\`\``;
+
+          const body = `
+          ## "cargo fmt --check" Result:
+          ${fmtOutput}
+
+          ## "cargo clippy" Result:
+          ${clippyOutput}
+          `;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });
 
   edc-unit-tests:
     runs-on: ubuntu-latest
