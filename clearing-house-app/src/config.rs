@@ -80,8 +80,8 @@ pub(crate) fn configure_logging(config: &CHConfig) {
     if std::env::var("RUST_LOG").is_err() {
         if let Some(level) = &config.log_level {
             #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
-            unsafe { 
-                std::env::set_var("RUST_LOG", level.to_string()); 
+            unsafe {
+                std::env::set_var("RUST_LOG", level.to_string());
             }
         }
     }
@@ -109,14 +109,20 @@ mod test {
     fn test_read_config_from_env() {
         #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
         unsafe {
-            std::env::set_var("CH_APP_DATABASE_URL", "mongodb://localhost:27117");
+            std::env::set_var(
+                "CH_APP_DATABASE_URL",
+                "postgres://my_user:my_password@localhost:5432/ch",
+            );
             std::env::set_var("CH_APP_CLEAR_DB", "true");
             std::env::set_var("CH_APP_LOG_LEVEL", "INFO");
             std::env::set_var("CH_APP_STATIC_PROCESS_OWNER", "ABC");
         }
 
         let conf = super::read_config(None);
-        assert_eq!(conf.database_url, "mongodb://localhost:27117");
+        assert_eq!(
+            conf.database_url,
+            "postgres://my_user:my_password@localhost:5432/ch"
+        );
         assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Info));
         assert_eq!(conf.static_process_owner, Some("ABC".to_string()));
@@ -142,7 +148,7 @@ mod test {
             .expect("Failure to create tempfile");
 
         // Write config to file
-        let toml = r#"database_url = "mongodb://localhost:27019"
+        let toml = r#"database_url = "postgres://my_user:my_password@localhost:5432/ch"
 clear_db = true
 log_level = "ERROR"
 static_process_owner = "ABC"
@@ -155,7 +161,10 @@ static_process_owner = "ABC"
         let conf = super::read_config(Some(file.path()));
 
         // Test
-        assert_eq!(conf.database_url, "mongodb://localhost:27019");
+        assert_eq!(
+            conf.database_url,
+            "postgres://my_user:my_password@localhost:5432/ch"
+        );
         assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Error));
         assert_eq!(conf.static_process_owner, Some("ABC".to_string()));

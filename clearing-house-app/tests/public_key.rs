@@ -6,16 +6,26 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn retrieve_public_key() {
-    // Start testcontainer: Postgres
-    let postgres_instance = testcontainers_modules::postgres::Postgres::default()
-        .start()
-        .await
-        .expect("Failed to start Postgres container");
-    let connection_string = format!(
-        "postgres://postgres:postgres@{}:{}/postgres",
-        postgres_instance.get_host().await.expect("Failed to get host"),
-        postgres_instance.get_host_port_ipv4(5432).await.expect("Failed to get port")
-    );
+    let (_instance, connection_string) = {
+        // Start testcontainer: Postgres
+        let postgres_instance = testcontainers_modules::postgres::Postgres::default()
+            .start()
+            .await
+            .expect("Failed to start Postgres container");
+        let connection_string = format!(
+            "postgres://postgres:postgres@{}:{}/postgres",
+            postgres_instance
+                .get_host()
+                .await
+                .expect("Failed to get host"),
+            postgres_instance
+                .get_host_port_ipv4(5432)
+                .await
+                .expect("Failed to get port")
+        );
+
+        (postgres_instance, connection_string)
+    };
 
     #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
     unsafe {

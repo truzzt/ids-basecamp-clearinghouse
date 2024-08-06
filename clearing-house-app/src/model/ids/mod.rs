@@ -130,7 +130,7 @@ impl std::fmt::Display for InfoModelTimeStamp {
 }
 
 /**
-There are three Subclasses of the abstract ids:Message class. Namely the ids:RequestMessage, ids:ResponseMessage
+There are three Subclasses of the abstract ids:Message class. Namely, the ids:RequestMessage, ids:ResponseMessage
 and ids:NotificationMessage. Each subclass itself has subclasses that fulfill a specific purpose in the communication process.
 
 For communication in the IDS, usually the more specific subclasses of the three mentioned ones are used.
@@ -145,6 +145,7 @@ pub enum MessageType {
     Message,
 
     /// ## Basic Message Types: Request, Response, Notification
+    ///
     /// Client-generated message initiating a communication, motivated by a certain reason and with an answer expected.
     #[serde(rename = "ids:RequestMessage")]
     RequestMessage,
@@ -156,6 +157,7 @@ pub enum MessageType {
     NotificationMessage,
 
     /// ## Core IDS Messages
+    ///
     /// Command messages are usually sent when a response is expected by the sender. Changes state on the recipient side. Therefore, commands are not 'safe' in the sense of REST.
     #[serde(rename = "ids:CommandMessage")]
     CommandMessage,
@@ -167,6 +169,7 @@ pub enum MessageType {
     RejectionMessage,
 
     /// ## Self-description
+    ///
     /// Message requesting metadata. If no URI is supplied via the ids:requestedElement field, this messages is treated like a self-description request and the recipient should return its self-description via an ids:DescriptionResponseMessage. However, if a URI is supplied, the Connector should either return metadata about the requested element via an ids:DescriptionResponseMessage, or send an ids:RejectionMessage, e.g., because the element was not found.
     #[serde(rename = "ids:DescriptionRequestMessage")]
     DescriptionRequestMessage,
@@ -175,6 +178,7 @@ pub enum MessageType {
     DescriptionResponseMessage,
 
     /// ## Connector-related Messages
+    ///
     /// Superclass of all messages, indicating a change of a connector's conditions.
     #[serde(rename = "ids:ConnectorNotificationMessage")]
     ConnectorNotificationMessage,
@@ -192,7 +196,8 @@ pub enum MessageType {
     ConnectorCertificateRevokedMessage,
 
     /// ## Participant-related Messages
-    /// Superclass of all messages, indicating a change of a particpants's conditions.
+    ///
+    /// Superclass of all messages, indicating a change of a participant's conditions.
     #[serde(rename = "ids:ParticipantNotificationMessage")]
     ParticipantNotificationMessage,
     /// Event notifying the recipient(s) about the availability and current description of a participant. The payload of the message must contain the participant's self-description.
@@ -209,6 +214,7 @@ pub enum MessageType {
     ParticipantCertificateRevokedMessage,
 
     /// ## Query related Messages
+    ///
     /// Query message intended to be consumed by a component.
     #[serde(rename = "ids:QueryMessage")]
     QueryMessage,
@@ -220,13 +226,14 @@ pub enum MessageType {
     QueryTarget,
 
     /// ## Contract Negotiation related Messages
+    ///
     /// Message containing a suggested content contract (as offered by the data consumer to the data provider) in the associated payload (which is an instance of ids:ContractRequest).
     #[serde(rename = "ids:ContractRequestMessage")]
     ContractRequestMessage,
     /// Message containing a response to a contract request (of a data consumer) in form of a counter-proposal of a contract in the associated payload (which is an instance of ids:ContractOffer).
     #[serde(rename = "ids:ContractResponseMessage")]
     ContractResponseMessage,
-    /// Message containing a offered content contract (as offered by a data provider to the data consumer) in the associated payload (which is an instance of ids:ContractOffer). In contrast to the ids:ContractResponseMessage, the ids:ContractOfferMessage is not related to a previous contract
+    /// Message containing an offered content contract (as offered by a data provider to the data consumer) in the associated payload (which is an instance of ids:ContractOffer). In contrast to the ids:ContractResponseMessage, the ids:ContractOfferMessage is not related to a previous contract
     #[serde(rename = "ids:ContractOfferMessage")]
     ContractOfferMessage,
     /// Message containing a contract, as an instance of ids:ContractAgreement, with resource access modalities on which two parties have agreed in the payload.
@@ -240,6 +247,7 @@ pub enum MessageType {
     ContractSupplementMessage,
 
     /// ## Security-related Messages
+    ///
     /// Message requesting an access token. This is intended for point-to-point communication with, e.g., Brokers.
     #[serde(rename = "ids:AccessTokenRequestMessage")]
     AccessTokenRequestMessage,
@@ -248,6 +256,7 @@ pub enum MessageType {
     AccessTokenResponseMessage,
 
     /// ## Resource related messages
+    ///
     /// Superclass of all messages, indicating a change of a resource.
     #[serde(rename = "ids:ResourceNotificationMessage")]
     ResourceNotificationMessage,
@@ -266,62 +275,67 @@ pub enum MessageType {
     /// Notification that a message has been successfully processed (i.e. not ignored or rejected).
     #[serde(rename = "ids:MessageProcessedNotificationMessage")]
     MessageProcessedNotificationMessage,
-    /// Message indicating that the result of a former InvokeOperation message is available. May transfer the result data in its associated payload section.
+    /// Message indicating that the result of a former `InvokeOperation` message is available. May transfer the result data in its associated payload section.
     #[serde(rename = "ids:OperationResultMessage")]
     OperationResultMessage,
 
     /// ## Artifact-related Messages
-    /// Message asking for retrieving the specified Artifact as the payload of an ArtifactResponse message.
+    ///
+    /// Message asking for retrieving the specified Artifact as the payload of an `ArtifactResponse` message.
     #[serde(rename = "ids:ArtifactRequestMessage")]
     ArtifactRequestMessage,
-    /// Message that follows up a RetrieveArtifact Message and contains the Artifact's data in the payload section.
+    /// Message that follows up a `RetrieveArtifact` Message and contains the Artifact's data in the payload section.
     #[serde(rename = "ids:ArtifactResponseMessage")]
     ArtifactResponseMessage,
 
     /// ## Upload Messages
+    ///
     /// Message used to upload a data to a recipient. Payload contains data.
     #[serde(rename = "ids:UploadMessage")]
     UploadMessage,
-    /// Message that follows up a UploadMessage and contains the upload confirmation.
+    /// Message that follows up a `UploadMessage` and contains the upload confirmation.
     #[serde(rename = "ids:UploadResponseMessage")]
     UploadResponseMessage,
 
-    /// ## ParIS Messages
+    /// ## `ParIS` Messages
+    ///
     /// This class is deprecated. Use ids:DescriptionRequestMessage instead. Message asking for retrieving the specified Participants information as the payload of an ids:ParticipantResponse message.
     #[serde(rename = "ids:ParticipantRequestMessage")]
     ParticipantRequestMessage,
-    /// This class is deprecated. Use ids:DescriptionResponseMessage instead. ParticipantResponseMessage follows up a ParticipantRequestMessage and contains the Participant's information in the payload section.
+    /// This class is deprecated. Use ids:DescriptionResponseMessage instead. `ParticipantResponseMessage` follows up a `ParticipantRequestMessage` and contains the Participant's information in the payload section.
     #[serde(rename = "ids:ParticipantResponseMessage")]
     ParticipantResponseMessage,
 
     /// ## Log messaging
+    ///
     /// Log Message which can be used to transfer logs e.g., to the clearing house.
     #[serde(rename = "ids:LogMessage")]
     LogMessage,
 
     /// ## App-related Messages
-    /// Message that asks for registration or update of a data app to the App Store. Payload contains app-related metadata (instance of class ids:AppResource). Message header may contain an app identifier parameter of a prior registered data app. If the app identifier is supplied, the message should be interpreted as a registration for an app update. Otherwise this message is used to register a new app.
+    ///
+    /// Message that asks for registration or update of a data app to the App Store. Payload contains app-related metadata (instance of class ids:AppResource). Message header may contain an app identifier parameter of a prior registered data app. If the app identifier is supplied, the message should be interpreted as a registration for an app update. Otherwise, this message is used to register a new app.
     #[serde(rename = "ids:AppRegistrationRequestMessage")]
     AppRegistrationRequestMessage,
-    /// Message that follows up an AppRegistrationRequestMessage and contains the app registration confirmation.
+    /// Message that follows up an `AppRegistrationRequestMessage` and contains the app registration confirmation.
     #[serde(rename = "ids:AppRegistrationResponseMessage")]
     AppRegistrationResponseMessage,
-    /// Message that usually follows a AppRegistrationResponseMessage and is used to upload a data app to the app store. Payload contains data app. Note that the message must refer to the prior sent, corresponding AppResource instance. The IRI of the ids:appArtifactReference must must match the IRI of the artifact which is the value for the ids:instance property. The ids:instance is specific for each representation. Therefore, if someone wants to upload multiple representations for an app, he has to state them using multiple ids:instance properties inside the AppRepresentation (and therefore inside the AppResource). Otherwise no mapping between payload and app metadata can be achieved.
+    /// Message that usually follows a `AppRegistrationResponseMessage` and is used to upload a data app to the app store. Payload contains data app. Note that the message must refer to the prior sent, corresponding `AppResource` instance. The IRI of the ids:appArtifactReference must match the IRI of the artifact which is the value for the ids:instance property. The ids:instance is specific for each representation. Therefore, if someone wants to upload multiple representations for an app, he has to state them using multiple ids:instance properties inside the `AppRepresentation` (and therefore inside the `AppResource`). Otherwise, no mapping between payload and app metadata can be achieved.
     #[serde(rename = "ids:AppUploadMessage")]
     AppUploadMessage,
-    /// Message that follows up an AppUploadMessage and contains the app upload confimation.
+    /// Message that follows up an `AppUploadMessage` and contains the app upload confirmation.
     #[serde(rename = "ids:AppUploadResponseMessage")]
     AppUploadResponseMessage,
-    /// Superclass of all messages, indicating a change of a DataApp. Unlike Resource-related Messages, AppNotificationMessages should lead to a state change for an app at the recipient, the AppStore.
+    /// Superclass of all messages, indicating a change of a `DataApp`. Unlike Resource-related Messages, `AppNotificationMessages` should lead to a state change for an app at the recipient, the `AppStore`.
     #[serde(rename = "ids:AppNotificationMessage")]
     AppNotificationMessage,
-    /// Message indicating that a specific App should be available (again) in the AppStore.
+    /// Message indicating that a specific App should be available (again) in the `AppStore`.
     #[serde(rename = "ids:AppAvailableMessage")]
     AppAvailableMessage,
-    /// Message indicating that a specific App should be unavailable in the AppStore.
+    /// Message indicating that a specific App should be unavailable in the `AppStore`.
     #[serde(rename = "ids:AppUnavailableMessage")]
     AppUnavailableMessage,
-    /// Message indicating that an App should be deleted from the AppStore.
+    /// Message indicating that an App should be deleted from the `AppStore`.
     #[serde(rename = "ids:AppDeleteMessage")]
     AppDeleteMessage,
 

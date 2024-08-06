@@ -3,7 +3,6 @@
 use axum::http::{Request, StatusCode};
 use biscuit::jwa::SignatureAlgorithm::PS512;
 use biscuit::jwk::JWKSet;
-use testcontainers::runners::AsyncRunner;
 use clearing_house_app::model::claims::{get_fingerprint, ChClaims};
 use clearing_house_app::model::ids::message::IdsMessage;
 use clearing_house_app::model::ids::request::ClearingHouseMessage;
@@ -11,20 +10,31 @@ use clearing_house_app::model::ids::{IdsQueryResult, InfoModelId, MessageType};
 use clearing_house_app::model::process::Receipt;
 use clearing_house_app::model::{claims::create_token, constants::SERVICE_HEADER};
 use clearing_house_app::util::new_uuid;
+use testcontainers::runners::AsyncRunner;
 use tower::ServiceExt;
 
 #[tokio::test]
 async fn log_message() {
-    // Start testcontainer: Postgres
-    let postgres_instance = testcontainers_modules::postgres::Postgres::default()
-        .start()
-        .await
-        .expect("Failed to start Postgres container");
-    let connection_string = format!(
-        "postgres://postgres:postgres@{}:{}/postgres",
-        postgres_instance.get_host().await.expect("Failed to get host"),
-        postgres_instance.get_host_port_ipv4(5432).await.expect("Failed to get port")
-    );
+    let (_instance, connection_string) = {
+        // Start testcontainer: Postgres
+        let postgres_instance = testcontainers_modules::postgres::Postgres::default()
+            .start()
+            .await
+            .expect("Failed to start Postgres container");
+        let connection_string = format!(
+            "postgres://postgres:postgres@{}:{}/postgres",
+            postgres_instance
+                .get_host()
+                .await
+                .expect("Failed to get host"),
+            postgres_instance
+                .get_host_port_ipv4(5432)
+                .await
+                .expect("Failed to get port")
+        );
+
+        (postgres_instance, connection_string)
+    };
 
     #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
     unsafe {
