@@ -23,11 +23,13 @@ jobs:
 
     - name: Run cargo fmt --check
       id: fmt
+      working-directory: ./clearing-house-app
       run: |
         cargo fmt --check >> "$GITHUB_OUTPUT"
 
     - name: Run cargo clippy
       id: clippy
+      working-directory: ./clearing-house-app
       run: |
         cargo clippy >> "$GITHUB_OUTPUT"
 
