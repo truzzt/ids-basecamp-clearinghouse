@@ -39,11 +39,11 @@ jobs:
       with:
         script: |
           const fmtOutput = `\`\`\`
-          ${ steps.fmt.outputs.fmt_result }
+          ${{ steps.fmt.outputs.fmt_result }}
           \`\`\``;
 
           const clippyOutput = `\`\`\`
-          ${ steps.clippy.outputs.clippy_result }
+          ${{ steps.clippy.outputs.clippy_result }}
           \`\`\``;
 
           const body = `
