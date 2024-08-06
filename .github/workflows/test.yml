@@ -35,6 +35,7 @@ jobs:
 
     - name: Post results to PR
       uses: actions/github-script@v7
+      if: always()
       with:
         script: |
           const fmtOutput = `\`\`\`
