@@ -34,7 +34,7 @@ jobs:
 
         echo "text<<EOF" >> $GITHUB_OUTPUT
         cat cargo_fmt_output.txt >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT        
+        echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Run cargo clippy
       id: clippy
@@ -45,7 +45,29 @@ jobs:
         
         echo "text<<EOF" >> $GITHUB_OUTPUT
         cat cargo_clippy_output.txt >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT        
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Build
+      id: build
+      working-directory: ./clearing-house-app
+      continue-on-error: true
+      run: |
+        cargo build >> cargo_build_output.txt || true
+
+        echo "text<<EOF" >> $GITHUB_OUTPUT
+        cat cargo_build_output.txt >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Test
+      id: test
+      working-directory: ./clearing-house-app
+      continue-on-error: true
+      run: |
+        cargo test >> cargo_test_output.txt || true
+
+        echo "text<<EOF" >> $GITHUB_OUTPUT
+        cat cargo_test_output.txt >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Post results to PR
       uses: actions/github-script@v7
@@ -68,12 +90,40 @@ jobs:
             clippyOutput = "_No linter warnings_";
           }
 
-          const body = `
-          ## "cargo fmt --check" Result:
+
+          let buildOutput = `<details><summary>Build log:</summary>
+          \`\`\`
+          ${{ steps.build.outputs.text }}
+          \`\`\`
+          </details>`.trim();
+
+          if (buildOutput.length <= 58) {
+            buildOutput = "_No build output_";
+          }
+
+          
+          let testOutput = `<details><summary>Test log:</summary>
+          \`\`\`
+          ${{ steps.test.outputs.text }}
+          \`\`\`
+          </details>`.trim();
+
+          if (testOutput.length <= 57) {
+            testOutput = "_No test output_";
+          }
+
+          const body = `# Clearinghouse App Build report
+          ## Formatter report ("cargo fmt --check"):
           ${fmtOutput}
 
-          ## "cargo clippy" Result:
+          ## Linter report ("cargo clippy"):
           ${clippyOutput}
+
+          ## Build log
+          ${buildOutput}
+
+          ## Test log
+          ${testOutput}
           `;
 
           github.rest.issues.createComment({
