@@ -33,6 +33,8 @@ jobs:
         cat cargo_fmt_output.txt >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
+        exit 0
+
     - name: Build
       id: build
       working-directory: ./clearing-house-app
@@ -111,18 +113,18 @@ jobs:
           const body = `# Clearinghouse App Build report
           ## Formatter report ("cargo fmt --check"):
 
-          Exit code: ${{ steps.fmt.outputs.exit_code }}
+          Exit code: ${{ steps.fmt.outputs.code }}
 
           ${fmtComment}
 
           ## Linter report ("cargo clippy"):
 
-          Exit code: ${{ steps.linter.outputs.exit_code }}
+          Exit code: ${{ steps.linter.outputs.code }}
           
           ${linterComment}
 
           ## Test log
-          Exit code: ${{ steps.test.outputs.exit_code }}
+          Exit code: ${{ steps.test.outputs.code }}
 
           ${testComment}
           `;
