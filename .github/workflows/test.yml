@@ -25,21 +25,26 @@ jobs:
       working-directory: ./clearing-house-app
       continue-on-error: true
       run: |
-        cargo fmt --check --message-format human >> cargo_fmt_output.txt || true
+        cargo fmt --check --message-format human >> cargo_fmt_output.txt
+        exit_code=$?
 
         echo "text<<EOF" >> $GITHUB_OUTPUT
         cat cargo_fmt_output.txt >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
+        exit $exit_code
+
     - name: Build
       id: build
       working-directory: ./clearing-house-app
+      continue-on-error: false
       run: |
         cargo build
 
     - name: Test
       id: test
       working-directory: ./clearing-house-app
+      continue-on-error: false
       env:
         NO_COLOR: true
       run: |
@@ -57,11 +62,14 @@ jobs:
       working-directory: ./clearing-house-app
       continue-on-error: true
       run: |
-        cargo clippy >> cargo_clippy_output.txt || true
+        cargo clippy >> cargo_clippy_output.txt
+        exit_code=$?
         
         echo "text<<EOF" >> $GITHUB_OUTPUT
         cat cargo_clippy_output.txt >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
+
+        exit $exit_code
 
     - name: Post results to PR
       uses: actions/github-script@v7
@@ -92,12 +100,14 @@ jobs:
 
           const testOutput = process.env.TEST_OUTPUT;
           let testComment = `<details><summary>Test log:</summary>
+
           \`\`\`
           ${ testOutput }
           \`\`\`
+
           </details>`;
 
-          if (testComment.length <= 57) {
+          if (testComment.length <= 59) {
             testComment = "_No test output_";
           }
 
