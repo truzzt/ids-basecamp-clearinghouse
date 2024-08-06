@@ -44,13 +44,21 @@ jobs:
       if: always()
       with:
         script: |
-          const fmtOutput = `\`\`\`
+          let fmtOutput = `\`\`\`
           ${{ steps.fmt.outputs.fmt_result }}
-          \`\`\``;
+          \`\`\``.trim();
 
-          const clippyOutput = `\`\`\`
+          if (fmtOutput  == "```\n\n```") {
+            fmtOutput  = "_No formatter warnings_";
+          }
+
+          let clippyOutput = `\`\`\`
           ${{ steps.clippy.outputs.clippy_result }}
-          \`\`\``;
+          \`\`\``.trim();
+
+          if (clippyOutput == "```\n\n```") {
+            clippyOutput = "_No linter warnings_";
+          }
 
           const body = `
           ## "cargo fmt --check" Result:
