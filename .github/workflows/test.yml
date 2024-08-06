@@ -32,9 +32,9 @@ jobs:
       run: |
         cargo fmt --check --message-format human >> cargo_fmt_output.txt || true
 
-        echo "text<<$EOF" >> $GITHUB_OUTPUT
+        echo "text<<EOF" >> $GITHUB_OUTPUT
         cat cargo_fmt_output.txt >> $GITHUB_OUTPUT
-        echo "$EOF" >> $GITHUB_OUTPUT        
+        echo "EOF" >> $GITHUB_OUTPUT        
 
     - name: Run cargo clippy
       id: clippy
@@ -43,9 +43,9 @@ jobs:
       run: |
         cargo clippy >> cargo_clippy_output.txt || true
         
-        echo "text<<$EOF" >> $GITHUB_OUTPUT
+        echo "text<<EOF" >> $GITHUB_OUTPUT
         cat cargo_clippy_output.txt >> $GITHUB_OUTPUT
-        echo "$EOF" >> $GITHUB_OUTPUT        
+        echo "EOF" >> $GITHUB_OUTPUT        
 
     - name: Post results to PR
       uses: actions/github-script@v7
