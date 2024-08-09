@@ -316,9 +316,15 @@ public class MultipartController extends AbstractMultipartController {
             var rejectionMessage = (RejectionMessage) multipartResponse.getHeader();
             var response = (AbstractResponse) multipartResponse.getPayload();
 
-            return Response.status(response.getHttpStatus())
-                    .entity(createFormDataMultiPart(createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId)))
-                    .build();
+            if ((response == null) || (response.getHttpStatus() == null)) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(createFormDataMultiPart(createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId)))
+                        .build();
+            } else {
+                return Response.status(response.getHttpStatus())
+                        .entity(createFormDataMultiPart(createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId)))
+                        .build();
+            }
         } else {
             return Response.status(Response.Status.CREATED)
                     .entity(createFormDataMultiPart(multipartResponse.getHeader(), multipartResponse.getPayload()))
