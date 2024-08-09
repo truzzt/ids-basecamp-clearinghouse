@@ -5,18 +5,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iais.eis.DynamicAttributeToken;
 import de.fraunhofer.iais.eis.MessageProcessedNotificationMessage;
 import de.truzzt.clearinghouse.edc.app.AppSender;
+import de.truzzt.clearinghouse.edc.app.delegate.AppSenderDelegate;
 import de.truzzt.clearinghouse.edc.app.delegate.CreateProcessDelegate;
-import de.truzzt.clearinghouse.edc.types.HandlerRequest;
+import de.truzzt.clearinghouse.edc.app.message.AppSenderRequest;
+import de.truzzt.clearinghouse.edc.app.message.CreateProcessResponse;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
+import de.truzzt.clearinghouse.edc.types.HandlerRequest;
 import okhttp3.ResponseBody;
 import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartResponse;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.UUID;
 
 import static de.truzzt.clearinghouse.edc.util.SettingsConstants.APP_BASE_URL_DEFAULT_VALUE;
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,6 +33,8 @@ import static org.mockito.Mockito.spy;
 
 class RequestMessageHandlerTest {
 
+    @Mock
+    private Monitor monitor;
     @Mock
     private IdsId connectorId;
     @Mock
@@ -44,7 +52,7 @@ class RequestMessageHandlerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        requestMessageHandler = spy(new RequestMessageHandler(connectorId, appSender, context));
+        requestMessageHandler = spy(new RequestMessageHandler(monitor, connectorId, appSender, context, mapper));
     }
     @Test
     void successfulCanHandle() {
@@ -73,8 +81,9 @@ class RequestMessageHandlerTest {
         doReturn(JWT.create().toString())
                 .when(requestMessageHandler).buildJWTToken(any(DynamicAttributeToken.class), any(ServiceExtensionContext.class));
 
-        doReturn(TestUtils.getValidCreateProcessResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
-                .when(createProcessDelegate).parseResponseBody(any(ResponseBody.class));
+        var createProcessResponse = TestUtils.getValidCreateProcessResponse();
+        doReturn(createProcessResponse)
+                .when(createProcessDelegate).buildSuccessResponse(any(ResponseBody.class));
 
         doReturn(APP_BASE_URL_DEFAULT_VALUE+ "/process/" + request.getPid())
                 .when(createProcessDelegate)
@@ -82,6 +91,9 @@ class RequestMessageHandlerTest {
 
         doReturn(TestUtils.getValidCreateProcessRequest(request))
                 .when(createProcessDelegate).buildRequestBody(any(HandlerRequest.class));
+
+        doReturn(createProcessResponse)
+                .when(appSender).send(any(AppSenderRequest.class), any(AppSenderDelegate.class));
 
         MultipartResponse response = requestMessageHandler.handleRequest(request);
 

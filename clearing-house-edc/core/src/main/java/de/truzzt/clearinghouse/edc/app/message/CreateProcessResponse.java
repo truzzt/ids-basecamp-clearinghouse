@@ -14,13 +14,20 @@
 package de.truzzt.clearinghouse.edc.app.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.jetbrains.annotations.NotNull;
 
-public class CreateProcessResponse {
+public class CreateProcessResponse extends AbstractResponse {
 
     @JsonProperty("pid")
-    @NotNull
     private String pid;
+
+    public CreateProcessResponse() {
+    }
+    public CreateProcessResponse(String pid) {
+        this.pid = pid;
+    }
+    public CreateProcessResponse(int httpStatus) {
+        super(httpStatus);
+    }
 
     public String getPid() {
         return pid;

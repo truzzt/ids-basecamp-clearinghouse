@@ -15,9 +15,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
@@ -25,6 +23,7 @@ import static org.mockito.Mockito.spy;
 public class AppSenderTest {
 
     private AppSender sender;
+
     @Mock
     private Monitor monitor;
     @Mock
@@ -37,8 +36,8 @@ public class AppSenderTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        senderDelegate = spy(new LoggingMessageDelegate());
-        sender = new AppSender(monitor, httpClient);
+        senderDelegate = spy(new LoggingMessageDelegate(monitor, mapper));
+        sender = new AppSender(monitor, httpClient, mapper);
     }
 
     @Test
@@ -46,12 +45,14 @@ public class AppSenderTest {
 
         doReturn(TestUtils.getValidResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
-                .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
+        doReturn(TestUtils.getValidLoggingMessageResponse())
+                .when(senderDelegate).buildSuccessResponse(any(ResponseBody.class));
 
         var response = sender.send(TestUtils.getValidAppSenderRequest(mapper), senderDelegate);
 
         assertNotNull(response);
+        assertTrue(response.isSuccess());
+        assertNull(response.getHttpStatus());
     }
 
     @Test
@@ -68,13 +69,14 @@ public class AppSenderTest {
 
         doReturn(TestUtils.getUnsuccessfulResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
-                .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
+        doReturn(TestUtils.getValidLoggingMessageResponse())
+                .when(senderDelegate).buildSuccessResponse(any(ResponseBody.class));
 
-        EdcException exception = assertThrows(EdcException.class, () ->
-                sender.send(TestUtils.getValidAppSenderRequest(mapper), senderDelegate));
+        var response = sender.send(TestUtils.getValidAppSenderRequest(mapper), senderDelegate);
 
-        assertEquals("Received an error from Clearing House App. Status: 401, message: Unauthorized", exception.getMessage());
+        assertNotNull(response);
+        assertFalse(response.isSuccess());
+        assertEquals(401, response.getHttpStatus());
     }
 
     @Test
@@ -82,12 +84,12 @@ public class AppSenderTest {
 
         doReturn(TestUtils.getResponseWithoutBody(TestUtils.getValidAppSenderRequest(mapper).getUrl()))
                 .when(httpClient).execute(any(Request.class));
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
-                .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
+        doReturn(TestUtils.getValidLoggingMessageResponse())
+                .when(senderDelegate).buildSuccessResponse(any(ResponseBody.class));
 
         EdcException exception = assertThrows(EdcException.class, () ->
                 sender.send(TestUtils.getValidAppSenderRequest(mapper), senderDelegate));
 
-        assertEquals("Error reading Clearing House App response body", exception.getMessage());
+        assertEquals("Received an empty response body from Clearing House App", exception.getMessage());
     }
 }

@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class QueryMessageResponse {
+public class QueryMessageResponse extends AbstractResponse {
 
     @JsonProperty("date_from")
     @NotNull
@@ -31,6 +31,12 @@ public class QueryMessageResponse {
     @JsonProperty("documents")
     @NotNull
     private List<LogMessage> documents;
+
+    public QueryMessageResponse() {
+    }
+    public QueryMessageResponse(int httpStatus) {
+        super(httpStatus);
+    }
 
     public String getDateFrom() {
         return dateFrom;

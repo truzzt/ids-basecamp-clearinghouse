@@ -13,6 +13,7 @@
  */
 package de.truzzt.clearinghouse.edc.handler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iais.eis.LogMessageImpl;
 import de.truzzt.clearinghouse.edc.app.AppSender;
 import de.truzzt.clearinghouse.edc.app.delegate.LoggingMessageDelegate;
@@ -22,6 +23,7 @@ import org.eclipse.edc.protocol.ids.api.multipart.handler.Handler;
 import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartRequest;
 import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartResponse;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,14 +40,16 @@ public class LogMessageHandler extends AbstractHandler implements Handler {
 
     private final ServiceExtensionContext context;
 
-    public LogMessageHandler(IdsId connectorId,
+    public LogMessageHandler(Monitor monitor,
+                             IdsId connectorId,
                              AppSender appSender,
-                             ServiceExtensionContext context) {
+                             ServiceExtensionContext context,
+                             ObjectMapper objectMapper) {
         this.connectorId = connectorId;
         this.appSender = appSender;
         this.context = context;
 
-        this.senderDelegate = new LoggingMessageDelegate();
+        this.senderDelegate = new LoggingMessageDelegate(monitor, objectMapper);
     }
 
     @Override

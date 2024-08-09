@@ -6,6 +6,7 @@ import de.truzzt.clearinghouse.edc.app.message.LoggingMessageRequest;
 import de.truzzt.clearinghouse.edc.app.message.LoggingMessageResponse;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import okhttp3.ResponseBody;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -20,6 +21,8 @@ import static org.mockito.Mockito.spy;
 class LoggingMessageDelegateTest {
 
     @Mock
+    private Monitor monitor;
+    @Mock
     private LoggingMessageDelegate senderDelegate;
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -27,7 +30,7 @@ class LoggingMessageDelegateTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        senderDelegate = spy(new LoggingMessageDelegate());
+        senderDelegate = spy(new LoggingMessageDelegate(monitor, mapper));
     }
 
     @Test
@@ -52,13 +55,13 @@ class LoggingMessageDelegateTest {
     }
 
     @Test
-    public void successfulParseResponseBody() {
+    public void successfulBuildSuccessResponse() {
 
         ResponseBody body = TestUtils.getValidResponseBody();
-        doReturn(TestUtils.getValidLoggingMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
-                .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
+        doReturn(TestUtils.getValidLoggingMessageResponse())
+                .when(senderDelegate).buildSuccessResponse(any(ResponseBody.class));
 
-        LoggingMessageResponse response = senderDelegate.parseResponseBody(body);
+        LoggingMessageResponse response = senderDelegate.buildSuccessResponse(body);
 
         assertNotNull(response);
     }

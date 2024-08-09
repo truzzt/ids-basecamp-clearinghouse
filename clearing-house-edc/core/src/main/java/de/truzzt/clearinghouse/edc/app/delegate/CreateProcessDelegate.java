@@ -16,13 +16,24 @@ package de.truzzt.clearinghouse.edc.app.delegate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.truzzt.clearinghouse.edc.app.message.CreateProcessRequest;
 import de.truzzt.clearinghouse.edc.app.message.CreateProcessResponse;
+import de.truzzt.clearinghouse.edc.app.message.QueryMessageResponse;
 import de.truzzt.clearinghouse.edc.app.types.Header;
 import de.truzzt.clearinghouse.edc.app.types.SecurityToken;
 import de.truzzt.clearinghouse.edc.types.HandlerRequest;
 import okhttp3.ResponseBody;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.monitor.Monitor;
 
-public class CreateProcessDelegate implements AppSenderDelegate<CreateProcessResponse> {
+import java.io.IOException;
+
+public class CreateProcessDelegate extends AppSenderDelegate<CreateProcessResponse> {
+
+    private final Monitor monitor;
+
+    public CreateProcessDelegate(Monitor monitor, ObjectMapper objectMapper) {
+        super(objectMapper);
+        this.monitor = monitor;
+    }
 
     public String buildRequestUrl(String baseUrl, HandlerRequest handlerRequest) {
         return baseUrl + "/process/" + handlerRequest.getPid();
@@ -52,11 +63,12 @@ public class CreateProcessDelegate implements AppSenderDelegate<CreateProcessRes
     }
 
     @Override
-    public CreateProcessResponse parseResponseBody(ResponseBody responseBody) {
-        try {
-            return new ObjectMapper().readValue(responseBody.byteStream(), CreateProcessResponse.class);
-        } catch (Exception e){
-            throw new EdcException("Error parsing byte to CreateProcessResponse", e);
-        }
+    public CreateProcessResponse buildSuccessResponse(ResponseBody responseBody) {
+        return parseSuccessResponse(responseBody, CreateProcessResponse.class);
+    }
+
+    @Override
+    public CreateProcessResponse buildErrorResponse(int httpStatus) {
+        return new CreateProcessResponse(httpStatus);
     }
 }

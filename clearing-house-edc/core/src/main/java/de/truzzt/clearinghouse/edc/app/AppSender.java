@@ -20,59 +20,60 @@ import de.truzzt.clearinghouse.edc.app.message.AppSenderRequest;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okhttp3.Response;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.http.EdcHttpClient;
 import org.eclipse.edc.spi.monitor.Monitor;
 
-import static java.lang.String.format;
+import java.io.IOException;
 
 public class AppSender {
     private static final String JSON_CONTENT_TYPE = "application/json";
 
     private final Monitor monitor;
     private final EdcHttpClient httpClient;
+    private final ObjectMapper objectMapper;
 
     public AppSender(Monitor monitor,
-                     EdcHttpClient httpClient) {
+                     EdcHttpClient httpClient,
+                     ObjectMapper objectMapper) {
         this.monitor = monitor;
         this.httpClient = httpClient;
+        this.objectMapper = objectMapper;
     }
 
     public <R, P> P send(AppSenderRequest request, AppSenderDelegate<P> appSenderDelegate) {
 
-        try{
-            var json = new ObjectMapper().writeValueAsString(request.getBody());
-            var requestBody = RequestBody.create(json, MediaType.get(JSON_CONTENT_TYPE));
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(request.getBody());
+        } catch (JsonProcessingException jpe) {
+            throw new EdcException("Error parsing request to Json", jpe);
+        }
 
-            var httpRequest = new Request.Builder()
-                    .url(request.getUrl())
-                    .addHeader("Ch-Service", request.getToken())
-                    .addHeader("Content-Type", JSON_CONTENT_TYPE)
-                    .post(requestBody)
-                    .build();
+        var requestBody = RequestBody.create(json, MediaType.get(JSON_CONTENT_TYPE));
 
-            Response response = httpClient.execute(httpRequest);
+        var httpRequest = new Request.Builder()
+                .url(request.getUrl())
+                .addHeader("Ch-Service", request.getToken())
+                .addHeader("Content-Type", JSON_CONTENT_TYPE)
+                .post(requestBody)
+                .build();
+
+        try (var response = httpClient.execute(httpRequest)) {
             monitor.debug("Response received from Clearing House App. Status: " + response.code());
 
             if (response.isSuccessful()) {
                 try (var body = response.body()) {
                     if (body == null) {
                         throw new EdcException("Received an empty response body from Clearing House App");
-                    } else {
-                        return appSenderDelegate.parseResponseBody(body);
                     }
-                } catch (Exception e) {
-                    throw new EdcException("Error reading Clearing House App response body", e);
+                    return appSenderDelegate.buildSuccessResponse(body);
                 }
             } else {
-                throw new EdcException(format("Received an error from Clearing House App. Status: %s, message: %s",
-                        response.code(), response.message()));
+                return appSenderDelegate.buildErrorResponse(response.code());
             }
-        } catch (JsonProcessingException jpe){
-            throw new EdcException("Error parsing request to Json", jpe);
-        } catch (java.io.IOException e) {
-             throw new EdcException("Error sending request to Clearing House App", e);
-         }
+        } catch (IOException e) {
+            throw new EdcException("Error sending request to Clearing House App", e);
+        }
     }
 }
