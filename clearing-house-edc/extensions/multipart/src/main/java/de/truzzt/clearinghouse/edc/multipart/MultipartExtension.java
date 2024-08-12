@@ -74,12 +74,12 @@ public class MultipartExtension implements ServiceExtension {
         IdsTypeManagerUtil.customizeTypeManager(context.getTypeManager());
         var objectMapper = IdsTypeManagerUtil.getIdsObjectMapper(context.getTypeManager());
 
-        var clearingHouseAppSender = new AppSender(monitor, httpClient);
+        var clearingHouseAppSender = new AppSender(monitor, httpClient, objectMapper);
 
         var handlers = new LinkedList<Handler>();
-        handlers.add(new RequestMessageHandler(connectorId, clearingHouseAppSender, context));
-        handlers.add(new LogMessageHandler(connectorId, clearingHouseAppSender, context));
-        handlers.add(new QueryMessageHandler(connectorId, clearingHouseAppSender, context));
+        handlers.add(new RequestMessageHandler(monitor, connectorId, clearingHouseAppSender, context, objectMapper));
+        handlers.add(new LogMessageHandler(monitor, connectorId, clearingHouseAppSender, context, objectMapper));
+        handlers.add(new QueryMessageHandler(monitor, connectorId, clearingHouseAppSender, context, objectMapper));
 
         var multipartController = new MultipartController(monitor,
                 connectorId,

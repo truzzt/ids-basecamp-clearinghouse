@@ -6,6 +6,7 @@ import de.truzzt.clearinghouse.edc.app.message.QueryMessageResponse;
 import de.truzzt.clearinghouse.edc.tests.TestUtils;
 import de.truzzt.clearinghouse.edc.types.HandlerRequest;
 import okhttp3.ResponseBody;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -20,6 +21,8 @@ import static org.mockito.Mockito.spy;
 class QueryMessageDelegateTest {
 
     @Mock
+    private Monitor monitor;
+    @Mock
     private QueryMessageDelegate senderDelegate;
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -27,7 +30,7 @@ class QueryMessageDelegateTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        senderDelegate = spy(new QueryMessageDelegate());
+        senderDelegate = spy(new QueryMessageDelegate(monitor, mapper));
     }
 
     @Test
@@ -102,13 +105,13 @@ class QueryMessageDelegateTest {
     }
 
     @Test
-    public void successfulParseResponseBody() {
+    public void successfulBuildSuccessResponse() {
 
         ResponseBody body = TestUtils.getValidResponseBody();
         doReturn(TestUtils.getValidQueryMessageResponse(TestUtils.getValidQueryAppSenderRequest(mapper).getUrl(), mapper))
-                .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
+                .when(senderDelegate).buildSuccessResponse(any(ResponseBody.class));
 
-        QueryMessageResponse response = senderDelegate.parseResponseBody(body);
+        QueryMessageResponse response = senderDelegate.buildSuccessResponse(body);
 
         assertNotNull(response);
     }

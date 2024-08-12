@@ -16,6 +16,7 @@ package de.truzzt.clearinghouse.edc.multipart.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iais.eis.*;
+import de.truzzt.clearinghouse.edc.app.message.AbstractResponse;
 import de.truzzt.clearinghouse.edc.types.HandlerRequest;
 import de.truzzt.clearinghouse.edc.multipart.controller.dto.PagingValidationResponse;
 import de.truzzt.clearinghouse.edc.multipart.controller.dto.RequestValidationResponse;
@@ -77,6 +78,19 @@ public class MultipartController extends AbstractMultipartController {
     }
 
     @POST
+    @Path(PROCESS_PID)
+    public Response createProcess(@PathParam(PID) String pid,
+                                  @FormDataParam(HEADER) InputStream headerInputStream,
+                                  @FormDataParam(PAYLOAD) String payload) {
+
+        var response = validateRequest(pid, headerInputStream, PROCESS_PID);
+        if (response.fail())
+            return response.getError();
+
+        return processRequest(pid, response.getHeader(), payload);
+    }
+
+    @POST
     @Path(MESSAGES_LOG_PID)
     public Response logMessage(@PathParam(PID) String pid,
                                @FormDataParam(HEADER) InputStream headerInputStream,
@@ -92,19 +106,6 @@ public class MultipartController extends AbstractMultipartController {
                     .entity(createFormDataMultiPart(malformedMessage(null, connectorId)))
                     .build();
         }
-
-        return processRequest(pid, response.getHeader(), payload);
-    }
-
-    @POST
-    @Path(PROCESS_PID)
-    public Response createProcess(@PathParam(PID) String pid,
-                                  @FormDataParam(HEADER) InputStream headerInputStream,
-                                  @FormDataParam(PAYLOAD) String payload) {
-
-        var response = validateRequest(pid, headerInputStream, PROCESS_PID);
-        if (response.fail())
-            return response.getError();
 
         return processRequest(pid, response.getHeader(), payload);
     }
@@ -313,10 +314,17 @@ public class MultipartController extends AbstractMultipartController {
         // Build the response
         if (multipartResponse.getHeader() instanceof RejectionMessage) {
             var rejectionMessage = (RejectionMessage) multipartResponse.getHeader();
+            var response = (AbstractResponse) multipartResponse.getPayload();
 
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(createFormDataMultiPart(createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId)))
-                    .build();
+            if ((response == null) || (response.getHttpStatus() == null)) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(createFormDataMultiPart(createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId)))
+                        .build();
+            } else {
+                return Response.status(response.getHttpStatus())
+                        .entity(createFormDataMultiPart(createRejectionMessage(rejectionMessage.getRejectionReason(), header, connectorId)))
+                        .build();
+            }
         } else {
             return Response.status(Response.Status.CREATED)
                     .entity(createFormDataMultiPart(multipartResponse.getHeader(), multipartResponse.getPayload()))

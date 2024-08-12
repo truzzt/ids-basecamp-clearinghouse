@@ -12,6 +12,7 @@ import okhttp3.ResponseBody;
 import org.eclipse.edc.protocol.ids.api.multipart.message.MultipartResponse;
 import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,9 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
 class QueryMessageHandlerTest {
+
+    @Mock
+    private Monitor monitor;
     @Mock
     private IdsId connectorId;
     @Mock
@@ -42,8 +46,8 @@ class QueryMessageHandlerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        senderDelegate = spy(new QueryMessageDelegate());
-        queryMessageHandler = spy(new QueryMessageHandler(connectorId, appSender, context));
+        senderDelegate = spy(new QueryMessageDelegate(monitor, mapper));
+        queryMessageHandler = spy(new QueryMessageHandler(monitor, connectorId, appSender, context, mapper));
     }
 
     @Test
@@ -74,7 +78,7 @@ class QueryMessageHandlerTest {
         doReturn(JWT.create().toString())
                 .when(queryMessageHandler).buildJWTToken(any(DynamicAttributeToken.class), any(ServiceExtensionContext.class));
         doReturn(TestUtils.getValidQueryMessageResponse(TestUtils.getValidAppSenderRequest(mapper).getUrl(), mapper))
-                .when(senderDelegate).parseResponseBody(any(ResponseBody.class));
+                .when(senderDelegate).buildSuccessResponse(any(ResponseBody.class));
         doReturn(APP_BASE_URL_DEFAULT_VALUE+ "/headers/query/" + request.getPid())
                 .when(senderDelegate)
                 .buildRequestUrl(any(String.class), any(HandlerRequest.class));

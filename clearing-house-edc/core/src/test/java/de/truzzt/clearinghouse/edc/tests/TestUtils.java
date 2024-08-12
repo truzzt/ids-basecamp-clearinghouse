@@ -21,7 +21,7 @@ public class TestUtils extends BaseTestUtils {
     public static final String TEST_BASE_URL = "http://localhost:8000";
 
     private static final String TEST_PAYLOAD = "Hello World";
-    private static final String TEST_CREATE_PROCCESS_PAYLOAD = "{ \"owners\": [\"1\", \"2\"]}";
+    private static final String TEST_LOG_MESSAGE_RESPONSE_DATA = "eyJhbGciOiJQUzUxMiIsImtpZCI6IlFyYS8vMjlGcnhiajVoaDVBemVmK0czNlNlaU9tOXE3czgrdzh1R0xEMjgifQ.eyJ0aW1lc3RhbXAiOjE3MjE0MDcxMzMsInByb2Nlc3NfaWQiOiIyNzYiLCJkb2N1bWVudF9pZCI6IjYyYjI4NzNlLWU3MTAtNDg2NC1iZTllLTE3MmZkNjgwMWNmZiIsInBheWxvYWQiOi";
     private static final String VALID_HEADER_JSON = "headers/valid-header.json";
     private static final String VALID_QUERY_MESSAGE_HEADER_JSON = "headers/valid-query-message-header.json";
     private static final String VALID_CREATE_PROCESS_HEADER_JSON = "headers/valid-create-process-header.json";
@@ -123,13 +123,8 @@ public class TestUtils extends BaseTestUtils {
                 null, 1000L, 1000L, null);
     }
 
-    public static LoggingMessageResponse getValidLoggingMessageResponse(String url, ObjectMapper mapper) {
-        try {
-            return mapper.readValue(getValidResponse(url).body().byteStream(), LoggingMessageResponse.class);
-
-        } catch (IOException e) {
-            throw new EdcException("Error parsing response", e);
-        }
+    public static LoggingMessageResponse getValidLoggingMessageResponse() {
+        return new LoggingMessageResponse(TEST_LOG_MESSAGE_RESPONSE_DATA);
     }
 
     public static QueryMessageResponse getValidQueryMessageResponse(String url, ObjectMapper mapper) {
@@ -141,13 +136,8 @@ public class TestUtils extends BaseTestUtils {
         }
     }
 
-    public static CreateProcessResponse getValidCreateProcessResponse(String url, ObjectMapper mapper) {
-        try {
-            return mapper.readValue(getValidResponse(url).body().byteStream(), CreateProcessResponse.class);
-
-        } catch (IOException e) {
-            throw new EdcException("Error parsing response", e);
-        }
+    public static CreateProcessResponse getValidCreateProcessResponse() {
+        return new CreateProcessResponse((UUID.randomUUID().toString()));
     }
 
     public static LoggingMessageRequest getValidLoggingMessageRequest(HandlerRequest handlerRequest) {

@@ -16,11 +16,20 @@ package de.truzzt.clearinghouse.edc.app.message;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jetbrains.annotations.NotNull;
 
-public class LoggingMessageResponse {
+public class LoggingMessageResponse extends AbstractResponse {
 
     @JsonProperty("data")
     @NotNull
     private String data;
+
+    public LoggingMessageResponse() {
+    }
+    public LoggingMessageResponse(String data) {
+        this.data = data;
+    }
+    public LoggingMessageResponse(int httpStatus) {
+        super(httpStatus);
+    }
 
     public String getData() {
         return data;

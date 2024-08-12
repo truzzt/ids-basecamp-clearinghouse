@@ -3,6 +3,9 @@ package de.truzzt.clearinghouse.edc.handler;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import de.fraunhofer.iais.eis.DynamicAttributeToken;
+import de.fraunhofer.iais.eis.Message;
+import de.truzzt.clearinghouse.edc.app.message.AbstractResponse;
+import org.eclipse.edc.protocol.ids.spi.types.IdsId;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.jetbrains.annotations.NotNull;
@@ -12,8 +15,10 @@ import java.time.ZoneId;
 import java.util.Date;
 
 import static de.truzzt.clearinghouse.edc.util.SettingsConstants.*;
+import static org.eclipse.edc.protocol.ids.api.multipart.util.ResponseUtil.*;
 
 public abstract class AbstractHandler {
+
     protected Date convertLocalDateTime(LocalDateTime localDateTime) {
         return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
     }
@@ -40,6 +45,26 @@ public abstract class AbstractHandler {
                 .withExpiresAt(convertLocalDateTime(expiresAt));
 
         return jwtToken.sign(Algorithm.HMAC256(context.getSetting(JWT_SIGN_SECRET_SETTING ,JWT_SIGN_SECRET_DEFAULT_VALUE)));
+    }
+
+    protected Message mapResponseToMessage(AbstractResponse response, Message correlationMessage, IdsId connectorId) {
+
+        if (response.isSuccess()) {
+            return messageProcessedNotification(correlationMessage, connectorId);
+        }
+
+        switch (response.getHttpStatus()) {
+            case 400:
+                return badParameters(correlationMessage, connectorId);
+            case 401:
+                return notAuthorized(correlationMessage, connectorId);
+            case 403:
+                return notAuthenticated(correlationMessage, connectorId);
+            case 404:
+                return notFound(correlationMessage, connectorId);
+            default:
+                return internalRecipientError(correlationMessage, connectorId);
+        }
     }
 
 }

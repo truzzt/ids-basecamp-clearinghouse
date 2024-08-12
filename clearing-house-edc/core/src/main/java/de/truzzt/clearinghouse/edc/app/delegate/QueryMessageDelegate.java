@@ -1,6 +1,7 @@
 package de.truzzt.clearinghouse.edc.app.delegate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.truzzt.clearinghouse.edc.app.message.LoggingMessageResponse;
 import de.truzzt.clearinghouse.edc.types.HandlerRequest;
 import de.truzzt.clearinghouse.edc.app.message.QueryMessageRequest;
 import de.truzzt.clearinghouse.edc.app.message.QueryMessageResponse;
@@ -8,12 +9,21 @@ import de.truzzt.clearinghouse.edc.app.types.Header;
 import de.truzzt.clearinghouse.edc.app.types.SecurityToken;
 import okhttp3.ResponseBody;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.monitor.Monitor;
 
+import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 
-public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageResponse> {
+public class QueryMessageDelegate extends AppSenderDelegate<QueryMessageResponse> {
+
+    private final Monitor monitor;
 
     private final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    public QueryMessageDelegate(Monitor monitor, ObjectMapper objectMapper) {
+        super(objectMapper);
+        this.monitor = monitor;
+    }
 
     public String buildRequestUrl(String baseUrl, HandlerRequest handlerRequest) {
 
@@ -81,11 +91,12 @@ public class QueryMessageDelegate implements AppSenderDelegate<QueryMessageRespo
     }
 
     @Override
-    public QueryMessageResponse parseResponseBody(ResponseBody responseBody) {
-        try {
-            return new ObjectMapper().readValue(responseBody.byteStream(), QueryMessageResponse.class);
-        } catch (Exception e){
-            throw new EdcException("Error parsing byte to QueryMessageResponse", e);
-        }
+    public QueryMessageResponse buildSuccessResponse(ResponseBody responseBody) {
+        return parseSuccessResponse(responseBody, QueryMessageResponse.class);
+    }
+
+    @Override
+    public QueryMessageResponse buildErrorResponse(int httpStatus) {
+        return new QueryMessageResponse(httpStatus);
     }
 }

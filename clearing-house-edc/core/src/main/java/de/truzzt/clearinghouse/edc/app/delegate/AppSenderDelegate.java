@@ -13,9 +13,29 @@
  */
 package de.truzzt.clearinghouse.edc.app.delegate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.ResponseBody;
+import org.eclipse.edc.spi.EdcException;
 
-public interface AppSenderDelegate<B> {
+import java.io.IOException;
 
-    B parseResponseBody(ResponseBody responseBody);
+public abstract class AppSenderDelegate<B> {
+
+    protected final ObjectMapper objectMapper;
+
+    protected AppSenderDelegate(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    public abstract B buildSuccessResponse(ResponseBody responseBody);
+
+    public abstract B buildErrorResponse(int httpStatus);
+
+    protected B parseSuccessResponse(ResponseBody responseBody, Class<B> type) {
+        try {
+            return objectMapper.readValue(responseBody.byteStream(), type);
+        } catch (IOException e){
+            throw new EdcException("Error parsing response body to " + type.getName(), e);
+        }
+    }
 }
