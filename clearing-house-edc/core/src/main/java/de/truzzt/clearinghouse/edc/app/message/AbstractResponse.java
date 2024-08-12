@@ -26,10 +26,12 @@ public abstract class AbstractResponse {
         this.httpStatus = httpStatus;
     }
 
+    @JsonIgnore
     public boolean isSuccess() {
         return (httpStatus == null) || ((httpStatus >= 200) & (httpStatus <= 299));
     }
 
+    @JsonIgnore
     public Integer getHttpStatus() {
         return httpStatus;
     }
