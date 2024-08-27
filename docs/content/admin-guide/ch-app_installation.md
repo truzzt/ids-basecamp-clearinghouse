@@ -4,7 +4,7 @@ The Clearinghouse App (`ch-app`) comes pre-packaged in a docker container.
 
 ## Releases
 
-For existing releases visit [ids-basecamp-clearinghouse/ch-app Releases](https://github.com/truzzt/ids-basecamp-clearinghouse/pkgs/container/ids-basecamp-clearing/ch-app).
+For existing releases visit [ids-basecamp-clearinghouse/ch-app Releases](https://github.com/ids-basecamp/clearinghouse/pkgs/container/clearinghouse%2Fch-app).
 
 ## Usage
 
