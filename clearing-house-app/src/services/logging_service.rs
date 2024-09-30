@@ -79,8 +79,8 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
     ) -> LoggingService<T, S> {
         LoggingService {
             db,
-            doc_api,
             static_process_owner,
+            doc_api,
         }
     }
 
@@ -229,7 +229,11 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
                 }
             }
             Ok(None) => {
-                info!("Requested pid '{}' does not exist and will have {} owners. Creating...", &pid, owners.len());
+                info!(
+                    "Requested pid '{}' does not exist and will have {} owners. Creating...",
+                    &pid,
+                    owners.len()
+                );
 
                 // create process
                 let new_process = Process::new(pid.clone(), owners);

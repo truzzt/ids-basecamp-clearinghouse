@@ -8,24 +8,137 @@ on:
       - alpha
       - development
 
+permissions:
+  issues: write
+  pull-requests: write
+
 jobs:
   app-unit-tests:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
-    - name: Set up Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-
-    - name: Build and Test
+    - name: Run cargo fmt --check
+      id: fmt
+      working-directory: ./clearing-house-app
+      continue-on-error: true
       run: |
-        cd clearing-house-app
+        set +e
+
+        cargo fmt --check --message-format human >> cargo_fmt_output.txt
+        exit_code=$?
+
+        echo "code=$exit_code" >> $GITHUB_OUTPUT
+        echo "text<<EOF" >> $GITHUB_OUTPUT
+        cat cargo_fmt_output.txt >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Build
+      id: build
+      working-directory: ./clearing-house-app
+      continue-on-error: false
+      run: |
         cargo build
-        cargo test
+
+    - name: Test
+      id: test
+      working-directory: ./clearing-house-app
+      continue-on-error: false
+      env:
+        NO_COLOR: true
+      run: |
+        set +e
+
+        cargo test &>> cargo_test_output.txt
+        exit_code=$?
+
+        echo "code=$exit_code" >> $GITHUB_OUTPUT
+        echo "text<<EOF" >> $GITHUB_OUTPUT
+        cat cargo_test_output.txt >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Run cargo clippy
+      id: clippy
+      working-directory: ./clearing-house-app
+      continue-on-error: true
+      run: |
+        set +e
+
+        cargo clippy >> cargo_clippy_output.txt
+        exit_code=$?
+        
+        echo "code=$exit_code" >> $GITHUB_OUTPUT
+        echo "text<<EOF" >> $GITHUB_OUTPUT
+        cat cargo_clippy_output.txt >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Post results to PR
+      uses: actions/github-script@v7
+      if: always()
+      env:
+        FMT_OUTPUT: ${{ steps.fmt.outputs.text }}
+        TEST_OUTPUT: ${{ steps.test.outputs.text }}
+        LINTER_OUTPUT: ${{ steps.linter.outputs.text }}
+      with:
+        script: |
+          const fmtOutput = process.env.FMT_OUTPUT;
+          let fmtComment = `\`\`\`
+          ${ fmtOutput }
+          \`\`\``;
+
+          if (fmtComment  == "```\n\n```") {
+            fmtComment = "_No formatter warnings_";
+          }
+
+          const clippyOutput = process.env.LINTER_OUTPUT;
+          let linterComment = `\`\`\`
+          ${ clippyOutput }
+          \`\`\``;
+
+          if (linterComment == "```\n\n```") {
+            linterComment = "_No linter warnings_";
+          }
+
+          const testOutput = process.env.TEST_OUTPUT;
+          let testComment = `<details><summary>Test log:</summary>
+
+          \`\`\`
+          ${ testOutput }
+          \`\`\`
+
+          </details>`;
+
+          if (testComment.length <= 59) {
+            testComment = "_No test output_";
+          }
+
+          const body = `# Clearinghouse App Build report
+          ## Formatter report ("cargo fmt --check"):
+
+          Exit code: ${{ steps.fmt.outputs.code }}
+
+          ${fmtComment}
+
+          ## Linter report ("cargo clippy"):
+
+          Exit code: ${{ steps.clippy.outputs.code }}
+          
+          ${linterComment}
+
+          ## Test log
+          Exit code: ${{ steps.test.outputs.code }}
+
+          ${testComment}
+          `;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });
 
   edc-unit-tests:
     runs-on: ubuntu-latest

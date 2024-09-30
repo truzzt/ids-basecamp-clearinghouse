@@ -1,5 +1,11 @@
-#![forbid(unsafe_code)]
-#![warn(clippy::all, clippy::pedantic, clippy::unwrap_used)]
+#![deny(unsafe_code)]
+#![warn(
+    clippy::all,
+    clippy::pedantic,
+    clippy::unwrap_used,
+    rust_2018_idioms,
+    rust_2024_compatibility
+)]
 #![allow(clippy::module_name_repetitions)]
 
 #[macro_use]
@@ -16,24 +22,15 @@ mod ports;
 mod services;
 pub mod util;
 
-#[cfg(feature = "postgres")]
 type PostgresLoggingService = services::logging_service::LoggingService<
     db::postgres_process_store::PostgresProcessStore,
     db::postgres_document_store::PostgresDocumentStore,
->;
-#[cfg(feature = "mongodb")]
-type MongoLoggingService = services::logging_service::LoggingService<
-    db::mongo_process_store::MongoProcessStore,
-    db::mongo_doc_store::MongoDocumentStore,
 >;
 
 /// Contains the application state
 #[derive(Clone)]
 pub(crate) struct AppState {
-    #[cfg(feature = "postgres")]
     pub logging_service: Arc<PostgresLoggingService>,
-    #[cfg(feature = "mongodb")]
-    pub logging_service: Arc<MongoLoggingService>,
     pub service_config: Arc<ServiceConfig>,
     pub signing_key_path: String,
 }
@@ -59,27 +56,11 @@ impl AppState {
         let pool = Self::setup_postgres(conf).await?;
 
         trace!("Initializing Process store");
-        #[cfg(feature = "mongodb")]
-        let process_store = db::mongo_process_store::MongoProcessStore::init_process_store(
-            &conf.database_url,
-            conf.clear_db,
-        )
-        .await
-        .expect("Failure to initialize process store! Exiting...");
-        #[cfg(feature = "postgres")]
         let process_store =
             db::postgres_process_store::PostgresProcessStore::new(pool.clone(), conf.clear_db)
                 .await;
 
         trace!("Initializing Document store");
-        #[cfg(feature = "mongodb")]
-        let doc_store = db::mongo_doc_store::MongoDocumentStore::init_datastore(
-            &conf.database_url,
-            conf.clear_db,
-        )
-        .await
-        .expect("Failure to initialize document store! Exiting...");
-        #[cfg(feature = "postgres")]
         let doc_store =
             db::postgres_document_store::PostgresDocumentStore::new(pool, conf.clear_db).await;
 

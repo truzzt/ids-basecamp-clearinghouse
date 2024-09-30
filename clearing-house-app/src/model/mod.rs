@@ -72,10 +72,9 @@ pub fn validate_and_sanitize_dates(
         &now, &date_from, &date_to
     );
 
-    let default_to_date =
-        now.add(chrono::TimeDelta::try_seconds(1).expect("1 Second is a valid time delta"));
-    let default_from_date = default_to_date.date().and_time(start_of_day())
-        - chrono::Duration::try_weeks(2).expect("2 weeks is a valid duration");
+    let default_to_date = now.add(chrono::TimeDelta::seconds(1));
+    let default_from_date =
+        default_to_date.date().and_time(start_of_day()) - chrono::Duration::weeks(2);
 
     match (date_from, date_to) {
         (Some(from), None) if from < now => Ok((from, default_to_date)),

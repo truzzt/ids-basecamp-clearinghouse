@@ -10,23 +10,40 @@ use clearing_house_app::model::ids::{IdsQueryResult, InfoModelId, MessageType};
 use clearing_house_app::model::process::Receipt;
 use clearing_house_app::model::{claims::create_token, constants::SERVICE_HEADER};
 use clearing_house_app::util::new_uuid;
+use testcontainers::runners::AsyncRunner;
 use tower::ServiceExt;
 
 #[tokio::test]
 async fn log_message() {
-    // Start testcontainer: Postgres
-    let docker = testcontainers::clients::Cli::default();
-    let postgres_instance = docker.run(testcontainers_modules::postgres::Postgres::default());
-    let connection_string = format!(
-        "postgres://postgres:postgres@127.0.0.1:{}/postgres",
-        postgres_instance.get_host_port_ipv4(5432)
-    );
+    let (_instance, connection_string) = {
+        // Start testcontainer: Postgres
+        let postgres_instance = testcontainers_modules::postgres::Postgres::default()
+            .start()
+            .await
+            .expect("Failed to start Postgres container");
+        let connection_string = format!(
+            "postgres://postgres:postgres@{}:{}/postgres",
+            postgres_instance
+                .get_host()
+                .await
+                .expect("Failed to get host"),
+            postgres_instance
+                .get_host_port_ipv4(5432)
+                .await
+                .expect("Failed to get port")
+        );
 
-    std::env::set_var("SERVICE_ID_LOG", "test");
-    std::env::set_var("SHARED_SECRET", "test");
-    std::env::set_var("CH_APP_LOG_LEVEL", "TRACE");
-    std::env::set_var("CH_APP_CLEAR_DB", "false");
-    std::env::set_var("CH_APP_DATABASE_URL", connection_string);
+        (postgres_instance, connection_string)
+    };
+
+    #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
+    unsafe {
+        std::env::set_var("SERVICE_ID_LOG", "test");
+        std::env::set_var("SHARED_SECRET", "test");
+        std::env::set_var("CH_APP_LOG_LEVEL", "TRACE");
+        std::env::set_var("CH_APP_CLEAR_DB", "false");
+        std::env::set_var("CH_APP_DATABASE_URL", connection_string);
+    }
 
     let app = clearing_house_app::app().await.unwrap();
 
