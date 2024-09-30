@@ -372,7 +372,7 @@ pub struct IdsQueryResult {
     pub date_from: String,
     pub date_to: String,
     pub page: i32,
-pub size: i32,
+    pub size: i32,
     pub order: String,
     pub documents: Vec<IdsMessage>,
 }

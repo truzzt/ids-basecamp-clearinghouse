@@ -77,7 +77,11 @@ impl<T: ProcessStore, S: DocumentStore> LoggingService<T, S> {
         doc_api: Arc<DocumentService<S>>,
         static_process_owner: Option<String>,
     ) -> LoggingService<T, S> {
-        LoggingService { db, static_process_owner, doc_api }
+        LoggingService {
+            db,
+            static_process_owner,
+            doc_api,
+        }
     }
 
     pub async fn log(
