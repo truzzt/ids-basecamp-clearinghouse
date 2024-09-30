@@ -1,0 +1,20 @@
+{
+  "@context":{
+    "ids" : "https://w3id.org/idsa/core/",
+    "idsc" : "https://w3id.org/idsa/code/"
+  },
+  "@type":"ids:LogMessage",
+  "@id":"https://w3id.org/idsa/autogen/logMessage/9fdba4ad-f750-4bbc-a7f0-f648ac853508",
+  "ids:securityToken": {
+    "@type" : "ids:DynamicAttributeToken",
+    "@id" : "https://w3id.org/idsa/autogen/dynamicAttributeToken/7bbbd2c1-2d75-4e3d-bd10-c52d0381cab0",
+    "ids:tokenValue" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzY29wZXMiOlsiaWRzYzpJRFNfQ09OTkVDVE9SX0FUVFJJQlVURVNfQUxMIl0sImF1ZCI6Imlkc2M6SURTX0NPTk5FQ1RPUlNfQUxMIiwiaXNzIjoiaHR0cHM6Ly9kYXBzLmFpc2VjLmZyYXVuaG9mZXIuZGUiLCJuYmYiOjE2MzQ2NTA3MzksImlhdCI6MTYzNDY1MDczOSwianRpIjoiTVRneE9EUXdPVFF6TXpZd05qWXlOVFExTUE9PSIsImV4cCI6MTYzNDY1NDMzOSwic2VjdXJpdHlQcm9maWxlIjoiaWRzYzpCQVNFX1NFQ1VSSVRZX1BST0ZJTEUiLCJAdHlwZSI6ImlkczpEYXRQYXlsb2FkIiwiQGNvbnRleHQiOiJodHRwczovL3czaWQub3JnL2lkc2EvY29udGV4dHMvY29udGV4dC5qc29ubGQiLCJ0cmFuc3BvcnRDZXJ0c1NoYTI1NiI6Ijk3NGU2MzI0ZjEyZjEwOTE2ZjQ2YmZkZWIxOGI4ZGQ2ZGE3OGNjNmE2YTA1NjYwMzFmYTVmMWEzOWVjOGU2MDAifQ.bz-XdCsjNwk8ce-9oHFta2wyojw7m4yplSGUoX1yAWY",
+    "ids:tokenFormat" : {
+      "@id" : "idsc:JWT"
+    }
+  },
+  "ids:senderAgent":"http://example.org",
+  "ids:modelVersion":"4.1.0",
+  "ids:issued" : "2021-06-23T17:27:23.566+02:00",
+  "ids:issuerConnector" : "https://companyA.com/connector/59a68243-dd96-4c8d-88a9-0f0e03e13b1b"
+}

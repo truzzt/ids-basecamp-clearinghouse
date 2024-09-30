@@ -1,0 +1,29 @@
+{
+  "name": "ids-basecamp-clearinghouse",
+  "version": "1.0.0",
+  "description": "The IDS Clearing House Service is a prototype implementation of the [Clearing House](https://github.com/International-Data-Spaces-Association/IDS-RAM_4_0/blob/main/documentation/3_Layers_of_the_Reference_Architecture_Model/3_5_System_Layer/3_5_5_Clearing_House.md) component of the [Industrial Data Space](https://internationaldataspaces.org/).",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test:app:int": "cd clearing-house-app && cargo test -- --ignored",
+    "test:app": "cd clearing-house-app && cargo test",
+    "test:edc": "cd clearing-house-edc && ./gradlew test",
+    "docs": "mdbook serve",
+    "start": "docker compose -f docker/docker-compose.yml up -d"
+  },
+  "bugs": {
+    "url": "https://github.com/ids-basecamp/clearinghouse/issues"
+  },
+  "keywords": [],
+  "repository": "https://github.com/ids-basecamp/clearinghouse",
+  "author": "Maximilian Schönenberg, Daniel Hommen",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "semantic-release": "^21.0.7"
+  }
+}

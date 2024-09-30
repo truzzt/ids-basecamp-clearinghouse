@@ -1,8 +1,13 @@
-.settings/*
+/**/.settings
+/**/.classpath
 .project
 target
 data
 *.log
 .idea/
-**/*.lock
+node_modules/
 **/*.iml
+.vscode/
+book/
+ca/
+.DS_Store

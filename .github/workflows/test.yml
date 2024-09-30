@@ -1,0 +1,59 @@
+name: test
+
+on:
+  pull_request:
+    branches:
+      - master
+      - beta
+      - alpha
+      - development
+
+jobs:
+  app-unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Build and Test
+      run: |
+        cd clearing-house-app
+        cargo build
+        cargo test
+
+  edc-unit-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write    
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup JDK 17
+      uses: actions/setup-java@v2
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Run Unit Tests
+      run: |
+        cd clearing-house-edc
+        ./gradlew test jacocoTestReport
+
+    - name: Add Coverage Report
+      id: jacoco
+      uses: madrapps/jacoco-report@v1.6.1
+      with:
+        paths: |
+          ${{ github.workspace }}/clearing-house-edc/core/build/reports/jacoco/test/jacocoTestReport.xml,
+          ${{ github.workspace }}clearing-house-edc/extensions/multipart/build/reports/jacoco/test/jacocoTestReport.xml
+        token: ${{ secrets.GITHUB_TOKEN }}
+        min-coverage-overall: 70
+        min-coverage-changed-files: 80
