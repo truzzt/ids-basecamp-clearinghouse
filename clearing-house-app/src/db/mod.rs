@@ -17,9 +17,9 @@ pub(crate) trait ProcessStore {
 }
 
 pub(crate) trait DocumentStore {
-    async fn add_document(&self, doc: Document) -> anyhow::Result<bool>;
+    async fn add_document(&self, doc: Document<String>) -> anyhow::Result<bool>;
     async fn exists_document(&self, id: &uuid::Uuid) -> anyhow::Result<bool>;
-    async fn get_document(&self, id: &str, pid: &str) -> anyhow::Result<Option<Document>>;
+    async fn get_document(&self, id: &str, pid: &str) -> anyhow::Result<Option<Document<String>>>;
     async fn get_documents_for_pid(
         &self,
         pid: &str,
@@ -27,5 +27,5 @@ pub(crate) trait DocumentStore {
         size: u64,
         sort: &SortingOrder,
         date: (&chrono::NaiveDateTime, &chrono::NaiveDateTime),
-    ) -> anyhow::Result<Vec<Document>>;
+    ) -> anyhow::Result<Vec<Document<String>>>;
 }

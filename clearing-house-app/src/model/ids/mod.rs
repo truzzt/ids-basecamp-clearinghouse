@@ -1,37 +1,32 @@
-use crate::model::ids::message::IdsMessage;
+use crate::model::ids::message::{IdsHeader, IdsMessage};
 
 pub mod message;
-pub mod request;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct InfoModelComplexId {
     /// IDS name
-    #[serde(rename = "@id", alias = "id", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "@id", alias = "id")]
     /// Correlated message, e.g. a response to a previous request
-    pub id: Option<String>,
+    pub id: String,
 }
 
 impl std::fmt::Display for InfoModelComplexId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use serde::ser::Error;
 
-        match &self.id {
-            Some(id) => write!(
-                f,
-                "{}",
-                serde_json::to_string(id).map_err(|e| std::fmt::Error::custom(format!(
-                    "JSON serialization failed: {e}"
-                )))?
-            ),
-            None => write!(f, ""),
-        }
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(&self.id)
+                .map_err(|e| std::fmt::Error::custom(format!("JSON serialization failed: {e}")))?
+        )
     }
 }
 
 impl InfoModelComplexId {
     #[must_use]
     pub fn new(id: String) -> InfoModelComplexId {
-        InfoModelComplexId { id: Some(id) }
+        InfoModelComplexId { id }
     }
 }
 
@@ -44,8 +39,8 @@ impl From<String> for InfoModelComplexId {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum InfoModelId {
-    SimpleId(String),
     ComplexId(InfoModelComplexId),
+    SimpleId(String),
 }
 
 impl InfoModelId {
@@ -68,6 +63,12 @@ impl std::fmt::Display for InfoModelId {
 impl From<String> for InfoModelId {
     fn from(id: String) -> InfoModelId {
         InfoModelId::SimpleId(id)
+    }
+}
+
+impl From<InfoModelComplexId> for InfoModelId {
+    fn from(id: InfoModelComplexId) -> InfoModelId {
+        InfoModelId::ComplexId(id)
     }
 }
 
@@ -126,6 +127,188 @@ impl std::fmt::Display for InfoModelTimeStamp {
                 write!(f, "")
             }
         }
+    }
+}
+
+pub struct MessageProcessedNotificationMessage<T> {
+    inner: IdsMessage<T>,
+}
+
+impl<T> MessageProcessedNotificationMessage<T> {
+    pub fn new(
+        clearinghouse_uri: &str,
+        daps_token: &str,
+        payload: T,
+        correlation_msg_id: Option<String>,
+    ) -> MessageProcessedNotificationMessage<T> {
+        let header = IdsHeader {
+            type_message: MessageType::MessageProcessedNotificationMessage,
+            model_version: "4.1.0".to_string(),
+            correlation_message: correlation_msg_id,
+            issuer_connector: InfoModelId::new(clearinghouse_uri.to_string()),
+            security_token: Some(SecurityToken {
+                type_message: MessageType::DAPSToken,
+                id: None,
+                token_format: Some(InfoModelId::new(
+                    "https://w3id.org/idsa/code/token/JWT".to_string(),
+                )),
+                token_value: daps_token.to_string(),
+            }),
+            ..Default::default()
+        };
+
+        MessageProcessedNotificationMessage {
+            inner: IdsMessage {
+                header,
+                payload: Some(payload),
+                payload_type: None,
+            },
+        }
+    }
+}
+
+impl<T> axum::response::IntoResponse for MessageProcessedNotificationMessage<T>
+where
+    T: serde::Serialize + Send,
+{
+    fn into_response(self) -> axum::response::Response {
+        let header = serde_json::to_vec(&self.inner.header).expect("Header is serializable");
+        let payload = serde_json::to_vec(&self.inner.payload).expect("Payload is serializable");
+
+        let form = axum_extra::response::multiple::MultipartForm::with_parts(vec![
+            axum_extra::response::multiple::Part::raw_part(
+                "header",
+                "application/json",
+                header,
+                None,
+            )
+            .expect("application/json is a valid mime type"),
+            axum_extra::response::multiple::Part::raw_part(
+                "payload",
+                "application/json",
+                payload,
+                None,
+            )
+            .expect("application/json is a valid mime type"),
+        ]);
+
+        form.into_response()
+    }
+}
+
+pub struct ResultMessage<T> {
+    inner: IdsMessage<IdsQueryResult<T>>,
+}
+
+impl<T> ResultMessage<T> {
+    #[must_use]
+    pub fn new(
+        clearinghouse_uri: &str,
+        daps_token: &str,
+        payload: IdsQueryResult<T>,
+        correlation_msg_id: Option<String>,
+    ) -> Self {
+        let header = IdsHeader {
+            type_message: MessageType::ResultMessage,
+            model_version: "4.1.0".to_string(),
+            correlation_message: correlation_msg_id,
+            issuer_connector: InfoModelId::new(clearinghouse_uri.to_string()),
+            security_token: Some(SecurityToken {
+                type_message: MessageType::DAPSToken,
+                id: None,
+                token_format: Some(InfoModelId::new(
+                    "https://w3id.org/idsa/code/token/JWT".to_string(),
+                )),
+                token_value: daps_token.to_string(),
+            }),
+            ..Default::default()
+        };
+
+        Self {
+            inner: IdsMessage {
+                header,
+                payload: Some(payload),
+                payload_type: None,
+            },
+        }
+    }
+}
+
+impl<T> axum::response::IntoResponse for ResultMessage<T>
+where
+    T: serde::Serialize + Send,
+{
+    fn into_response(self) -> axum::response::Response {
+        let header = serde_json::to_vec(&self.inner.header).expect("Header is serializable");
+        let payload = serde_json::to_vec(&self.inner.payload).expect("Payload is serializable");
+
+        let form = axum_extra::response::multiple::MultipartForm::with_parts(vec![
+            axum_extra::response::multiple::Part::raw_part(
+                "header",
+                "application/json",
+                header,
+                None,
+            )
+            .expect("application/json is a valid mime type"),
+            axum_extra::response::multiple::Part::raw_part(
+                "payload",
+                "application/json",
+                payload,
+                None,
+            )
+            .expect("application/json is a valid mime type"),
+        ]);
+
+        form.into_response()
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct RejectionMessage {
+    #[serde(flatten)]
+    inner: IdsHeader,
+    #[serde(rename = "ids:rejectionReason")]
+    rejection_reason: String,
+}
+
+impl RejectionMessage {
+    #[must_use]
+    pub fn new(
+        clearinghouse_uri: &str,
+        rejection_message: String,
+        correlation_msg_id: Option<String>,
+    ) -> Self {
+        let header = IdsHeader {
+            type_message: MessageType::RejectionMessage,
+            model_version: "4.1.0".to_string(),
+            correlation_message: correlation_msg_id,
+            issuer_connector: InfoModelId::new(clearinghouse_uri.to_string()),
+            security_token: None, // We omit the DAPS Token here, so that not somebody can try to spoof the DAPS Token
+            ..Default::default()
+        };
+
+        Self {
+            inner: header,
+            rejection_reason: rejection_message,
+        }
+    }
+}
+
+impl axum::response::IntoResponse for RejectionMessage {
+    fn into_response(self) -> axum::response::Response {
+        let header = serde_json::to_vec(&self.inner).expect("Header is serializable");
+
+        let form = axum_extra::response::multiple::MultipartForm::with_parts(vec![
+            axum_extra::response::multiple::Part::raw_part(
+                "header",
+                "application/json",
+                header,
+                None,
+            )
+            .expect("application/json is a valid mime type"),
+        ]);
+
+        form.into_response()
     }
 }
 
@@ -368,16 +551,16 @@ pub struct SecurityToken {
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
-pub struct IdsQueryResult {
+pub struct IdsQueryResult<T> {
     pub date_from: String,
     pub date_to: String,
     pub page: i32,
     pub size: i32,
     pub order: String,
-    pub documents: Vec<IdsMessage>,
+    pub documents: Vec<IdsMessage<T>>,
 }
 
-impl IdsQueryResult {
+impl<T> IdsQueryResult<T> {
     /// Create a new `IdsQueryResult`
     ///
     /// # Panics
@@ -390,8 +573,8 @@ impl IdsQueryResult {
         page: Option<i32>,
         size: Option<i32>,
         order: String,
-        documents: Vec<IdsMessage>,
-    ) -> IdsQueryResult {
+        documents: Vec<IdsMessage<T>>,
+    ) -> IdsQueryResult<T> {
         let date_from = chrono::DateTime::from_timestamp(date_from, 0)
             .expect("Invalid date_from seconds")
             .format("%Y-%m-%d %H:%M:%S")

@@ -11,8 +11,6 @@
 #[macro_use]
 extern crate tracing;
 
-use crate::model::constants::ENV_LOGGING_SERVICE_ID;
-use crate::util::ServiceConfig;
 use std::sync::Arc;
 
 mod config;
@@ -31,8 +29,8 @@ type PostgresLoggingService = services::logging_service::LoggingService<
 #[derive(Clone)]
 pub(crate) struct AppState {
     pub logging_service: Arc<PostgresLoggingService>,
-    pub service_config: Arc<ServiceConfig>,
-    pub signing_key_path: String,
+    pub daps_client: Arc<ids_daps_client::ReqwestDapsClient>,
+    pub cert_util: Arc<ids_daps_cert::CertUtil>,
 }
 
 impl AppState {
@@ -52,6 +50,14 @@ impl AppState {
 
     /// Initialize the application state from config
     async fn init(conf: &config::CHConfig) -> anyhow::Result<Self> {
+        let cert_util = Arc::new(
+            ids_daps_cert::CertUtil::load_certificate(
+                std::path::Path::new(&conf.p12_path),
+                conf.p12_password.as_deref().unwrap_or(""),
+            )
+            .expect("Load certificate failed"),
+        );
+
         #[cfg(feature = "postgres")]
         let pool = Self::setup_postgres(conf).await?;
 
@@ -69,17 +75,22 @@ impl AppState {
         let logging_service = Arc::new(services::logging_service::LoggingService::new(
             process_store,
             doc_service.clone(),
+            cert_util.clone(),
+            conf.issuer.clone(),
             conf.static_process_owner.clone(),
         ));
 
-        let service_config = Arc::new(util::init_service_config(ENV_LOGGING_SERVICE_ID)?);
-        let signing_key = util::init_signing_key(conf.signing_key.as_deref())?;
+        let daps_client = ids_daps_client::ReqwestDapsClient::from_cert_util(
+            &cert_util,
+            &conf.token_scope,
+            &conf.daps_certs_url,
+            &conf.daps_token_url,
+            300_u64,
+        );
 
-        Ok(Self {
-            signing_key_path: signing_key,
-            service_config,
-            logging_service,
-        })
+        let daps_client = Arc::new(daps_client);
+
+        Ok(Self { logging_service, daps_client, cert_util })
     }
 }
 
