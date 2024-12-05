@@ -5,10 +5,15 @@ use std::fmt::Display;
 pub(crate) struct CHConfig {
     pub(crate) database_url: String,
     pub(crate) clear_db: bool,
+    pub(crate) issuer: String,
     #[serde(default)]
     pub(crate) log_level: Option<LogLevel>,
+    pub(crate) p12_path: String,
     #[serde(default)]
-    pub(crate) signing_key: Option<String>,
+    pub(crate) p12_password: Option<String>,
+    pub(crate) daps_token_url: String,
+    pub(crate) daps_certs_url: String,
+    pub(crate) token_scope: String,
     #[serde(default)]
     pub(crate) static_process_owner: Option<String>,
     performance_tracing: Option<bool>,
@@ -152,6 +157,12 @@ mod test {
 clear_db = true
 log_level = "ERROR"
 static_process_owner = "ABC"
+issuer = "https://example.com"
+p12_path = "keys/connector-certificate.p12"
+p12_password = "Password1"  # Optional
+daps_token_url = "http://localhost:4567/jwks.json"
+daps_certs_url = "http://localhost:4567/token"
+token_scope = "idsc:IDS_CONNECTORS_ALL"
 "#;
 
         // Write to file
@@ -168,5 +179,6 @@ static_process_owner = "ABC"
         assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Error));
         assert_eq!(conf.static_process_owner, Some("ABC".to_string()));
+        assert_eq!(conf.issuer, "https://example.com");
     }
 }

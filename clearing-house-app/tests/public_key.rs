@@ -1,6 +1,4 @@
 use axum::body::Body;
-use axum::http::{Request, StatusCode};
-use biscuit::jwk::JWKSet;
 use testcontainers::runners::AsyncRunner;
 use tower::ServiceExt;
 
@@ -37,7 +35,7 @@ async fn retrieve_public_key() {
 
     let response = app
         .oneshot(
-            Request::builder()
+            http::Request::builder()
                 .uri("/.well-known/jwks.json")
                 .body(Body::empty())
                 .unwrap(),
@@ -45,12 +43,13 @@ async fn retrieve_public_key() {
         .await
         .unwrap();
 
-    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
 
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)
         .await
         .unwrap();
     assert!(!body.is_empty());
-    let jwks = serde_json::from_slice::<JWKSet<biscuit::Empty>>(&body).expect("Decoded the JWKSet");
-    println!("JWKS: {:?}", jwks);
+    let jwks =
+        serde_json::from_slice::<jsonwebtoken::jwk::JwkSet>(&body).expect("Decoded the JWKSet");
+    tracing::info!("JWKS: {:#?}", jwks);
 }

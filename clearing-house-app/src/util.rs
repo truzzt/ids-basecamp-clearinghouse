@@ -1,33 +1,3 @@
-use crate::model::claims::get_fingerprint;
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ServiceConfig {
-    pub service_id: String,
-}
-
-pub(super) fn init_service_config(service_id: &str) -> anyhow::Result<ServiceConfig> {
-    match std::env::var(service_id) {
-        Ok(id) => Ok(ServiceConfig { service_id: id }),
-        Err(_e) => {
-            anyhow::bail!(
-                "Service ID not configured. Please configure environment variable {}",
-                &service_id
-            );
-        }
-    }
-}
-
-pub(super) fn init_signing_key(signing_key_path: Option<&str>) -> anyhow::Result<String> {
-    let private_key_path = signing_key_path.unwrap_or("keys/private_key.der");
-    if std::path::Path::new(&private_key_path).exists()
-        && get_fingerprint(private_key_path).is_some()
-    {
-        Ok(private_key_path.to_string())
-    } else {
-        anyhow::bail!("Signing key not found! Aborting startup! Please configure signing_key!");
-    }
-}
-
 /// Signal handler to catch a Ctrl+C and initiate a graceful shutdown
 ///
 /// # Panics
