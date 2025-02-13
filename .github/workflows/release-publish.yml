@@ -52,9 +52,6 @@ jobs:
           - context: "ch-app"
             directory: "clearing-house-app"
             dockerfile: "Dockerfile" 
-          - context: "ch-edc"
-            directory: "clearing-house-edc"
-            dockerfile: "launchers/connector-prod/Dockerfile"
 
     steps:
       - name: Checkout repository
@@ -68,7 +65,9 @@ jobs:
           DOCKER_IMAGE_TAG: ${{ needs.release.outputs.new_tag_version }}
         run: |
           cd ${{ matrix.directory }}
-          docker build -t ghcr.io/${{ github.repository }}/${{ matrix.context }}:$DOCKER_IMAGE_TAG -f ${{ matrix.dockerfile }} .
+          docker build --build-arg="VERSION=${{ needs.release.outputs.new_tag_version }}" \
+            --build-arg="GITHUB_USER=${{ github.actor }}" --build-arg="GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
+            -t ghcr.io/${{ github.repository }}/${{ matrix.context }}:$DOCKER_IMAGE_TAG -f ${{ matrix.dockerfile }} .
 
       - name: Push Docker image
         env:

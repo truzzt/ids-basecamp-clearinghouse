@@ -1,6 +1,6 @@
 [package]
 name = "clearing-house-app"
-version = "0.10.0"
+version = "2.0.0"
 license = "Apache-2.0"
 repository = "https://github.com/ids-basecamp/clearinghouse"
 authors = [
@@ -11,62 +11,52 @@ authors = [
 edition = "2021"
 
 [dependencies]
+# IDS DAPS Client
+ids-daps-client = { git = "https://github.com/ids-basecamp/ids-rs", package = "ids-daps-client" }
+ids-daps-cert = { git = "https://github.com/ids-basecamp/ids-rs", package = "ids-daps-cert", features = ["fingerprint", "biscuit"] }
 # JWT
-biscuit = "0.6.0"
-# Database
-mongodb = { version = ">= 2.7.0", features = ["openssl-tls"], optional = true }
-# Serialization
+jsonwebtoken = "9.3.0"
+# Serialization / Deserialization
 serde = { version = "> 1.0.184", features = ["derive"] }
 serde_json = "1"
 # Error handling
 anyhow = "1"
 # Time handling
 chrono = { version = "0.4.26", features = ["serde", "clock", "std"], default-features = false }
-# Encryption and hashing
-ring = "0.16.20"
 # Config reader
-config = { version = "0.13.3", default-features = false, features = ["toml"] }
+config = { version = "0.14.1", default-features = false, features = ["toml"] }
 # Logging/Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
-# Random number generation
-rand = "0.8.5"
-# lazy initialization of static variables
-once_cell = "1.18.0"
 # Base64 encoding
-base64 = "0.21.7"
+base64 = "0.22.1"
 # UUID generation
 uuid = { version = "1", features = ["serde", "v4"] }
-# Big integer handling (RSA key modulus and exponent)
-num-bigint = "0.4.3"
-# Generating fingerprint of RSA keys
-openssh-keys = "0.6.2"
 # Async runtime
-tokio = { version = ">= 1.32.0", features = ["macros", "rt-multi-thread", "signal"] }
+tokio = { version = ">= 1.41.1", features = ["macros", "rt-multi-thread", "signal"] }
 # HTTP server
-axum = { version = "0.7.4", features = ["json", "http2"] }
-# Helper to allow defining traits for async functions
-async-trait = "0.1.73"
-# Helper for working with futures
-futures = "0.3.29"
+axum = { version = "0.8.0-alpha.1", features = ["json", "http2", "multipart", "macros"] }
+axum-extra = { version = "0.10.0-alpha.1", features = ["multipart"] }
 # Helper for creating custom error types
-thiserror = "1.0.48"
+thiserror = "2.0.3"
 # Optional: Sentry integration
-sentry = { version = "0.32.1", optional = true }
-sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"], optional = true }
+sentry = { version = "0.35.0", optional = true }
+sqlx = { version = "0.8.1", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"], optional = true }
+bytes = "1.9.0"
 
 [dev-dependencies]
 # Controlling execution of unit test cases, which could interfere with each other
 serial_test = "3"
 # Tempfile creation for testing
 tempfile = "3.8"
-tower = { version = "0.4", features = ["util"] }
-hyper = { version = "1", features = ["full"] }
-testcontainers = "0.15.0"
-testcontainers-modules = { version = "0.3.4", features = ["postgres"] }
+tower = { version = "0.5.1", features = ["util"] }
+testcontainers = "0.23.1"
+testcontainers-modules = { version = "0.11.4", features = ["postgres"] }
+http = "1.2.0"
+reqwest = { version = "0.12.9", features = ["multipart"] }
+multipart = { version = "0.18.0", features = ["server"] }
 
 [features]
 default = ["postgres"]
 sentry = ["dep:sentry"]
-mongodb = ["dep:mongodb"]
 postgres = ["dep:sqlx"]
