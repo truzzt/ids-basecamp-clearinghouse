@@ -1,3 +1,13 @@
+# [2.0.0-beta.1](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0...v2.0.0-beta.1) (2025-02-13)
+
+
+* 2_0_beta.1 (#130) ([297c288](https://github.com/ids-basecamp/clearinghouse/commit/297c28820fda002b1f9412ab642eb8eab0bc435f)), closes [#130](https://github.com/ids-basecamp/clearinghouse/issues/130)
+
+
+### BREAKING CHANGES
+
+* edc as a proxy connector has been removed and the ids prodoctol directly implemented in the app
+
 # 1.0.0 (2024-09-30)
 
 
