@@ -1,5 +1,11 @@
 log_level = "INFO" # TRACE, DEBUG, INFO, WARN, ERROR
 database_url= "postgres://my_user:my_password@localhost:5432/ch"
 clear_db = true
-signing_key = "keys/private_key.der" # Optional
+issuer = "http://localhost:8080"
+p12_path = "keys/connector-certificate.p12"
+p12_password = "Password1"  # Optional
+daps_token_url = "http://localhost:4567/jwks.json"
+daps_certs_url = "http://localhost:4567/token"
+token_scope = "idsc:IDS_CONNECTORS_ALL"
+static_process_owner = "MDS" # Optional
 performance_tracing = false

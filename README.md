@@ -12,10 +12,10 @@
 > The ids-basecamp-clearingHouse is a implementation of the [Clearing House](https://github.com/International-Data-Spaces-Association/IDS-RAM_4_0/blob/main/documentation/3_Layers_of_the_Reference_Architecture_Model/3_5_System_Layer/3_5_5_Clearing_House.md) component of the [International Data Space](https://internationaldataspaces.org/).
 
 ## Quick Start
-Please refer to the quick start [guide](https://truzzt.github.io/ids-basecamp-clearinghouse/content/admin-guide/quick_start.html)
+Please refer to the quick start [guide](https://ids-basecamp.github.io/clearinghouse/content/admin-guide/quick_start.html)
 
 ## Documentation
-Please refer to the [documentation](https://truzzt.github.io/ids-basecamp-clearinghouse/)
+Please refer to the [documentation](https://ids-basecamp.github.io/clearinghouse/)
 
 ## Run tests
 

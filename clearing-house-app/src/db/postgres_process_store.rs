@@ -27,10 +27,10 @@ impl super::ProcessStore for PostgresProcessStore {
         LEFT JOIN clients c ON po.client_id = c.id
         GROUP BY p.process_id, p.created_at",
         )
-            .fetch_all(&self.db)
-            .await
-            .map(|r| r.into_iter().map(std::convert::Into::into).collect())
-            .map_err(std::convert::Into::into)
+        .fetch_all(&self.db)
+        .await
+        .map(|r| r.into_iter().map(std::convert::Into::into).collect())
+        .map_err(std::convert::Into::into)
     }
 
     async fn delete_process(&self, pid: &str) -> anyhow::Result<bool> {
@@ -59,11 +59,11 @@ impl super::ProcessStore for PostgresProcessStore {
         WHERE p.process_id = $1
         GROUP BY p.process_id, p.created_at",
         )
-            .bind(pid)
-            .fetch_optional(&self.db)
-            .await
-            .map(|r| r.map(std::convert::Into::into))
-            .map_err(std::convert::Into::into)
+        .bind(pid)
+        .fetch_optional(&self.db)
+        .await
+        .map(|r| r.map(std::convert::Into::into))
+        .map_err(std::convert::Into::into)
     }
 
     async fn store_process(&self, process: Process) -> anyhow::Result<()> {

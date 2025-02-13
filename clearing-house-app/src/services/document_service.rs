@@ -15,7 +15,7 @@ pub enum DocumentServiceError {
     MissingPayload,
     #[error("Error during database operation: {description}: {source}")]
     DatabaseError {
-        source: anyhow::Error,
+        source: Box<dyn std::error::Error + Sync + Send>,
         description: String,
     },
     #[error("Invalid dates in query!")]
@@ -28,7 +28,9 @@ impl axum::response::IntoResponse for DocumentServiceError {
     fn into_response(self) -> axum::response::Response {
         use axum::http::StatusCode;
         match self {
-            Self::DocumentAlreadyExists | Self::MissingPayload | Self::InvalidDates => (StatusCode::BAD_REQUEST, self.to_string()).into_response(),
+            Self::DocumentAlreadyExists | Self::MissingPayload | Self::InvalidDates => {
+                (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+            }
             Self::DatabaseError {
                 source,
                 description,
@@ -56,7 +58,7 @@ impl<T: DocumentStore> DocumentService<T> {
     pub(crate) async fn create_enc_document(
         &self,
         ch_claims: ChClaims,
-        doc: Document,
+        doc: Document<String>,
     ) -> Result<DocumentReceipt, DocumentServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         // data validation
@@ -79,7 +81,7 @@ impl<T: DocumentStore> DocumentService<T> {
                 Err(e) => {
                     error!("Error while adding: {:?}", e);
                     Err(DocumentServiceError::DatabaseError {
-                        source: e,
+                        source: e.into(),
                         description: "Error while adding document".to_string(),
                     })
                 }
@@ -141,7 +143,7 @@ impl<T: DocumentStore> DocumentService<T> {
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
                 return Err(DocumentServiceError::DatabaseError {
-                    source: e,
+                    source: e.into(),
                     description: "Error while retrieving document".to_string(),
                 });
             }
@@ -155,8 +157,8 @@ impl<T: DocumentStore> DocumentService<T> {
         };
 
         let mut result = QueryResult::new(
-            sanitized_date_from.timestamp(),
-            sanitized_date_to.timestamp(),
+            sanitized_date_from.and_utc().timestamp(),
+            sanitized_date_to.and_utc().timestamp(),
             result_page,
             result_size,
             result_sort,
@@ -180,7 +182,7 @@ impl<T: DocumentStore> DocumentService<T> {
         pid: String,
         id: String,
         hash: Option<String>,
-    ) -> Result<Document, DocumentServiceError> {
+    ) -> Result<Document<String>, DocumentServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         trace!("trying to retrieve document with id '{id}' for pid '{pid}'");
         if let Some(hash) = hash {
@@ -196,7 +198,7 @@ impl<T: DocumentStore> DocumentService<T> {
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
                 Err(DocumentServiceError::DatabaseError {
-                    source: e,
+                    source: e.into(),
                     description: "Error while retrieving document".to_string(),
                 })
             }
