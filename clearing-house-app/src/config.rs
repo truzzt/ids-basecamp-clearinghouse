@@ -5,10 +5,15 @@ use std::fmt::Display;
 pub(crate) struct CHConfig {
     pub(crate) database_url: String,
     pub(crate) clear_db: bool,
+    pub(crate) issuer: String,
     #[serde(default)]
     pub(crate) log_level: Option<LogLevel>,
+    pub(crate) p12_path: String,
     #[serde(default)]
-    pub(crate) signing_key: Option<String>,
+    pub(crate) p12_password: Option<String>,
+    pub(crate) daps_token_url: String,
+    pub(crate) daps_certs_url: String,
+    pub(crate) token_scope: String,
     #[serde(default)]
     pub(crate) static_process_owner: Option<String>,
     performance_tracing: Option<bool>,
@@ -79,7 +84,10 @@ pub(crate) fn read_config(config_file_override: Option<&std::path::Path>) -> CHC
 pub(crate) fn configure_logging(config: &CHConfig) {
     if std::env::var("RUST_LOG").is_err() {
         if let Some(level) = &config.log_level {
-            std::env::set_var("RUST_LOG", level.to_string());
+            #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
+            unsafe {
+                std::env::set_var("RUST_LOG", level.to_string());
+            }
         }
     }
 
@@ -104,22 +112,34 @@ mod test {
     #[test]
     #[serial]
     fn test_read_config_from_env() {
-        std::env::set_var("CH_APP_DATABASE_URL", "mongodb://localhost:27117");
-        std::env::set_var("CH_APP_CLEAR_DB", "true");
-        std::env::set_var("CH_APP_LOG_LEVEL", "INFO");
-        std::env::set_var("CH_APP_STATIC_PROCESS_OWNER", "ABC");
+        #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
+        unsafe {
+            std::env::set_var(
+                "CH_APP_DATABASE_URL",
+                "postgres://my_user:my_password@localhost:5432/ch",
+            );
+            std::env::set_var("CH_APP_CLEAR_DB", "true");
+            std::env::set_var("CH_APP_LOG_LEVEL", "INFO");
+            std::env::set_var("CH_APP_STATIC_PROCESS_OWNER", "ABC");
+        }
 
         let conf = super::read_config(None);
-        assert_eq!(conf.database_url, "mongodb://localhost:27117");
+        assert_eq!(
+            conf.database_url,
+            "postgres://my_user:my_password@localhost:5432/ch"
+        );
         assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Info));
         assert_eq!(conf.static_process_owner, Some("ABC".to_string()));
 
         // Cleanup
-        std::env::remove_var("CH_APP_DATABASE_URL");
-        std::env::remove_var("CH_APP_CLEAR_DB");
-        std::env::remove_var("CH_APP_LOG_LEVEL");
-        std::env::remove_var("CH_APP_STATIC_PROCESS_OWNER");
+        #[allow(unsafe_code)] // Deprecated safe from rust edition 2024
+        unsafe {
+            std::env::remove_var("CH_APP_DATABASE_URL");
+            std::env::remove_var("CH_APP_CLEAR_DB");
+            std::env::remove_var("CH_APP_LOG_LEVEL");
+            std::env::remove_var("CH_APP_STATIC_PROCESS_OWNER");
+        }
     }
 
     /// Test reading config from toml file
@@ -133,10 +153,16 @@ mod test {
             .expect("Failure to create tempfile");
 
         // Write config to file
-        let toml = r#"database_url = "mongodb://localhost:27019"
+        let toml = r#"database_url = "postgres://my_user:my_password@localhost:5432/ch"
 clear_db = true
 log_level = "ERROR"
 static_process_owner = "ABC"
+issuer = "https://example.com"
+p12_path = "keys/connector-certificate.p12"
+p12_password = "Password1"  # Optional
+daps_token_url = "http://localhost:4567/jwks.json"
+daps_certs_url = "http://localhost:4567/token"
+token_scope = "idsc:IDS_CONNECTORS_ALL"
 "#;
 
         // Write to file
@@ -146,9 +172,13 @@ static_process_owner = "ABC"
         let conf = super::read_config(Some(file.path()));
 
         // Test
-        assert_eq!(conf.database_url, "mongodb://localhost:27019");
+        assert_eq!(
+            conf.database_url,
+            "postgres://my_user:my_password@localhost:5432/ch"
+        );
         assert!(conf.clear_db);
         assert_eq!(conf.log_level, Some(super::LogLevel::Error));
         assert_eq!(conf.static_process_owner, Some("ABC".to_string()));
+        assert_eq!(conf.issuer, "https://example.com");
     }
 }
