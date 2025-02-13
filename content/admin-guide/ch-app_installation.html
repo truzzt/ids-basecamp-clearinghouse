@@ -152,53 +152,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="clearinghouse-app-installation"><a class="header" href="#clearinghouse-app-installation">Clearinghouse App Installation</a></h1>
-<p>The Clearinghouse App (<code>ch-app</code>) comes pre-packaged in a docker container.</p>
-<h2 id="releases"><a class="header" href="#releases">Releases</a></h2>
-<p>For existing releases visit <a href="https://github.com/ids-basecamp/clearinghouse/pkgs/container/clearinghouse%2Fch-app">ids-basecamp-clearinghouse/ch-app Releases</a>.</p>
-<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
-<p>Starting the <code>ch-app</code> Docker-only, use the following command and adapt it to your needs.</p>
-<pre><code class="language-sh">docker run -d \
-    -p 8000:8000 \
-    -v ${PRIVATE_KEY_PATH}:/app/keys/private_key.der:ro \
-    -e CH_APP_PROCESS_DATABASE_URL='mongodb://mongohost:27017' \
-    -e CH_APP_KEYRING_DATABASE_URL='mongodb://mongohost:27017' \
-    -e CH_APP_DOCUMENT_DATABASE_URL='mongodb://mongohost:27017' \
-    -e CH_APP_CLEAR_DB='false' \
-    -e CH_APP_LOG_LEVEL='INFO' \
-    -e CH_APP_STATIC_PROCESS_OWNER='MDS_ID' \
-    -e SERVICE_ID_LOG='1' \
-    -e SHARED_SECRET='123' \
-    --name ch-app \
-    ghcr.io/truzzt/ids-basecamp-clearing/ch-app:${TAG}
-</code></pre>
-<p>The following example starts the <code>ch-app</code> together with a <code>mongodb</code> also running on docker (good for local development):</p>
-<pre><code class="language-sh"># Create a docker network
-docker network create testch
-# Start mongodb
-docker run -d -p 27017:27017 --net=testch --name mongohost mongo
-# Start ch-app
-docker run -d \
-    -p 8000:8000 --net=testch \
-    -v ${PRIVATE_KEY_PATH}:/app/keys/private_key.der:ro \
-    -e CH_APP_PROCESS_DATABASE_URL='mongodb://mongohost:27017' \
-    -e CH_APP_KEYRING_DATABASE_URL='mongodb://mongohost:27017' \
-    -e CH_APP_DOCUMENT_DATABASE_URL='mongodb://mongohost:27017' \
-    -e CH_APP_CLEAR_DB='false' \
-    -e CH_APP_LOG_LEVEL='INFO' \
-    -e CH_APP_STATIC_PROCESS_OWNER='MDS_ID' \
-    -e SERVICE_ID_LOG='1' \
-    -e SHARED_SECRET='123' \
-    --name ch-app \
-    ghcr.io/truzzt/ids-basecamp-clearing/ch-app:${TAG}
-
-# ---
-# Cleanup
-docker rm -f mongohost ch-app
-docker network rm testch
-</code></pre>
-<h2 id="build"><a class="header" href="#build">Build</a></h2>
-<p>To build the ch-app yourself change into the <code>/clearing-house-app</code> directory and run <code>docker build -t ch-app:latest .</code>.</p>
+                        <h1 id="clearinghouse-app"><a class="header" href="#clearinghouse-app">Clearinghouse-App</a></h1>
 
                     </main>
 
