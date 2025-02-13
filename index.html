@@ -152,14 +152,69 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h1>
+                        <h1 id="clearinghouse-quick-start-guide"><a class="header" href="#clearinghouse-quick-start-guide">Clearinghouse Quick Start Guide</a></h1>
+<p>This guide provides instructions to quickly set up and run the Clearinghouse software implementing the IDSA RAM 4.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<p>Before starting, ensure you have the following prerequisites in place:</p>
+<ul>
+<li>A running <strong>DAPS</strong> (Dynamic Attribute Provisioning Service)</li>
+<li>A valid <strong>certificate</strong> in <code>.p12</code> format for authentication</li>
+<li>A <strong>PostgreSQL database</strong></li>
+</ul>
+<h2 id="running-the-application"><a class="header" href="#running-the-application">Running the Application</a></h2>
+<h3 id="1-using-cargo"><a class="header" href="#1-using-cargo">1. Using Cargo</a></h3>
+<p>If running with <strong>Cargo</strong>, the environment variables must be set in a <code>config.toml</code> file using the following syntax:</p>
+<pre><code class="language-toml">log_level = "INFO"
+database_url = "$CLEARING_APP_DATABASE_URL"
+p12_path = "/run/secrets/connector.p12"
+p12_password = "$CLEARING_EDC_KEYSTORE_PASSWORD"
+daps_token_url = "https://${DAPS_DOMAIN}/realms/DAPS/protocol/openid-connect/token"
+daps_certs_url = "https://${DAPS_DOMAIN}/realms/DAPS/protocol/openid-connect/certs"
+token_scope = "https://daps.dev.mobility-dataspace.eu/realms/DAPS"
+static_process_owner = "MDS"
+issuer = "https://clearing.dev.mobility-dataspace.eu"
+</code></pre>
+<p>To start the application with <strong>Cargo</strong>, navigate to the project directory and run:</p>
+<pre><code class="language-bash">cargo run
+</code></pre>
+<h3 id="2-using-docker"><a class="header" href="#2-using-docker">2. Using Docker</a></h3>
+<p>Alternatively, you can use <strong>Docker Compose</strong> to run the application in a containerized environment. Ensure that you have <strong>Docker</strong> and <strong>Docker Compose</strong> installed.</p>
+<h4 id="running-with-docker-compose"><a class="header" href="#running-with-docker-compose">Running with Docker Compose</a></h4>
+<ol>
+<li>Create an <code>example.docker-compose.yml</code> file (if not provided).</li>
+<li>Start the application with:</li>
+</ol>
+<pre><code class="language-bash">docker-compose -f example.docker-compose.yml up -d
+</code></pre>
+<p>This will spin up the required services in detached mode.</p>
+<h2 id="environment-variables-breakdown"><a class="header" href="#environment-variables-breakdown">Environment Variables Breakdown</a></h2>
+<p>Below is an explanation of each environment variable required for the application:</p>
+<ul>
+<li><strong>CH_APP_LOG_LEVEL</strong>: Defines the logging level for the application (e.g., INFO, DEBUG, ERROR).</li>
+<li><strong>CH_APP_DATABASE_URL</strong>: The connection string for the PostgreSQL database.</li>
+<li><strong>CH_APP_P12_PATH</strong>: Path to the <code>.p12</code> certificate file used for authentication.</li>
+<li><strong>CH_APP_P12_PASSWORD</strong>: Password for the <code>.p12</code> certificate file.</li>
+<li><strong>CH_APP_DAPS_TOKEN_URL</strong>: URL for obtaining tokens from the DAPS service.</li>
+<li><strong>CH_APP_DAPS_CERTS_URL</strong>: URL for retrieving DAPS certificates.</li>
+<li><strong>CH_APP_TOKEN_SCOPE</strong>: Scope of the token used in DAPS authentication.</li>
+<li><strong>CH_APP_STATIC_PROCESS_OWNER</strong>: Static identifier for the process owner, typically set to “MDS”.</li>
+<li><strong>CH_APP_ISSUER</strong>: The issuer URL for the Clearinghouse instance.</li>
+</ul>
+<h2 id="additional-notes"><a class="header" href="#additional-notes">Additional Notes</a></h2>
+<ul>
+<li>Ensure that your <code>.p12</code> certificate is properly mounted in the container when using Docker.</li>
+<li>Verify connectivity to the <strong>DAPS</strong> service to avoid authentication issues.</li>
+</ul>
+<p>For further configuration options, refer to the project documentation.</p>
+<hr />
+<p><em>You’re now ready to use the Clearinghouse in your Mobility Data Space setup!</em></p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
 
-                            <a rel="next prefetch" href="content/admin-guide/ch-app_installation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="content/references.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -170,7 +225,7 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
 
-                    <a rel="next prefetch" href="content/admin-guide/ch-app_installation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="content/references.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
