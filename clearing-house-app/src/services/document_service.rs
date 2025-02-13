@@ -15,7 +15,7 @@ pub enum DocumentServiceError {
     MissingPayload,
     #[error("Error during database operation: {description}: {source}")]
     DatabaseError {
-        source: anyhow::Error,
+        source: Box<dyn std::error::Error + Sync + Send>,
         description: String,
     },
     #[error("Invalid dates in query!")]
@@ -58,7 +58,7 @@ impl<T: DocumentStore> DocumentService<T> {
     pub(crate) async fn create_enc_document(
         &self,
         ch_claims: ChClaims,
-        doc: Document,
+        doc: Document<String>,
     ) -> Result<DocumentReceipt, DocumentServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         // data validation
@@ -81,7 +81,7 @@ impl<T: DocumentStore> DocumentService<T> {
                 Err(e) => {
                     error!("Error while adding: {:?}", e);
                     Err(DocumentServiceError::DatabaseError {
-                        source: e,
+                        source: e.into(),
                         description: "Error while adding document".to_string(),
                     })
                 }
@@ -143,7 +143,7 @@ impl<T: DocumentStore> DocumentService<T> {
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
                 return Err(DocumentServiceError::DatabaseError {
-                    source: e,
+                    source: e.into(),
                     description: "Error while retrieving document".to_string(),
                 });
             }
@@ -182,7 +182,7 @@ impl<T: DocumentStore> DocumentService<T> {
         pid: String,
         id: String,
         hash: Option<String>,
-    ) -> Result<Document, DocumentServiceError> {
+    ) -> Result<Document<String>, DocumentServiceError> {
         trace!("...user '{:?}'", &ch_claims.client_id);
         trace!("trying to retrieve document with id '{id}' for pid '{pid}'");
         if let Some(hash) = hash {
@@ -198,7 +198,7 @@ impl<T: DocumentStore> DocumentService<T> {
             Err(e) => {
                 error!("Error while retrieving document: {:?}", e);
                 Err(DocumentServiceError::DatabaseError {
-                    source: e,
+                    source: e.into(),
                     description: "Error while retrieving document".to_string(),
                 })
             }
