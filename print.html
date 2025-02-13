@@ -209,6 +209,16 @@ issuer = "https://clearing.dev.mobility-dataspace.eu"
 <p>For further configuration options, refer to the project documentation.</p>
 <hr />
 <p><em>You’re now ready to use the Clearinghouse in your Mobility Data Space setup!</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="clearinghouse-migration-guide"><a class="header" href="#clearinghouse-migration-guide">Clearinghouse Migration Guide</a></h1>
+<h2 id="migration-steps-v1x-to-20"><a class="header" href="#migration-steps-v1x-to-20">Migration Steps v1.x to 2.0</a></h2>
+<h3 id="1-remove-edc"><a class="header" href="#1-remove-edc">1. Remove EDC</a></h3>
+<p>Since the EDC is no longer required, it can be safely decommissioned and removed from your deployment.</p>
+<h3 id="2-verify-database-configuration"><a class="header" href="#2-verify-database-configuration">2. Verify Database Configuration</a></h3>
+<p>No database changes are required, but it is recommended to ensure that all connections remain functional after the migration.</p>
+<h3 id="3-update-certificate-configuration"><a class="header" href="#3-update-certificate-configuration">3. Update Certificate Configuration</a></h3>
+<p>Ensure that the existing connector certificate is configured as the Clearinghouse signature certificate.</p>
+<h3 id="4-update-incoming-connection-pointers"><a class="header" href="#4-update-incoming-connection-pointers">4. Update Incoming Connection Pointers</a></h3>
+<p>Modify any references to the old connection endpoint and point them to <code>ch-app</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="api-docs"><a class="header" href="#api-docs">API Docs</a></h1>
 <p>Swagger and Postman Collection can be found <a href="https://github.com/truzzt/ids-basecamp-clearinghouse-postman">here</a></p>
 
