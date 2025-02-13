@@ -1,3 +1,26 @@
+# [1.0.0-beta.8](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.7...v1.0.0-beta.8) (2025-02-13)
+
+
+### Bug Fixes
+
+* fixing unit tests ([5cc791e](https://github.com/ids-basecamp/clearinghouse/commit/5cc791ea9a17a688e26552db81cdf0172d7eb7a3))
+
+
+* Merge pull request #126 from ids-basecamp/feature/lh-2.0 ([7efec2c](https://github.com/ids-basecamp/clearinghouse/commit/7efec2c725b1d8ff148d98966b9a5c8fb2e68ebb)), closes [#126](https://github.com/ids-basecamp/clearinghouse/issues/126)
+
+
+### Features
+
+* **app:** removed MongoDB implementation, added report posting in PR, bumped dependencies ([c7a6aeb](https://github.com/ids-basecamp/clearinghouse/commit/c7a6aeb39987b7e621d0878c5c3b5b955c5e17e2))
+* clearing house app response errors mapping ([32dc0d4](https://github.com/ids-basecamp/clearinghouse/commit/32dc0d44d181e816d274129bd3844077734e0698))
+* clearing house app response errors mapping ([c9fa461](https://github.com/ids-basecamp/clearinghouse/commit/c9fa4610a5d9d71476445aa4db2ff9387716a138))
+* **docs:** setup deployment docs ([#124](https://github.com/ids-basecamp/clearinghouse/issues/124)) ([6a67af1](https://github.com/ids-basecamp/clearinghouse/commit/6a67af137243f6ed1cb75add12f1f75ab234c46d))
+
+
+### BREAKING CHANGES
+
+* implement ids protocol directly in app and remove EDC
+
 # [1.0.0-beta.7](https://github.com/ids-basecamp/clearinghouse/compare/v1.0.0-beta.6...v1.0.0-beta.7) (2024-08-01)
 
 
