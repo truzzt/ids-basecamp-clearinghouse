@@ -37,7 +37,7 @@ pub struct QueryResult {
     pub page: Option<i32>,
     pub size: Option<i32>,
     pub order: String,
-    pub documents: Vec<Document<String>>,
+    pub documents: Vec<Document>,
 }
 
 impl QueryResult {
@@ -47,7 +47,7 @@ impl QueryResult {
         page: Option<i32>,
         size: Option<i32>,
         order: String,
-        documents: Vec<Document<String>>,
+        documents: Vec<Document>,
     ) -> QueryResult {
         QueryResult {
             date_from,

@@ -1,32 +1,37 @@
-use crate::model::ids::message::{IdsHeader, IdsMessage};
+use crate::model::ids::message::IdsMessage;
 
 pub mod message;
+pub mod request;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct InfoModelComplexId {
     /// IDS name
-    #[serde(rename = "@id", alias = "id")]
+    #[serde(rename = "@id", alias = "id", skip_serializing_if = "Option::is_none")]
     /// Correlated message, e.g. a response to a previous request
-    pub id: String,
+    pub id: Option<String>,
 }
 
 impl std::fmt::Display for InfoModelComplexId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use serde::ser::Error;
 
-        write!(
-            f,
-            "{}",
-            serde_json::to_string(&self.id)
-                .map_err(|e| std::fmt::Error::custom(format!("JSON serialization failed: {e}")))?
-        )
+        match &self.id {
+            Some(id) => write!(
+                f,
+                "{}",
+                serde_json::to_string(id).map_err(|e| std::fmt::Error::custom(format!(
+                    "JSON serialization failed: {e}"
+                )))?
+            ),
+            None => write!(f, ""),
+        }
     }
 }
 
 impl InfoModelComplexId {
     #[must_use]
     pub fn new(id: String) -> InfoModelComplexId {
-        InfoModelComplexId { id }
+        InfoModelComplexId { id: Some(id) }
     }
 }
 
@@ -39,8 +44,8 @@ impl From<String> for InfoModelComplexId {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum InfoModelId {
-    ComplexId(InfoModelComplexId),
     SimpleId(String),
+    ComplexId(InfoModelComplexId),
 }
 
 impl InfoModelId {
@@ -51,7 +56,7 @@ impl InfoModelId {
 }
 
 impl std::fmt::Display for InfoModelId {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             InfoModelId::SimpleId(id) => fmt.write_str(id)?,
             InfoModelId::ComplexId(id) => fmt.write_str(&id.to_string())?,
@@ -63,12 +68,6 @@ impl std::fmt::Display for InfoModelId {
 impl From<String> for InfoModelId {
     fn from(id: String) -> InfoModelId {
         InfoModelId::SimpleId(id)
-    }
-}
-
-impl From<InfoModelComplexId> for InfoModelId {
-    fn from(id: InfoModelComplexId) -> InfoModelId {
-        InfoModelId::ComplexId(id)
     }
 }
 
@@ -86,7 +85,7 @@ impl Default for InfoModelDateTime {
 }
 
 impl std::fmt::Display for InfoModelDateTime {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             InfoModelDateTime::Time(value) => fmt.write_str(&value.to_string())?,
             InfoModelDateTime::ComplexTime(value) => fmt.write_str(&value.to_string())?,
@@ -99,9 +98,9 @@ impl std::fmt::Display for InfoModelDateTime {
 pub struct InfoModelTimeStamp {
     //IDS name
     #[serde(
-        rename = "@type",
-        alias = "type",
-        skip_serializing_if = "Option::is_none"
+    rename = "@type",
+    alias = "type",
+    skip_serializing_if = "Option::is_none"
     )]
     pub format: Option<String>,
     //IDS name
@@ -130,190 +129,8 @@ impl std::fmt::Display for InfoModelTimeStamp {
     }
 }
 
-pub struct MessageProcessedNotificationMessage<T> {
-    inner: IdsMessage<T>,
-}
-
-impl<T> MessageProcessedNotificationMessage<T> {
-    pub fn new(
-        clearinghouse_uri: &str,
-        daps_token: &str,
-        payload: T,
-        correlation_msg_id: Option<String>,
-    ) -> MessageProcessedNotificationMessage<T> {
-        let header = IdsHeader {
-            type_message: MessageType::MessageProcessedNotificationMessage,
-            model_version: "4.1.0".to_string(),
-            correlation_message: correlation_msg_id,
-            issuer_connector: InfoModelId::new(clearinghouse_uri.to_string()),
-            security_token: Some(SecurityToken {
-                type_message: MessageType::DAPSToken,
-                id: None,
-                token_format: Some(InfoModelId::new(
-                    "https://w3id.org/idsa/code/token/JWT".to_string(),
-                )),
-                token_value: daps_token.to_string(),
-            }),
-            ..Default::default()
-        };
-
-        MessageProcessedNotificationMessage {
-            inner: IdsMessage {
-                header,
-                payload: Some(payload),
-                payload_type: None,
-            },
-        }
-    }
-}
-
-impl<T> axum::response::IntoResponse for MessageProcessedNotificationMessage<T>
-where
-    T: serde::Serialize + Send,
-{
-    fn into_response(self) -> axum::response::Response {
-        let header = serde_json::to_vec(&self.inner.header).expect("Header is serializable");
-        let payload = serde_json::to_vec(&self.inner.payload).expect("Payload is serializable");
-
-        let form = axum_extra::response::multiple::MultipartForm::with_parts(vec![
-            axum_extra::response::multiple::Part::raw_part(
-                "header",
-                "application/json",
-                header,
-                None,
-            )
-            .expect("application/json is a valid mime type"),
-            axum_extra::response::multiple::Part::raw_part(
-                "payload",
-                "application/json",
-                payload,
-                None,
-            )
-            .expect("application/json is a valid mime type"),
-        ]);
-
-        form.into_response()
-    }
-}
-
-pub struct ResultMessage<T> {
-    inner: IdsMessage<IdsQueryResult<T>>,
-}
-
-impl<T> ResultMessage<T> {
-    #[must_use]
-    pub fn new(
-        clearinghouse_uri: &str,
-        daps_token: &str,
-        payload: IdsQueryResult<T>,
-        correlation_msg_id: Option<String>,
-    ) -> Self {
-        let header = IdsHeader {
-            type_message: MessageType::ResultMessage,
-            model_version: "4.1.0".to_string(),
-            correlation_message: correlation_msg_id,
-            issuer_connector: InfoModelId::new(clearinghouse_uri.to_string()),
-            security_token: Some(SecurityToken {
-                type_message: MessageType::DAPSToken,
-                id: None,
-                token_format: Some(InfoModelId::new(
-                    "https://w3id.org/idsa/code/token/JWT".to_string(),
-                )),
-                token_value: daps_token.to_string(),
-            }),
-            ..Default::default()
-        };
-
-        Self {
-            inner: IdsMessage {
-                header,
-                payload: Some(payload),
-                payload_type: None,
-            },
-        }
-    }
-}
-
-impl<T> axum::response::IntoResponse for ResultMessage<T>
-where
-    T: serde::Serialize + Send,
-{
-    fn into_response(self) -> axum::response::Response {
-        let header = serde_json::to_vec(&self.inner.header).expect("Header is serializable");
-        let payload = serde_json::to_vec(&self.inner.payload).expect("Payload is serializable");
-
-        let form = axum_extra::response::multiple::MultipartForm::with_parts(vec![
-            axum_extra::response::multiple::Part::raw_part(
-                "header",
-                "application/json",
-                header,
-                None,
-            )
-            .expect("application/json is a valid mime type"),
-            axum_extra::response::multiple::Part::raw_part(
-                "payload",
-                "application/json",
-                payload,
-                None,
-            )
-            .expect("application/json is a valid mime type"),
-        ]);
-
-        form.into_response()
-    }
-}
-
-#[derive(Debug, Clone, serde::Serialize)]
-pub struct RejectionMessage {
-    #[serde(flatten)]
-    inner: IdsHeader,
-    #[serde(rename = "ids:rejectionReason")]
-    rejection_reason: String,
-}
-
-impl RejectionMessage {
-    #[must_use]
-    pub fn new(
-        clearinghouse_uri: &str,
-        rejection_message: String,
-        correlation_msg_id: Option<String>,
-    ) -> Self {
-        let header = IdsHeader {
-            type_message: MessageType::RejectionMessage,
-            model_version: "4.1.0".to_string(),
-            correlation_message: correlation_msg_id,
-            issuer_connector: InfoModelId::new(clearinghouse_uri.to_string()),
-            security_token: None, // We omit the DAPS Token here, so that not somebody can try to spoof the DAPS Token
-            ..Default::default()
-        };
-
-        Self {
-            inner: header,
-            rejection_reason: rejection_message,
-        }
-    }
-}
-
-impl axum::response::IntoResponse for RejectionMessage {
-    fn into_response(self) -> axum::response::Response {
-        let header = serde_json::to_vec(&self.inner).expect("Header is serializable");
-
-        let form = axum_extra::response::multiple::MultipartForm::with_parts(vec![
-            axum_extra::response::multiple::Part::raw_part(
-                "header",
-                "application/json",
-                header,
-                None,
-            )
-            .expect("application/json is a valid mime type"),
-        ]);
-
-        form.into_response()
-    }
-}
-
 /**
-There are three Subclasses of the abstract ids:Message class. Namely, the ids:RequestMessage, ids:ResponseMessage
+There are three Subclasses of the abstract ids:Message class. Namely the ids:RequestMessage, ids:ResponseMessage
 and ids:NotificationMessage. Each subclass itself has subclasses that fulfill a specific purpose in the communication process.
 
 For communication in the IDS, usually the more specific subclasses of the three mentioned ones are used.
@@ -328,7 +145,6 @@ pub enum MessageType {
     Message,
 
     /// ## Basic Message Types: Request, Response, Notification
-    ///
     /// Client-generated message initiating a communication, motivated by a certain reason and with an answer expected.
     #[serde(rename = "ids:RequestMessage")]
     RequestMessage,
@@ -340,7 +156,6 @@ pub enum MessageType {
     NotificationMessage,
 
     /// ## Core IDS Messages
-    ///
     /// Command messages are usually sent when a response is expected by the sender. Changes state on the recipient side. Therefore, commands are not 'safe' in the sense of REST.
     #[serde(rename = "ids:CommandMessage")]
     CommandMessage,
@@ -352,7 +167,6 @@ pub enum MessageType {
     RejectionMessage,
 
     /// ## Self-description
-    ///
     /// Message requesting metadata. If no URI is supplied via the ids:requestedElement field, this messages is treated like a self-description request and the recipient should return its self-description via an ids:DescriptionResponseMessage. However, if a URI is supplied, the Connector should either return metadata about the requested element via an ids:DescriptionResponseMessage, or send an ids:RejectionMessage, e.g., because the element was not found.
     #[serde(rename = "ids:DescriptionRequestMessage")]
     DescriptionRequestMessage,
@@ -361,7 +175,6 @@ pub enum MessageType {
     DescriptionResponseMessage,
 
     /// ## Connector-related Messages
-    ///
     /// Superclass of all messages, indicating a change of a connector's conditions.
     #[serde(rename = "ids:ConnectorNotificationMessage")]
     ConnectorNotificationMessage,
@@ -379,8 +192,7 @@ pub enum MessageType {
     ConnectorCertificateRevokedMessage,
 
     /// ## Participant-related Messages
-    ///
-    /// Superclass of all messages, indicating a change of a participant's conditions.
+    /// Superclass of all messages, indicating a change of a particpants's conditions.
     #[serde(rename = "ids:ParticipantNotificationMessage")]
     ParticipantNotificationMessage,
     /// Event notifying the recipient(s) about the availability and current description of a participant. The payload of the message must contain the participant's self-description.
@@ -397,7 +209,6 @@ pub enum MessageType {
     ParticipantCertificateRevokedMessage,
 
     /// ## Query related Messages
-    ///
     /// Query message intended to be consumed by a component.
     #[serde(rename = "ids:QueryMessage")]
     QueryMessage,
@@ -409,14 +220,13 @@ pub enum MessageType {
     QueryTarget,
 
     /// ## Contract Negotiation related Messages
-    ///
     /// Message containing a suggested content contract (as offered by the data consumer to the data provider) in the associated payload (which is an instance of ids:ContractRequest).
     #[serde(rename = "ids:ContractRequestMessage")]
     ContractRequestMessage,
     /// Message containing a response to a contract request (of a data consumer) in form of a counter-proposal of a contract in the associated payload (which is an instance of ids:ContractOffer).
     #[serde(rename = "ids:ContractResponseMessage")]
     ContractResponseMessage,
-    /// Message containing an offered content contract (as offered by a data provider to the data consumer) in the associated payload (which is an instance of ids:ContractOffer). In contrast to the ids:ContractResponseMessage, the ids:ContractOfferMessage is not related to a previous contract
+    /// Message containing a offered content contract (as offered by a data provider to the data consumer) in the associated payload (which is an instance of ids:ContractOffer). In contrast to the ids:ContractResponseMessage, the ids:ContractOfferMessage is not related to a previous contract
     #[serde(rename = "ids:ContractOfferMessage")]
     ContractOfferMessage,
     /// Message containing a contract, as an instance of ids:ContractAgreement, with resource access modalities on which two parties have agreed in the payload.
@@ -430,7 +240,6 @@ pub enum MessageType {
     ContractSupplementMessage,
 
     /// ## Security-related Messages
-    ///
     /// Message requesting an access token. This is intended for point-to-point communication with, e.g., Brokers.
     #[serde(rename = "ids:AccessTokenRequestMessage")]
     AccessTokenRequestMessage,
@@ -439,7 +248,6 @@ pub enum MessageType {
     AccessTokenResponseMessage,
 
     /// ## Resource related messages
-    ///
     /// Superclass of all messages, indicating a change of a resource.
     #[serde(rename = "ids:ResourceNotificationMessage")]
     ResourceNotificationMessage,
@@ -458,67 +266,62 @@ pub enum MessageType {
     /// Notification that a message has been successfully processed (i.e. not ignored or rejected).
     #[serde(rename = "ids:MessageProcessedNotificationMessage")]
     MessageProcessedNotificationMessage,
-    /// Message indicating that the result of a former `InvokeOperation` message is available. May transfer the result data in its associated payload section.
+    /// Message indicating that the result of a former InvokeOperation message is available. May transfer the result data in its associated payload section.
     #[serde(rename = "ids:OperationResultMessage")]
     OperationResultMessage,
 
     /// ## Artifact-related Messages
-    ///
-    /// Message asking for retrieving the specified Artifact as the payload of an `ArtifactResponse` message.
+    /// Message asking for retrieving the specified Artifact as the payload of an ArtifactResponse message.
     #[serde(rename = "ids:ArtifactRequestMessage")]
     ArtifactRequestMessage,
-    /// Message that follows up a `RetrieveArtifact` Message and contains the Artifact's data in the payload section.
+    /// Message that follows up a RetrieveArtifact Message and contains the Artifact's data in the payload section.
     #[serde(rename = "ids:ArtifactResponseMessage")]
     ArtifactResponseMessage,
 
     /// ## Upload Messages
-    ///
     /// Message used to upload a data to a recipient. Payload contains data.
     #[serde(rename = "ids:UploadMessage")]
     UploadMessage,
-    /// Message that follows up a `UploadMessage` and contains the upload confirmation.
+    /// Message that follows up a UploadMessage and contains the upload confirmation.
     #[serde(rename = "ids:UploadResponseMessage")]
     UploadResponseMessage,
 
-    /// ## `ParIS` Messages
-    ///
+    /// ## ParIS Messages
     /// This class is deprecated. Use ids:DescriptionRequestMessage instead. Message asking for retrieving the specified Participants information as the payload of an ids:ParticipantResponse message.
     #[serde(rename = "ids:ParticipantRequestMessage")]
     ParticipantRequestMessage,
-    /// This class is deprecated. Use ids:DescriptionResponseMessage instead. `ParticipantResponseMessage` follows up a `ParticipantRequestMessage` and contains the Participant's information in the payload section.
+    /// This class is deprecated. Use ids:DescriptionResponseMessage instead. ParticipantResponseMessage follows up a ParticipantRequestMessage and contains the Participant's information in the payload section.
     #[serde(rename = "ids:ParticipantResponseMessage")]
     ParticipantResponseMessage,
 
     /// ## Log messaging
-    ///
     /// Log Message which can be used to transfer logs e.g., to the clearing house.
     #[serde(rename = "ids:LogMessage")]
     LogMessage,
 
     /// ## App-related Messages
-    ///
-    /// Message that asks for registration or update of a data app to the App Store. Payload contains app-related metadata (instance of class ids:AppResource). Message header may contain an app identifier parameter of a prior registered data app. If the app identifier is supplied, the message should be interpreted as a registration for an app update. Otherwise, this message is used to register a new app.
+    /// Message that asks for registration or update of a data app to the App Store. Payload contains app-related metadata (instance of class ids:AppResource). Message header may contain an app identifier parameter of a prior registered data app. If the app identifier is supplied, the message should be interpreted as a registration for an app update. Otherwise this message is used to register a new app.
     #[serde(rename = "ids:AppRegistrationRequestMessage")]
     AppRegistrationRequestMessage,
-    /// Message that follows up an `AppRegistrationRequestMessage` and contains the app registration confirmation.
+    /// Message that follows up an AppRegistrationRequestMessage and contains the app registration confirmation.
     #[serde(rename = "ids:AppRegistrationResponseMessage")]
     AppRegistrationResponseMessage,
-    /// Message that usually follows a `AppRegistrationResponseMessage` and is used to upload a data app to the app store. Payload contains data app. Note that the message must refer to the prior sent, corresponding `AppResource` instance. The IRI of the ids:appArtifactReference must match the IRI of the artifact which is the value for the ids:instance property. The ids:instance is specific for each representation. Therefore, if someone wants to upload multiple representations for an app, he has to state them using multiple ids:instance properties inside the `AppRepresentation` (and therefore inside the `AppResource`). Otherwise, no mapping between payload and app metadata can be achieved.
+    /// Message that usually follows a AppRegistrationResponseMessage and is used to upload a data app to the app store. Payload contains data app. Note that the message must refer to the prior sent, corresponding AppResource instance. The IRI of the ids:appArtifactReference must must match the IRI of the artifact which is the value for the ids:instance property. The ids:instance is specific for each representation. Therefore, if someone wants to upload multiple representations for an app, he has to state them using multiple ids:instance properties inside the AppRepresentation (and therefore inside the AppResource). Otherwise no mapping between payload and app metadata can be achieved.
     #[serde(rename = "ids:AppUploadMessage")]
     AppUploadMessage,
-    /// Message that follows up an `AppUploadMessage` and contains the app upload confirmation.
+    /// Message that follows up an AppUploadMessage and contains the app upload confimation.
     #[serde(rename = "ids:AppUploadResponseMessage")]
     AppUploadResponseMessage,
-    /// Superclass of all messages, indicating a change of a `DataApp`. Unlike Resource-related Messages, `AppNotificationMessages` should lead to a state change for an app at the recipient, the `AppStore`.
+    /// Superclass of all messages, indicating a change of a DataApp. Unlike Resource-related Messages, AppNotificationMessages should lead to a state change for an app at the recipient, the AppStore.
     #[serde(rename = "ids:AppNotificationMessage")]
     AppNotificationMessage,
-    /// Message indicating that a specific App should be available (again) in the `AppStore`.
+    /// Message indicating that a specific App should be available (again) in the AppStore.
     #[serde(rename = "ids:AppAvailableMessage")]
     AppAvailableMessage,
-    /// Message indicating that a specific App should be unavailable in the `AppStore`.
+    /// Message indicating that a specific App should be unavailable in the AppStore.
     #[serde(rename = "ids:AppUnavailableMessage")]
     AppUnavailableMessage,
-    /// Message indicating that an App should be deleted from the `AppStore`.
+    /// Message indicating that an App should be deleted from the AppStore.
     #[serde(rename = "ids:AppDeleteMessage")]
     AppDeleteMessage,
 
@@ -551,16 +354,16 @@ pub struct SecurityToken {
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
-pub struct IdsQueryResult<T> {
+pub struct IdsQueryResult {
     pub date_from: String,
     pub date_to: String,
     pub page: i32,
     pub size: i32,
     pub order: String,
-    pub documents: Vec<IdsMessage<T>>,
+    pub documents: Vec<IdsMessage>,
 }
 
-impl<T> IdsQueryResult<T> {
+impl IdsQueryResult {
     /// Create a new `IdsQueryResult`
     ///
     /// # Panics
@@ -573,13 +376,13 @@ impl<T> IdsQueryResult<T> {
         page: Option<i32>,
         size: Option<i32>,
         order: String,
-        documents: Vec<IdsMessage<T>>,
-    ) -> IdsQueryResult<T> {
-        let date_from = chrono::DateTime::from_timestamp(date_from, 0)
+        documents: Vec<IdsMessage>,
+    ) -> IdsQueryResult {
+        let date_from = chrono::NaiveDateTime::from_timestamp_opt(date_from, 0)
             .expect("Invalid date_from seconds")
             .format("%Y-%m-%d %H:%M:%S")
             .to_string();
-        let date_to = chrono::DateTime::from_timestamp(date_to, 0)
+        let date_to = chrono::NaiveDateTime::from_timestamp_opt(date_to, 0)
             .expect("Invalid date_to seconds")
             .format("%Y-%m-%d %H:%M:%S")
             .to_string();

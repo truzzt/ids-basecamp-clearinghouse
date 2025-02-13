@@ -21,7 +21,7 @@ impl PostgresDocumentStore {
 }
 
 impl super::DocumentStore for PostgresDocumentStore {
-    async fn add_document(&self, doc: Document<String>) -> anyhow::Result<bool> {
+    async fn add_document(&self, doc: Document) -> anyhow::Result<bool> {
         let doc = DocumentRow::from(doc);
 
         sqlx::query(
@@ -64,7 +64,7 @@ impl super::DocumentStore for PostgresDocumentStore {
             .map_err(std::convert::Into::into)
     }
 
-    async fn get_document(&self, id: &str, pid: &str) -> anyhow::Result<Option<Document<String>>> {
+    async fn get_document(&self, id: &str, pid: &str) -> anyhow::Result<Option<Document>> {
         sqlx::query_as::<_, DocumentRow>(
             r"SELECT documents.id, processes.process_id, documents.created_at, model_version, correlation_message,
         transfer_contract, issued, issuer_connector, content_version, recipient_connector,
@@ -94,7 +94,7 @@ impl super::DocumentStore for PostgresDocumentStore {
         size: u64,
         sort: &SortingOrder,
         (date_from, date_to): (&chrono::NaiveDateTime, &chrono::NaiveDateTime),
-    ) -> anyhow::Result<Vec<Document<String>>> {
+    ) -> anyhow::Result<Vec<Document>> {
         let sort_order = match sort {
             SortingOrder::Ascending => "ASC",
             SortingOrder::Descending => "DESC",
@@ -153,29 +153,29 @@ struct DocumentRow {
     message_id: Option<String>,
 }
 
-impl From<Document<String>> for DocumentRow {
-    fn from(value: Document<String>) -> Self {
+impl From<Document> for DocumentRow {
+    fn from(value: Document) -> Self {
         Self {
             id: value.id,
             process_id: value.pid,
             created_at: value.ts.naive_utc(),
-            model_version: value.content.header.model_version,
-            correlation_message: value.content.header.correlation_message,
-            transfer_contract: value.content.header.transfer_contract,
-            issued: sqlx::types::Json(value.content.header.issued),
-            issuer_connector: sqlx::types::Json(value.content.header.issuer_connector),
-            content_version: value.content.header.content_version,
-            recipient_connector: value.content.header.recipient_connector.map(sqlx::types::Json),
-            sender_agent: value.content.header.sender_agent.to_string(),
-            recipient_agent: value.content.header.recipient_agent.map(sqlx::types::Json),
+            model_version: value.content.model_version,
+            correlation_message: value.content.correlation_message,
+            transfer_contract: value.content.transfer_contract,
+            issued: sqlx::types::Json(value.content.issued),
+            issuer_connector: sqlx::types::Json(value.content.issuer_connector),
+            content_version: value.content.content_version,
+            recipient_connector: value.content.recipient_connector.map(sqlx::types::Json),
+            sender_agent: value.content.sender_agent,
+            recipient_agent: value.content.recipient_agent.map(sqlx::types::Json),
             payload: value.content.payload.map(|s| s.as_bytes().to_owned()),
             payload_type: value.content.payload_type,
-            message_id: value.content.header.id,
+            message_id: value.content.id,
         }
     }
 }
 
-impl From<DocumentRow> for Document<String> {
+impl From<DocumentRow> for Document {
     fn from(value: DocumentRow) -> Self {
         use chrono::TimeZone;
 
@@ -184,22 +184,21 @@ impl From<DocumentRow> for Document<String> {
             pid: value.process_id,
             ts: chrono::Local.from_utc_datetime(&value.created_at),
             content: crate::model::ids::message::IdsMessage {
-                header: crate::model::ids::message::IdsHeader {
-                    model_version: value.model_version,
-                    correlation_message: value.correlation_message,
-                    transfer_contract: value.transfer_contract,
-                    issued: value.issued.0,
-                    issuer_connector: value.issuer_connector.0,
-                    content_version: value.content_version,
-                    recipient_connector: value.recipient_connector.map(|s| s.0),
-                    sender_agent: InfoModelId::SimpleId(value.sender_agent),
-                    recipient_agent: value.recipient_agent.map(|s| s.0),
-                    id: value.message_id,
-                    ..Default::default()
-                },
-                payload: value.payload.map(|b| String::from_utf8_lossy(&b).to_string()),
+                model_version: value.model_version,
+                correlation_message: value.correlation_message,
+                transfer_contract: value.transfer_contract,
+                issued: value.issued.0,
+                issuer_connector: value.issuer_connector.0,
+                content_version: value.content_version,
+                recipient_connector: value.recipient_connector.map(|s| s.0),
+                sender_agent: value.sender_agent,
+                recipient_agent: value.recipient_agent.map(|s| s.0),
+                payload: value
+                    .payload
+                    .map(|s| String::from_utf8_lossy(s.as_ref()).to_string()),
                 payload_type: value.payload_type,
-
+                id: value.message_id,
+                ..Default::default()
             },
         }
     }

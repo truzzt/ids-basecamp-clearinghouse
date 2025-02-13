@@ -1,37 +1,31 @@
-use crate::model::claims::ExtractIdsMessage;
-use crate::model::ids::{MessageProcessedNotificationMessage, RejectionMessage, ResultMessage};
+use crate::model::claims::ExtractChClaims;
 use crate::{model::claims::get_jwks, model::SortingOrder, AppState};
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use biscuit::jwk::JWKSet;
+
 use crate::model::ids::message::IdsMessage;
-use crate::model::process::OwnerList;
+use crate::model::ids::request::ClearingHouseMessage;
+use crate::model::ids::IdsQueryResult;
+use crate::model::process::Receipt;
+use crate::services::logging_service::LoggingServiceError;
+
+type LoggingApiResult<T> = super::ApiResult<T, LoggingServiceError>;
 
 async fn log(
+    ExtractChClaims(ch_claims): ExtractChClaims,
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Path(pid): axum::extract::Path<String>,
-    ExtractIdsMessage {
-        ch_claims,
-        ids_message,
-    }: ExtractIdsMessage<serde_json::Value>,
-) -> super::ApiResult {
-    let correlation_id = ids_message.header.id.clone();
-    let daps_token = state.daps_client.request_dat().await
-        .map_err(|e| RejectionMessage::new(state.logging_service.issuer(), format!("DAPS error: {e:?}"), correlation_id.clone()))?;
-
-    let cloned_ids_message: IdsMessage<String> = IdsMessage { header: ids_message.header.clone(),
-        payload: ids_message.payload.map(|t| t.to_string()),
-        payload_type: None,
-    };
-
-    match state.logging_service.log(ch_claims, cloned_ids_message, pid).await {
-        Ok(receipt) => Ok((
-            StatusCode::CREATED,
-            MessageProcessedNotificationMessage::new(state.logging_service.issuer(), &daps_token, receipt, correlation_id),
-        )
-            .into_response()),
+    axum::extract::Json(message): axum::extract::Json<ClearingHouseMessage>,
+) -> LoggingApiResult<Receipt> {
+    match state
+        .logging_service
+        .log(ch_claims, state.signing_key_path.as_str(), message, pid)
+        .await
+    {
+        Ok(id) => Ok((StatusCode::CREATED, axum::Json(id))),
         Err(e) => {
             error!("Error while logging: {:?}", e);
-            Err(RejectionMessage::new(state.logging_service.issuer(), format!("Error while logging: {e:?}"), correlation_id))
+            Err(e)
         }
     }
 }
@@ -42,30 +36,23 @@ struct CreateProcessResponse {
 }
 
 async fn create_process(
+    ExtractChClaims(ch_claims): ExtractChClaims,
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Path(pid): axum::extract::Path<String>,
-    ExtractIdsMessage {
-        ch_claims,
-        ids_message,
-    }: ExtractIdsMessage<OwnerList>,
-) -> super::ApiResult {
-    let correlation_id = ids_message.header.id.clone();
-    let daps_token = state.daps_client.request_dat().await
-        .map_err(|e| RejectionMessage::new(state.logging_service.issuer(), format!("DAPS error: {e:?}"), correlation_id.clone()))?;
-
+    axum::extract::Json(message): axum::extract::Json<ClearingHouseMessage>,
+) -> LoggingApiResult<CreateProcessResponse> {
     match state
         .logging_service
-        .create_process(ch_claims, ids_message, pid)
+        .create_process(ch_claims, message, pid)
         .await
     {
         Ok(id) => Ok((
             StatusCode::CREATED,
-            MessageProcessedNotificationMessage::new(state.logging_service.issuer(), &daps_token, CreateProcessResponse { pid: id }, correlation_id),
-        )
-            .into_response()),
+            axum::Json(CreateProcessResponse { pid: id }),
+        )),
         Err(e) => {
-            error!("Error while creating process: {e:?}");
-            Err(RejectionMessage::new(state.logging_service.issuer(), format!("Error while creating process: {e:?}"), correlation_id))
+            error!("Error while creating process: {:?}", e);
+            Err(e)
         }
     }
 }
@@ -80,18 +67,12 @@ struct QueryParams {
 }
 
 async fn query_pid(
+    ExtractChClaims(ch_claims): ExtractChClaims,
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Query(params): axum::extract::Query<QueryParams>,
     axum::extract::Path(pid): axum::extract::Path<String>,
-    ExtractIdsMessage {
-        ch_claims,
-        ids_message,
-    }: ExtractIdsMessage<()>,
-) -> super::ApiResult {
-    let correlation_id = ids_message.header.id.clone();
-    let daps_token = state.daps_client.request_dat().await
-        .map_err(|e| RejectionMessage::new(state.logging_service.issuer(), format!("DAPS error: {e:?}"), correlation_id.clone()))?;
-
+    axum::extract::Json(_): axum::extract::Json<ClearingHouseMessage>,
+) -> LoggingApiResult<IdsQueryResult> {
     match state
         .logging_service
         .query_pid(
@@ -104,63 +85,49 @@ async fn query_pid(
         )
         .await
     {
-        Ok(result) => Ok((
-            StatusCode::OK,
-            ResultMessage::new(state.logging_service.issuer(), &daps_token, result, correlation_id),
-        )
-            .into_response()),
+        Ok(result) => Ok((StatusCode::OK, axum::Json(result))),
         Err(e) => {
-            error!("Error while querying: {e:?}");
-            Err(RejectionMessage::new(state.logging_service.issuer(), format!("Error while querying: {e:?}"), correlation_id))
+            error!("Error while querying: {:?}", e);
+            Err(e)
         }
     }
 }
 
 async fn query_id(
+    ExtractChClaims(ch_claims): ExtractChClaims,
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Path(pid): axum::extract::Path<String>,
     axum::extract::Path(id): axum::extract::Path<String>,
-    ExtractIdsMessage {
-        ch_claims,
-        ids_message,
-    }: ExtractIdsMessage<()>,
-) -> super::ApiResult {
-    let correlation_id = ids_message.header.id.clone();
-    let daps_token = state.daps_client.request_dat().await
-        .map_err(|e| RejectionMessage::new(state.logging_service.issuer(), format!("DAPS error: {e:?}"), correlation_id.clone()))?;
-
+    axum::extract::Json(message): axum::extract::Json<ClearingHouseMessage>,
+) -> LoggingApiResult<IdsMessage> {
     match state
         .logging_service
-        .query_id(ch_claims, pid, id, ids_message)
+        .query_id(ch_claims, pid, id, message)
         .await
     {
-        Ok(result) => Ok((
-            StatusCode::OK,
-            ResultMessage::new(state.logging_service.issuer(), &daps_token, result, correlation_id),
-        )
-            .into_response()),
+        Ok(result) => Ok((StatusCode::OK, axum::Json(result))),
         Err(e) => {
             error!("Error while querying: {:?}", e);
-            Err(RejectionMessage::new(state.logging_service.issuer(), format!("Error while querying: {e:?}"), correlation_id))
+            Err(e)
         }
     }
 }
 
 async fn get_public_sign_key(
     axum::extract::State(state): axum::extract::State<AppState>,
-) -> super::ApiResult {
-    match get_jwks(&state.cert_util) {
-        Some(jwks) => Ok((StatusCode::OK, axum::Json(jwks)).into_response()),
-        None => Err(RejectionMessage::new(state.logging_service.issuer(), "Error reading signing key".to_string(), None)),
+) -> super::ApiResult<JWKSet<biscuit::Empty>, &'static str> {
+    match get_jwks(state.signing_key_path.as_str()) {
+        Some(jwks) => Ok((StatusCode::OK, axum::Json(jwks))),
+        None => Err("Error reading signing key"),
     }
 }
 
 pub(crate) fn router() -> axum::routing::Router<AppState> {
     axum::Router::new()
-        .route("/messages/log/{pid}", axum::routing::post(log))
-        .route("/process/{pid}", axum::routing::post(create_process))
-        .route("/messages/query/{pid}", axum::routing::post(query_pid))
-        .route("/messages/query/{pid}/{id}", axum::routing::post(query_id))
+        .route("/messages/log/:pid", axum::routing::post(log))
+        .route("/process/:pid", axum::routing::post(create_process))
+        .route("/messages/query/:pid", axum::routing::post(query_pid))
+        .route("/messages/query/:pid/:id", axum::routing::post(query_id))
         .route(
             "/.well-known/jwks.json",
             axum::routing::get(get_public_sign_key),

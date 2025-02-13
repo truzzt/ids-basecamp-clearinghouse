@@ -1,5 +1,3 @@
-use anyhow::anyhow;
-
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 pub struct Process {
     pub id: String,
@@ -23,14 +21,14 @@ pub struct TransactionCounter {
     pub tc: i64,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct OwnerList {
     pub owners: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Receipt {
-    pub data: String,
+    pub data: biscuit::jws::Compact<DataTransaction, biscuit::Empty>,
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
@@ -43,26 +41,32 @@ pub struct DataTransaction {
     pub clearing_house_version: String,
 }
 
+impl biscuit::CompactJson for DataTransaction {}
+
 impl DataTransaction {
     /// Signs a `DataTransaction` with a given key on the `key_path` and returns a `Receipt`.
-    /// 
-    /// # Errors
-    /// Only if issues with reading the key or signing the `DataTransaction` occur.
-    pub fn sign_jsonwebtoken(
-        &self,
-        cert_util: &ids_daps_cert::CertUtil,
-    ) -> anyhow::Result<Receipt> {
-        let mut header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::PS512);
-        header.typ = None;
-        header.kid = cert_util.fingerprint().ok();
+    ///
+    /// # Panics
+    ///
+    /// Panics if the key at `key_path` is not a valid RSA keypair or does not exist
+    pub fn sign(&self, key_path: &str) -> Receipt {
+        let jws = biscuit::jws::Compact::new_decoded(
+            biscuit::jws::Header::from_registered_header(biscuit::jws::RegisteredHeader {
+                algorithm: biscuit::jwa::SignatureAlgorithm::PS512,
+                media_type: None,
+                key_id: crate::model::claims::get_fingerprint(key_path),
+                ..Default::default()
+            }),
+            self.clone(),
+        );
 
-        let private_key_der = cert_util
-            .private_key_der()
-            .map_err(|e| anyhow!("Error getting private_key_der: {e}"))?;
-        let private_key = jsonwebtoken::EncodingKey::from_rsa_der(&private_key_der);
-
-        let data = jsonwebtoken::encode(&header, self, &private_key)?;
-
-        Ok(Receipt { data })
+        let keypair = biscuit::jws::Secret::rsa_keypair_from_file(key_path)
+            .unwrap_or_else(|_| panic!("File exists at '{key_path}' and is a valid RSA keypair"));
+        debug!("decoded JWS:{:#?}", &jws);
+        Receipt {
+            data: jws
+                .into_encoded(&keypair)
+                .expect("Encoded JWS with keypair"),
+        }
     }
 }

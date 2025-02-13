@@ -3,7 +3,7 @@ use chrono::Local;
 use crate::model::ids::message::IdsMessage;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
-pub struct Document<T> {
+pub struct Document {
     /// Document id
     pub id: uuid::Uuid,
     /// Process ID
@@ -11,13 +11,14 @@ pub struct Document<T> {
     /// timestamp: unix timestamp
     pub ts: chrono::DateTime<Local>,
     /// Content of the document
-    pub content: IdsMessage<T>,
+    pub content: IdsMessage,
 }
 
 /// Documents should have a globally unique id, setting the id manually is discouraged.
-impl<T> Document<T> {
+impl Document {
+
     #[must_use]
-    pub fn new(pid: String, content: IdsMessage<T>) -> Self {
+    pub fn new(pid: String, content: IdsMessage) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
             pid,
